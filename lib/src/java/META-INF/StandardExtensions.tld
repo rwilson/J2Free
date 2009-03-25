@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib version="2.0" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee web-jsptaglibrary_2_0.xsd">
+    <tlib-version>2.0</tlib-version>
+    <short-name>stdx</short-name>
+    <uri>http://tags.j2free.org/StandardExt</uri>
+    <tag>
+        <name>requireController</name>
+        <tag-class>org.j2free.jsp.tags.RequireController</tag-class>
+        <body-content>JSP</body-content>
+    </tag>
+    <function>
+        <name>instanceOf</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            boolean instanceOf(java.lang.Object,java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>currentTimeMillis</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            long currentTimeMillis()
+        </function-signature>
+    </function>
+    <function>
+        <name>isUserInRole</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.Boolean isUserInRole(javax.servlet.http.HttpServletRequest, java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatPercent</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String formatPercent(float)
+        </function-signature>
+    </function>
+    <function>
+        <name>integerDivision</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            int integerDivision(int,int)
+        </function-signature>
+    </function>
+    <function>
+        <name>capitalizeFirst</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String capitalizeFirst(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>escapeSingleQuotes</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String escapeSingleQuotes(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>escapeDoubleQuotes</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String escapeDoubleQuotes(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>replaceAll</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String replaceAll(java.lang.String,java.lang.String,java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>stringLength</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            int stringLength(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>startsWithVowel</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            boolean startsWithVowel(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>indexOf</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            int indexOf(java.lang.String,java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDecimal</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String formatDecimal(double,int,int)
+        </function-signature>
+    </function>
+    <function>
+        <name>toLower</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String toLower(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>toUpper</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String toUpper(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>trim</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String trim(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>commify</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String commify(int)
+        </function-signature>
+    </function>
+    <function>
+        <name>cleanXSS</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String cleanXSS(java.lang.String)
+        </function-signature>
+    </function>
+</taglib>

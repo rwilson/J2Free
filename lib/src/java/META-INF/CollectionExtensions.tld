@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib version="2.0" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee web-jsptaglibrary_2_0.xsd">
+    <tlib-version>1.0</tlib-version>
+    <short-name>cext</short-name>
+    <uri>http://tags.j2free.org/CollectionsExt</uri>
+    <function>
+        <name>getCollectionSize</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            int getCollectionSize(java.util.Collection)
+        </function-signature>
+    </function>
+    <function>
+        <name>collectionContains</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            boolean collectionContains(java.util.Collection,java.lang.Object)
+        </function-signature>
+    </function>
+    <function>
+        <name>shuffle</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            java.util.List shuffle(java.util.List)
+        </function-signature>
+    </function>
+    <function>
+        <name>isEmpty</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            boolean isEmpty(java.util.Collection)
+        </function-signature>
+    </function>
+    <function>
+        <name>filter</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            java.util.List filter(org.j2free.jpa.Controller,java.util.Collection,java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>filterLimited</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            java.util.List filterLimited(org.j2free.jpa.Controller,java.util.Collection,java.lang.String,int,int)
+        </function-signature>
+    </function>
+    <function>
+        <name>join</name>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            java.lang.String join(java.util.Collection,java.lang.String)
+        </function-signature>
+    </function>
+</taglib>

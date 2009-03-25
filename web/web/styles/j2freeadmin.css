@@ -1,0 +1,176 @@
+body {
+    font-family: "Lucida Grande", "Trebuchet MS", tahoma, verdana, sans-serif;
+    font-size: 9pt;
+    line-height: 1.2em;
+    margin: 0;
+    padding: 0;
+    background-color: #666;
+}
+a, a:link, a:visited {
+    color: #396F30;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: none;
+    color: #333;
+}
+input[type=text] {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #888;
+    background-color: #F8F8F8;
+    font-size: 10pt;
+    padding: 2px 5px;
+}
+textarea {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #888;
+    background-color: #F8F8F8;
+    font-size: 10pt;
+    padding: 2px 5px;
+    width: 300px;
+    height: auto;
+    overflow: hidden;
+}
+input[readonly], input[type=text].readonly, textarea.readonly {
+    background-color: #CCC;
+}
+.header {
+    font-size: 16pt;
+    color: #666;
+    padding: 25px 20px;
+    border-bottom: 1px #bbb solid;
+    border-top: 1px #bbb solid;
+    background-color: #D5EFD1;
+}
+.headerRight {
+    float: right;
+    text-align: right;
+    padding: 0;
+    margin: 0;
+    padding: 15px 20px;
+}
+.headerRight div {
+    text-align: right;
+    font-size: 14pt;
+    color: #676767;
+    margin-bottom: 5px;
+}
+.headerRight span {
+    text-align: right;
+    font-size: 10.5pt;
+    color: #858585;
+}
+.footer {
+    text-align: center;
+    color: #eee;
+    padding: 25px 50px;
+    border-top: 1px #999 solid;
+    background-color: #666;
+}
+.content {
+    background-color: #F5F5F5;
+    margin: 0;
+    height: 550px;
+    border-top: 1px #888 solid;
+    border-bottom: 1px #ccc solid;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+#col1 {
+    overflow: hidden;
+}
+#col2 {
+    width: 250px;
+    overflow-x: hidden;
+}
+#col3 {
+    max-width: 450px;
+    border-right-color: transparent;
+}
+#col4 {
+    float: right;
+}
+.column {
+    float: left;
+    border-right: 1px #ccc solid;
+    height: 550px;
+    overflow: auto;
+    padding: 0;
+}
+.column .columnHeaderRight {
+    float: right;
+    padding: 12px 10px 0 0;
+    cursor: pointer;
+}
+.column .columnHeader {
+    font-size: 12pt;
+    color: #444;
+    padding: 12px 0 0 10px;
+    line-height: 1.1em;
+}
+#col3 .columnHeader {
+    line-height: 1.4em;
+}
+.column ul {
+    list-style-type: none;
+    margin: 5px 0 0;
+    padding: 0 0 0 0;
+}
+.column ul li {
+    padding: 0;
+    font-size: 10pt;
+    cursor: pointer;
+}
+.column ul li a, .column ul li a:link, .column ul li a:visited {
+    padding: 5px 10px 5px 20px;
+    display: block;
+    text-decoration: none;
+    color: #396F30;
+}
+.column ul li a:hover { 
+    background-color: #396F30;
+    color: #FFF;
+}
+.column ul li a.selected, .column ul li a.selected:link, .column ul li a.selected:visited {
+    background-color: #ddd;
+}
+.column ul li a.selected:hover {
+    background-color: #ddd;
+    color: #396F30;
+    cursor: default;
+}
+.loader {
+    font-size: 12pt;
+    position: absolute;
+    right: 0px;
+    top: 67px;
+    width: 100px;
+/*
+    left: 50%;
+    margin-left: -50px;
+    top: 17px;
+    top: 50px;
+*/
+    text-align: center;
+    padding: 8px 0;
+    border: 1px #FFE08F solid;
+    background-color: #FFF4BF;
+    color: #BF6700;
+    /*opacity: 0.8;*/
+}
+.infoTable {
+    margin: 10px 20px;
+}
+.infoTable tr td {
+    vertical-align: top;
+}
+.infoTable tr td.label {
+    vertical-align: top;
+    padding-top: 5px;
+}
+.moreLoader {
+    text-align: center;
+    padding: 5px 0;
+}

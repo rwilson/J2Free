@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib version="2.0" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee web-jsptaglibrary_2_0.xsd">
+    <tlib-version>1.0</tlib-version>
+    <short-name>dt</short-name>
+    <uri>http://tags.j2free.org/DateTimeExt</uri>
+    <function>
+        <description>Formats the specified date according to the specified pattern. Uses SimpleDateFormat.</description>
+        <name>formatDate</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDate(java.util.Date,java.lang.String,boolean)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDateRelative</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDate(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDateTimeOnly</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDateTimeOnly(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDateNoTime</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDateNoTime(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDateSimple</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDate(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDateLowPrecision</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDateLowPrecision(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatDateMinPrecision</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatDateMinPrecision(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>getCountdown</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            String getCountdown(java.util.Date)
+        </function-signature>
+    </function>
+    <function>
+        <name>formatNumberWithExtension</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String formatNumberWithExtension(int)
+        </function-signature>
+    </function>
+    <function>
+        <name>asEllapsedTime</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String asEllapsedTime(java.lang.Double)
+        </function-signature>
+    </function>
+    <function>
+        <name>asEllapsedTimeAgo</name>
+        <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
+        <function-signature>
+            java.lang.String asEllapsedTime(java.lang.Double)
+        </function-signature>
+    </function>
+</taglib>

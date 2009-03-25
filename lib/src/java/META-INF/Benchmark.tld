@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib version="2.0" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee web-jsptaglibrary_2_0.xsd">
+    <tlib-version>1.0</tlib-version>
+    <short-name>perf</short-name>
+    <uri>http://tags.j2free.org/Benchmark</uri>
+    <tag>
+        <name>benchmark</name>
+        <tag-class>org.j2free.jsp.tags.benchmark.BenchmarkTag</tag-class>
+        <body-content>JSP</body-content>
+        <attribute>
+            <description>Assigns a name to this benchmarked code section.  name will be included with any comment or logging output</description>
+            <name>name</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>java.lang.String</type>
+        </attribute>
+        <attribute>
+            <description>Enables output of benchmark results as an HTML comment</description>
+            <name>comments</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>boolean</type>
+        </attribute>
+        <attribute>
+            <description>Enabled output of benchmark results using commons logging with level INFO.</description>
+            <name>logs</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>boolean</type>
+        </attribute>
+        <attribute>
+            <description>Disables the benchmark tag</description>
+            <name>disable</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>boolean</type>
+        </attribute>
+    </tag>
+</taglib>

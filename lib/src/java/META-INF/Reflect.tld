@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib version="2.0" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee web-jsptaglibrary_2_0.xsd">
+    <tlib-version>1.0</tlib-version>
+    <short-name>reflect</short-name>
+    <uri>http://tags.j2free.org/Reflect</uri>
+    <function>
+        <name>isEntity</name>
+        <function-class>org.j2free.jsp.el.Reflection</function-class>
+        <function-signature>
+            boolean isEntity(java.lang.Object)
+        </function-signature>
+    </function>
+    <function>
+        <name>extractId</name>
+        <function-class>org.j2free.jsp.el.Reflection</function-class>
+        <function-signature>
+            java.lang.String extractId(java.lang.Object)
+        </function-signature>
+    </function>
+    <function>
+        <name>getStaticConstant</name>
+        <function-class>org.j2free.jsp.el.Reflection</function-class>
+        <function-signature>
+            java.lang.Object getStaticConstant(java.lang.String, java.lang.String)
+        </function-signature>
+    </function>
+</taglib>
