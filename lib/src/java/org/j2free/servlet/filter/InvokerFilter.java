@@ -9,15 +9,12 @@ package org.j2free.servlet.filter;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import javax.naming.NamingException;
 
-import javax.persistence.OptimisticLockException;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.hibernate.StaleObjectStateException;
 import org.j2free.annotations.URLMapping;
 import org.j2free.jpa.Controller;
 import org.j2free.jpa.ControllerServlet;
@@ -32,6 +29,34 @@ import org.scannotation.ClasspathUrlFinder;
 public class InvokerFilter implements Filter {
 
     private static Log log = LogFactory.getLog(InvokerFilter.class);
+
+    /* Ignored User-Agents
+        panscient.com
+        Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+        nutchsearch/Nutch-0.9 (Nutch Search 1.0; herceg_novi at yahoo dot com)
+        Yahoo! Slurp
+        Powerset
+        Ask Jeeves/Teoma
+        msnbot
+        Mozilla/5.0 (compatible; MJ12bot/v1.2.1; http://www.majestic12.co.uk/bot.php?+)
+        Mozilla/5.0 (Twiceler-0.9 http://www.cuill.com/twiceler/robot.html)
+        Gigabot/3.0 (http://www.gigablast.com/spider.html)
+        Mozilla/5.0 (compatible; attributor/1.13.2 +http://www.attributor.com)
+        lwp-request/2.07
+    */
+    private static final String IGNORED_AGENTS =
+            ".*?(" +
+                "(spider|robot|bot)\\.[a-z]*?|" +
+                "panscient\\.com|" +
+                "Googlebot|" +
+                "nutchsearch|" +
+                "Yahoo! Slurp|" +
+                "powerset|" +
+                "Ask Jeeves/Teoma|" +
+                "msnbot|" +
+                "Twiceler|" +
+                "attributor\\.com|" +
+            ").*?";
 
     // The filter configuration object we are associated with.  If
     // this value is null, this filter instance is not currently
@@ -58,18 +83,29 @@ public class InvokerFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
 
-        String currentPath = request.getRequestURI().replaceFirst(
-                request.getContextPath(), "");
+        String currentPath = request.getRequestURI().replaceFirst(request.getContextPath(), "");
 
+        long start = System.currentTimeMillis();
+
+        // Set cache-control based on content
+        if (currentPath.matches(".*?\\.(jpg|gif|png|jpeg)") && !currentPath.contains("captcha.jpg")) {
+            response.setHeader("Cache-Control","max-age=3600");
+            response.setHeader("Pragma","cache");
+        } else if (currentPath.matches(".*?\\.(swf|js|css)")) {
+            response.setHeader("Cache-Control","max-age=31449600");
+            response.setHeader("Pragma","cache");
+        }
+        
         // Certain extensions are known to be mapped in web.xml (e.g. .pack), 
         // or known to never be dynamic resources (e.g. .swf), so let them through
         if (currentPath.matches(".*?\\.swf")) {
             chain.doFilter(req, resp);
+            log.info((System.currentTimeMillis() - start) + "ms\t\t" + currentPath);
             return;
         }
 
         if (urlMap == null) {
-            log.error("urlMap is null!");
+            log.error("urlMap is null! Initializing...");
             initAnnotatedURLMappings();
         }
 
@@ -99,6 +135,8 @@ public class InvokerFilter implements Filter {
 
                     // if we found a match, get out of this loop asap
                     if (klass != null) {
+                        // Register the klass with the currentPath for future use.
+                        urlMap.put(currentPath, klass);
                         break;
                     }
 
@@ -115,6 +153,8 @@ public class InvokerFilter implements Filter {
                 }
             }
         }
+
+        ServletException problem = null;
 
         // If we didn't find it, then just pass it on
         if (klass == null) {
@@ -162,24 +202,29 @@ public class InvokerFilter implements Filter {
 
                 }
 
-            } catch (OptimisticLockException ole) {
-                log.error("OptimisticLockException[" + ole.getEntity() + "]");
-            } catch (StaleObjectStateException sose) {
-                log.error("StaleObjectStateException[" + sose.getEntityName() + "=" + sose.getIdentifier() + "]");
-            } catch (InstantiationException e) {
-                log.error("Error instantiating new Controller", e);
-                throw new ServletException(e);
-            } catch (IllegalAccessException iae) {
-                log.error("Error instantiating Controller", iae);
-                throw new ServletException(iae);
-            } catch (ClassNotFoundException cnfe) {
-                log.error("Error instantiating Controller, class not found", cnfe);
-                throw new ServletException(cnfe);
-            } catch (NamingException ne) {
-                log.error("Error instantiating Controller", ne);
-                throw new ServletException(ne);
+            } catch (Exception e) {
+
+                String userAgent = request.getHeader("User-Agent");
+                if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
+                    /*
+                    Emailer mailer = Emailer.getInstance();
+                    String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
+                    try {
+                        mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
+                    } catch (Exception e0) {
+                        log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
+                    }
+                    */
+                    log.error("Error servicing " + currentPath,e);
+                    problem = new ServletException(e);
+                }
             }
         }
+
+        log.info((System.currentTimeMillis() - start) + "ms\t\t" + currentPath);
+
+        if (problem != null)
+            throw problem;
     }
 
     /**
