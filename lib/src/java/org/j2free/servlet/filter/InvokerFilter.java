@@ -221,7 +221,7 @@ public class InvokerFilter implements Filter {
             }
         }
 
-        log.info((System.currentTimeMillis() - start) + "ms\t\t" + currentPath);
+        log.info("\t" + (System.currentTimeMillis() - start) + "\t" + currentPath);
 
         if (problem != null)
             throw problem;
