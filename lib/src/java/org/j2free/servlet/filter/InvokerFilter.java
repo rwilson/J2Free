@@ -31,41 +31,43 @@ public class InvokerFilter implements Filter {
     private static Log log = LogFactory.getLog(InvokerFilter.class);
 
     /* Ignored User-Agents
-        panscient.com
-        Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
-        nutchsearch/Nutch-0.9 (Nutch Search 1.0; herceg_novi at yahoo dot com)
-        Yahoo! Slurp
-        Powerset
-        Ask Jeeves/Teoma
-        msnbot
-        Mozilla/5.0 (compatible; MJ12bot/v1.2.1; http://www.majestic12.co.uk/bot.php?+)
-        Mozilla/5.0 (Twiceler-0.9 http://www.cuill.com/twiceler/robot.html)
-        Gigabot/3.0 (http://www.gigablast.com/spider.html)
-        Mozilla/5.0 (compatible; attributor/1.13.2 +http://www.attributor.com)
-        lwp-request/2.07
-    */
+    panscient.com
+    Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+    nutchsearch/Nutch-0.9 (Nutch Search 1.0; herceg_novi at yahoo dot com)
+    Yahoo! Slurp
+    Powerset
+    Ask Jeeves/Teoma
+    msnbot
+    Mozilla/5.0 (compatible; MJ12bot/v1.2.1; http://www.majestic12.co.uk/bot.php?+)
+    Mozilla/5.0 (Twiceler-0.9 http://www.cuill.com/twiceler/robot.html)
+    Gigabot/3.0 (http://www.gigablast.com/spider.html)
+    Mozilla/5.0 (compatible; attributor/1.13.2 +http://www.attributor.com)
+    lwp-request/2.07
+     */
     private static final String IGNORED_AGENTS =
-            ".*?(" +
-                "(spider|robot|bot)\\.[a-z]*?|" +
-                "panscient\\.com|" +
-                "Googlebot|" +
-                "nutchsearch|" +
-                "Yahoo! Slurp|" +
-                "powerset|" +
-                "Ask Jeeves/Teoma|" +
-                "msnbot|" +
-                "Twiceler|" +
-                "attributor\\.com|" +
-            ").*?";
+                                ".*?(" +
+                                "(spider|robot|bot)\\.[a-z]*?|" +
+                                "panscient\\.com|" +
+                                "Googlebot|" +
+                                "nutchsearch|" +
+                                "Yahoo! Slurp|" +
+                                "powerset|" +
+                                "Ask Jeeves/Teoma|" +
+                                "msnbot|" +
+                                "Twiceler|" +
+                                "attributor\\.com|" +
+                                ").*?";
 
     // The filter configuration object we are associated with.  If
     // this value is null, this filter instance is not currently
     // configured.
-    private FilterConfig filterConfig = null;
-    private static HashMap<String, Class> urlMap = null;
+    private FilterConfig filterConfig        = null;
 
-    public InvokerFilter() {
-    }
+    private boolean benchmarkAccess          = false;
+    private String extendedClassName         = null;
+
+    private static Map<String, Class> urlMap = null;
+    private static Set<String> staticSet     = Collections.synchronizedSet(new HashSet<String>());
 
     /**
      *
@@ -85,146 +87,173 @@ public class InvokerFilter implements Filter {
 
         String currentPath = request.getRequestURI().replaceFirst(request.getContextPath(), "");
 
-        long start = System.currentTimeMillis();
+        long start   = System.currentTimeMillis(),  // start time
+             find    = 0,                           // time after figuring out what to do
+             run     = 0,                           // time after processing
+             finish  = 0;                           // finish time
 
         // Set cache-control based on content
         if (currentPath.matches(".*?\\.(jpg|gif|png|jpeg)") && !currentPath.contains("captcha.jpg")) {
-            response.setHeader("Cache-Control","max-age=3600");
-            response.setHeader("Pragma","cache");
-        } else if (currentPath.matches(".*?\\.(swf|js|css)")) {
-            response.setHeader("Cache-Control","max-age=31449600");
-            response.setHeader("Pragma","cache");
-        }
-        
-        // Certain extensions are known to be mapped in web.xml (e.g. .pack), 
-        // or known to never be dynamic resources (e.g. .swf), so let them through
-        if (currentPath.matches(".*?\\.swf")) {
-            chain.doFilter(req, resp);
-            log.info((System.currentTimeMillis() - start) + "ms\t\t" + currentPath);
-            return;
-        }
-
-        if (urlMap == null) {
-            log.error("urlMap is null! Initializing...");
-            initAnnotatedURLMappings();
-        }
-
-        // Check for static first, since this is a constant look and regex aren't
-        Class klass = urlMap.get(currentPath);
-
-        log.debug("InvokerFilter for path: " + currentPath);
-
-        // if the exact match wasn't found, look for wildcard matches
-        if (klass == null) {
-            String partial;
-
-            // If the path contains a "." then check for the *.ext patterns
-            if (currentPath.indexOf(".") != -1) {
-                partial = currentPath.substring(currentPath.lastIndexOf("."));
-                klass = urlMap.get(partial);
-            }
-
-            if (klass == null && currentPath.lastIndexOf("/") > 0) {
-                partial = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
-                // check for possible /*, /something/* patterns starting with most specific
-                // and moving down to /*
-                while (partial.lastIndexOf("/") > 0) {
-                    //log.debug("trying to find wildcard resource " + partial);
-
-                    klass = urlMap.get(partial);
-
-                    // if we found a match, get out of this loop asap
-                    if (klass != null) {
-                        // Register the klass with the currentPath for future use.
-                        urlMap.put(currentPath, klass);
-                        break;
-                    }
-
-                    // if it's only a slash and it wasn't found, get out asap
-                    if (partial.equals("/")) {
-                        break;
-                    }
-
-                    // chop the ending '/' off 
-                    partial = partial.substring(0, partial.length() - 2);
-
-                    // then set the string to be the remnants
-                    partial = partial.substring(0, partial.lastIndexOf("/") + 1);
-                }
-            }
+            response.setHeader("Cache-Control", "max-age=3600");
+            response.setHeader("Pragma", "cache");
+        } else if (currentPath.matches(".*?\\.(swf|js|css|flv)")) {
+            response.setHeader("Cache-Control", "max-age=31449600");
+            response.setHeader("Pragma", "cache");
         }
 
         ServletException problem = null;
 
-        // If we didn't find it, then just pass it on
-        if (klass == null) {
+        /*
+         * Certain extensions are known to be mapped in web.xml,
+         * known to never be dynamic resources (e.g. .swf), or
+         * were discovered earlier to be static content, so let
+         * those through.
+         */
+        if (staticSet.contains(currentPath) || currentPath.matches(".*?\\.(swf|flv)")) {
 
-            log.debug("Dynamic resource not found for path: " + currentPath);
+            find = System.currentTimeMillis();
             chain.doFilter(req, resp);
-
+            run  = System.currentTimeMillis();
+            
         } else {
 
-            Controller controller = null;
+            if (urlMap == null) {
+                log.error("urlMap is null! Initializing...");
+                initAnnotatedURLMappings();
+            }
 
-            try {
+            // Check for static first, since this is a constant look and regex aren't
+            Class klass = urlMap.get(currentPath);
 
-                String extendedClassName = filterConfig.getInitParameter("controllerClass");
+            log.debug("InvokerFilter for path: " + currentPath);
 
-                if (extendedClassName == null) {
-                    controller = new Controller();
-                } else {
-                    controller = (Controller) (Class.forName(extendedClassName).newInstance());
+            // if the exact match wasn't found, look for wildcard matches
+            if (klass == null) {
+                String partial;
+
+                // If the path contains a "." then check for the *.ext patterns
+                if (currentPath.indexOf(".") != -1) {
+                    partial = currentPath.substring(currentPath.lastIndexOf("."));
+                    klass = urlMap.get(partial);
                 }
 
-                if (klass.getSuperclass() == ControllerServlet.class) {
+                if (klass == null && currentPath.lastIndexOf("/") > 0) {
+                    partial = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
+                    // check for possible /*, /something/* patterns starting with most specific
+                    // and moving down to /*
+                    while (partial.lastIndexOf("/") > 0) {
+                        //log.debug("trying to find wildcard resource " + partial);
 
-                    log.debug("Dynamic resource found, instance of ControllerServlet, servicing with " + klass.getName());
+                        klass = urlMap.get(partial);
 
-                    ControllerServlet servlet = (ControllerServlet) klass.newInstance();
+                        // if we found a match, get out of this loop asap
+                        if (klass != null) {
+                            // Register the klass with the currentPath for future use.
+                            urlMap.put(currentPath, klass);
+                            break;
+                        }
 
-                    long startTime = System.currentTimeMillis();
+                        // if it's only a slash and it wasn't found, get out asap
+                        if (partial.equals("/")) {
+                            break;
+                        }
 
-                    controller.startTransaction();
-                    servlet.setController(controller);
-                    request.setAttribute("controller", controller);
-                    servlet.service(request, response);
-                    controller.endTransaction();
+                        // chop the ending '/' off
+                        partial = partial.substring(0, partial.length() - 2);
 
-                    if (request.getParameter("benchmark") != null) {
-                        log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - startTime));
+                        // then set the string to be the remnants
+                        partial = partial.substring(0, partial.lastIndexOf("/") + 1);
+                    }
+                }
+            }
+
+            // If we didn't find it, then just pass it on
+            if (klass == null) {
+
+                log.debug("Dynamic resource not found for path: " + currentPath);
+
+                // Save this path in the staticSet so we don't have to look it up next time
+                staticSet.add(currentPath);
+
+                find = System.currentTimeMillis();
+                chain.doFilter(req, resp);
+                run  = System.currentTimeMillis();
+
+            } else {
+
+                Controller controller = null;
+
+                try {
+
+                    if (klass.getSuperclass() == ControllerServlet.class) {
+
+                        if (extendedClassName == null) {
+                            controller = new Controller();
+                        } else {
+                            controller = (Controller) (Class.forName(extendedClassName).newInstance());
+                        }
+                        
+                        log.debug("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
+
+                        ControllerServlet servlet = (ControllerServlet) klass.newInstance();
+
+                        find = System.currentTimeMillis();
+
+                        controller.startTransaction();
+
+                        servlet.setController(controller);
+                        request.setAttribute("controller", controller);
+                        servlet.service(request, response);
+
+                        run  = System.currentTimeMillis();
+
+                        controller.endTransaction();
+
+                        if (request.getParameter("benchmark") != null) {
+                            log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
+                        }
+
+                    } else {
+
+                        log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
+                        HttpServlet servlet = (HttpServlet) klass.newInstance();
+
+                        find = System.currentTimeMillis();
+                        servlet.service(request, response);
+                        run  = System.currentTimeMillis();
+
                     }
 
-                } else {
+                } catch (Exception e) {
 
-                    log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
-                    HttpServlet servlet = (HttpServlet) klass.newInstance();
-                    servlet.service(request, response);
+                    run = System.currentTimeMillis();
 
-                }
-
-            } catch (Exception e) {
-
-                String userAgent = request.getHeader("User-Agent");
-                if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
-                    /*
-                    Emailer mailer = Emailer.getInstance();
-                    String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
-                    try {
+                    String userAgent = request.getHeader("User-Agent");
+                    if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
+                        /*
+                        Emailer mailer = Emailer.getInstance();
+                        String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
+                        try {
                         mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
-                    } catch (Exception e0) {
+                        } catch (Exception e0) {
                         log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
+                        }
+                         */
+                        log.error("Error servicing " + currentPath, e);
+                        problem = new ServletException(e);
                     }
-                    */
-                    log.error("Error servicing " + currentPath,e);
-                    problem = new ServletException(e);
                 }
             }
         }
 
-        log.info("\t" + (System.currentTimeMillis() - start) + "\t" + currentPath);
+        finish = System.currentTimeMillis();
 
-        if (problem != null)
+        if (problem == null) {
+            if (benchmarkAccess) log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
+        } else {
+            if (benchmarkAccess) log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath + "\t" + problem.getMessage());
             throw problem;
+        }
     }
 
     /**
@@ -260,6 +289,11 @@ public class InvokerFilter implements Filter {
         if (urlMap == null) {
             initAnnotatedURLMappings();
         }
+
+        extendedClassName= filterConfig.getInitParameter("controller-class");
+
+        String temp = filterConfig.getInitParameter("benchmark-access");
+        benchmarkAccess = temp != null && (temp.equals("true") || temp.equals("1"));
     }
 
     /**
@@ -269,9 +303,9 @@ public class InvokerFilter implements Filter {
     public String toString() {
 
         if (filterConfig == null) {
-            return ("UrlRedirectorFilter()");
+            return ("InvokerFilter()");
         }
-        StringBuffer sb = new StringBuffer("UrlRedirectorFilter(");
+        StringBuffer sb = new StringBuffer("InvokerFilter(");
         sb.append(filterConfig);
         sb.append(")");
         return (sb.toString());
@@ -284,7 +318,7 @@ public class InvokerFilter implements Filter {
      *               the form of *.extension or /some/path/*
      */
     private void initAnnotatedURLMappings() {
-        urlMap = new HashMap<String, Class>();
+        urlMap = Collections.synchronizedMap(new HashMap<String, Class>());
 
         try {
             LinkedList<URL> urlList = new LinkedList<URL>();
