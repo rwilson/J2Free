@@ -817,6 +817,24 @@ public class Controller {
         return null;
     }
     
+    public int nativeCount(String queryString, Pair<String,? extends Object>... parameters) {
+        Query query = em.createNativeQuery(queryString);
+
+        int count = 0;
+        if (parameters != null) {
+            for (Pair<String,? extends Object> parameter : parameters)
+                query.setParameter(parameter.getFirst(),parameter.getSecond());
+        }
+        try {
+            count = ((Long)query.getSingleResult()).intValue();
+        } catch (NoResultException nre) {
+        } catch (Exception e) {
+            LOG.error("Exception in Controller.nativeScalar [query:" + queryString + "]",e);
+        }
+        
+        return count;
+    }
+
     public <T extends Object> List<T> list(Class<T> entityClass, String queryString, Pair<String,? extends Object>... parameters) {
         return list(entityClass,queryString,-1,-1,parameters);
     }
