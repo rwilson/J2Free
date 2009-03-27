@@ -897,8 +897,14 @@ public class Controller {
         while( results.next() ) {
             index++;
             fullTextSession.index( results.get(0) ); //index each element
-            if (index % batchSize == 0) fullTextSession.clear(); //clear every batchSize since the queue is processed
+
+            //clear every batchSize since the queue is processed
+            if (index % batchSize == 0) {
+                fullTextSession.flush();
+                fullTextSession.clear();
+            }
         }
+        results.close();
     }
     
 
@@ -907,23 +913,15 @@ public class Controller {
      **/
     public <T extends Object> void hibernateSearchClearAndIndex(Class<T> entityClass, int batchSize) {
         FullTextSession fullTextSession = org.hibernate.search.Search.createFullTextSession(getSession());
-        
         fullTextSession.purgeAll(entityClass);
-        
-        ScrollableResults results = fullTextSession.createCriteria( entityClass ).scroll( ScrollMode.FORWARD_ONLY );
-        int index = 0;
-        while( results.next() ) {
-            index++;
-            fullTextSession.index( results.get(0) ); //index each element
-            if (index % batchSize == 0) fullTextSession.clear(); //clear every batchSize since the queue is processed
-        }
+        fullTextSession.flush();
+        hibernateSearchIndex(entityClass, batchSize);
     }
     
     public <T extends Object> void hibernateSearchRemove(Class<T> entityClass, int entityId) {
         FullTextSession fullTextSession = org.hibernate.search.Search.createFullTextSession(getSession());
-        Transaction tx = fullTextSession.beginTransaction();
         fullTextSession.purge(entityClass,entityId);
-        tx.commit(); //index are written at commit time  
+        fullTextSession.flush(); //index are written at commit time
     }
     
     public <T extends Object> List<T> hibernateSearchResults(Class<T> entityClass, String query, String[] fields) {
@@ -957,7 +955,7 @@ public class Controller {
             }
             
         } catch (ParseException ex) {
-            ex.printStackTrace();
+            LOG.error("Error searching [entityClass=" + entityClass.getSimpleName() + ", query=" + query + "]",ex);
         }
         return null;
     }
@@ -976,7 +974,7 @@ public class Controller {
 
             return hibQuery.getResultSize();
         } catch (ParseException ex) {
-            ex.printStackTrace();
+            LOG.error("Error counting [entityClass=" + entityClass.getSimpleName() + ", query=" + query + "]",ex);
         }
         return -1;
     }
