@@ -978,7 +978,16 @@ public class Controller {
             //org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim());
             org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim());
             if (!query.contains("\"")) {
-                luceneQuery = parser.parse(query.trim().replaceAll(" ","* ").replaceAll(" [Aa][Nn][Dd]* "," AND ").replaceAll(" [Oo][Rr]* "," OR ") + "*");
+                luceneQuery = parser.parse(query.trim()
+                        .replaceAll(" ","* ")
+                        .replaceAll(" [Aa][Nn][Dd]* "," AND ")
+                        .replaceAll(" [Oo][Rr]* "," OR ")
+                        .replaceAll("-* ","- ")
+                        .replaceAll(")* ",") ")
+                        .replaceAll("(* ","( ")
+                        .replaceAll("!* ","! ")
+                        .replaceAll("+* ","+ ")
+                        + "*");
             }
             org.hibernate.search.jpa.FullTextQuery hibQuery = getFullTextEntityManager().createFullTextQuery( luceneQuery, entityClass );
 
