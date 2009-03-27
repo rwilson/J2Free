@@ -914,6 +914,7 @@ public class Controller {
     public <T extends Object> void hibernateSearchClearAndIndex(Class<T> entityClass, int batchSize) {
         FullTextSession fullTextSession = org.hibernate.search.Search.createFullTextSession(getSession());
         fullTextSession.purgeAll(entityClass);
+        fullTextSession.getSearchFactory().optimize(entityClass);
         fullTextSession.flush();
         hibernateSearchIndex(entityClass, batchSize);
     }
