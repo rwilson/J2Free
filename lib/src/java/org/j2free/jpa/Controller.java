@@ -258,10 +258,18 @@ public class Controller {
     }
 
     public <T extends Object> int count(Class<T> entityClass) {
+
+        Object o = null;
+
         try {
             Query query = em.createQuery("SELECT COUNT(e) FROM " + entityClass.getSimpleName() + " e");
             
-            return ((Long)query.getSingleResult()).intValue();
+            o = query.getSingleResult();
+
+            return o == null ? -1 : ((Long)o).intValue();
+
+        } catch (ClassCastException cce) {
+            return o == null ? -1 : ((java.math.BigInteger)o).intValue();
         } catch (Exception e) {
             LOG.error("Exception in Controller.count",e);
         }
@@ -270,14 +278,16 @@ public class Controller {
     
     public <T extends Object> int count(Query query, Pair<String,? extends Object>... parameters) {
         int count = -1;
+        Object o  = null;
         if (parameters != null) {
             for (Pair<String,? extends Object> parameter : parameters)
                 query.setParameter(parameter.getFirst(),parameter.getSecond());
         }
         try {
-            count = ((Long)query.getSingleResult()).intValue();
+            o = query.getSingleResult();
+            count = ((Long)o).intValue();
         } catch (ClassCastException cce) {
-            count = ((java.math.BigInteger)query.getSingleResult()).intValue();        
+            count = ((java.math.BigInteger)o).intValue();
         } catch (Exception e) {
             LOG.error("Exception in Controller.count",e);
         }
@@ -821,13 +831,17 @@ public class Controller {
         Query query = em.createNativeQuery(queryString);
 
         int count = 0;
+        Object o  = null;
         if (parameters != null) {
             for (Pair<String,? extends Object> parameter : parameters)
                 query.setParameter(parameter.getFirst(),parameter.getSecond());
         }
         try {
-            count = ((Long)query.getSingleResult()).intValue();
+            o     = query.getSingleResult();
+            count = ((Long)o).intValue();
         } catch (NoResultException nre) {
+        } catch (ClassCastException cce) {
+            count = ((java.math.BigInteger)o).intValue();
         } catch (Exception e) {
             LOG.error("Exception in Controller.nativeScalar [query:" + queryString + "]",e);
         }
