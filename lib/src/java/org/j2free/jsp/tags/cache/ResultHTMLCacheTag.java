@@ -110,8 +110,11 @@ public class ResultHTMLCacheTag extends BodyTagSupport {
         
         long now = System.currentTimeMillis();
         long exp = 0;
-        if (cacheTimestamps != null && !cacheTimestamps.isEmpty()) {
-            exp = (Long)cacheTimestamps.get(key) + timeout;
+        if (cacheTimestamps != null && !cacheTimestamps.isEmpty() && key != null) {
+            Long temp = (Long)cacheTimestamps.get(key) + timeout;
+            if (temp != null) {
+                exp = temp;
+            }
         }
         
         /**
