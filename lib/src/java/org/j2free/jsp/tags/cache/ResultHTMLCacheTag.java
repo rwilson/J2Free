@@ -7,8 +7,10 @@
 package org.j2free.jsp.tags.cache;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 
+import java.util.Map;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
@@ -31,9 +33,9 @@ public class ResultHTMLCacheTag extends BodyTagSupport {
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
 
-    private static HashMap<String,String> cache;
-    private static HashMap<String,Long> cacheTimestamps;
-    private static HashMap<String,String> cacheConditions;
+    private static Map<String,String> cache;
+    private static Map<String,Long> cacheTimestamps;
+    private static Map<String,String> cacheConditions;
     
     /**
      *  @TODO implement cron expression based expiration to allow for easy definition
@@ -53,9 +55,9 @@ public class ResultHTMLCacheTag extends BodyTagSupport {
     private boolean disable;
     
     static {
-        cache           = new HashMap<String,String>(200);
-        cacheTimestamps = new HashMap<String,Long>(200);
-        cacheConditions = new HashMap<String,String>(200);
+        cache           = Collections.synchronizedMap(new HashMap<String,String>(200));
+        cacheTimestamps = Collections.synchronizedMap(new HashMap<String,Long>(200));
+        cacheConditions = Collections.synchronizedMap(new HashMap<String,String>(200));
     }
     
     public ResultHTMLCacheTag() {      
@@ -110,11 +112,8 @@ public class ResultHTMLCacheTag extends BodyTagSupport {
         
         long now = System.currentTimeMillis();
         long exp = 0;
-        if (cacheTimestamps != null && !cacheTimestamps.isEmpty() && key != null) {
-            Long temp = (Long)cacheTimestamps.get(key) + timeout;
-            if (temp != null) {
-                exp = temp;
-            }
+        if (cacheTimestamps != null && !cacheTimestamps.isEmpty() && cacheTimestamps.containsKey(key)) {
+            exp = cacheTimestamps.get(key) + timeout;
         }
         
         /**
