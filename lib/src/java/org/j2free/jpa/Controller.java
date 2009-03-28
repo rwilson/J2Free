@@ -28,17 +28,16 @@ import org.apache.commons.logging.LogFactory;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
-import org.apache.lucene.queryParser.ParseException;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Criteria;
+import org.hibernate.FlushMode;
 import org.hibernate.PropertyValueException;
 import org.hibernate.SQLQuery;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Example;
 import org.hibernate.criterion.NaturalIdentifier;
@@ -890,17 +889,22 @@ public class Controller {
      * It is critical that batchSize matches the hibernate.search.worker.batch_size you set
      **/
     public <T extends Object> void hibernateSearchIndex(Class<T> entityClass, int batchSize) {
-        FullTextSession fullTextSession = org.hibernate.search.Search.createFullTextSession(getSession());
+        FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
+        fullTextSession.setFlushMode(FlushMode.MANUAL);
+        fullTextSession.setCacheMode(CacheMode.IGNORE);
         
-        ScrollableResults results = fullTextSession.createCriteria( entityClass ).scroll( ScrollMode.FORWARD_ONLY );
+        ScrollableResults results = fullTextSession.createCriteria( entityClass )
+                                                   .setFetchSize(batchSize)
+                                                   .scroll(ScrollMode.FORWARD_ONLY);
+
         int index = 0;
-        while( results.next() ) {
+        while (results.next()) {
             index++;
-            fullTextSession.index( results.get(0) ); //index each element
+            fullTextSession.index(results.get(0)); //index each element
 
             //clear every batchSize since the queue is processed
             if (index % batchSize == 0) {
-                fullTextSession.flush();
+                fullTextSession.flushToIndexes();
                 fullTextSession.clear();
             }
         }
@@ -912,15 +916,14 @@ public class Controller {
      * It is critical that batchSize matches the hibernate.search.worker.batch_size you set
      **/
     public <T extends Object> void hibernateSearchClearAndIndex(Class<T> entityClass, int batchSize) {
-        FullTextSession fullTextSession = org.hibernate.search.Search.createFullTextSession(getSession());
+        FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.purgeAll(entityClass);
-        fullTextSession.getSearchFactory().optimize(entityClass);
-        fullTextSession.flush();
         hibernateSearchIndex(entityClass, batchSize);
+        fullTextSession.getSearchFactory().optimize(entityClass);
     }
     
     public <T extends Object> void hibernateSearchRemove(Class<T> entityClass, int entityId) {
-        FullTextSession fullTextSession = org.hibernate.search.Search.createFullTextSession(getSession());
+        FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.purge(entityClass,entityId);
         fullTextSession.flush(); //index are written at commit time
     }
@@ -943,13 +946,13 @@ public class Controller {
             if (!query.contains("\"")) {
                 luceneQuery = parser.parse(query.trim()
                         .replaceAll(" ","* ")
-                        .replaceAll(" [Aa][Nn][Dd]* "," AND ")
-                        .replaceAll(" [Oo][Rr]* "," OR ")
-                        .replaceAll("-* ","- ")
-                        .replaceAll(")* ",") ")
-                        .replaceAll("(* ","( ")
-                        .replaceAll("!* ","! ")
-                        .replaceAll("+* ","+ ")
+                        .replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
+                        .replaceAll(" [Oo][Rr]\\* "," OR ")
+                        .replaceAll("[-]\\* ","- ")
+                        .replaceAll("[)]\\* ",") ")
+                        .replaceAll("[(]\\* ","( ")
+                        .replaceAll("[!]\\* ","! ")
+                        .replaceAll("[+]\\* ","+ ")
                         + "*");
             }
             org.hibernate.search.jpa.FullTextQuery hibQuery = getFullTextEntityManager().createFullTextQuery( luceneQuery, entityClass );
@@ -964,7 +967,7 @@ public class Controller {
                 return hibQuery.getResultList();
             }
             
-        } catch (ParseException ex) {
+        } catch (Exception ex) {
             LOG.error("Error searching [entityClass=" + entityClass.getSimpleName() + ", query=" + query + "]",ex);
         }
         return null;
@@ -980,19 +983,19 @@ public class Controller {
             if (!query.contains("\"")) {
                 luceneQuery = parser.parse(query.trim()
                         .replaceAll(" ","* ")
-                        .replaceAll(" [Aa][Nn][Dd]* "," AND ")
-                        .replaceAll(" [Oo][Rr]* "," OR ")
-                        .replaceAll("-* ","- ")
-                        .replaceAll(")* ",") ")
-                        .replaceAll("(* ","( ")
-                        .replaceAll("!* ","! ")
-                        .replaceAll("+* ","+ ")
+                        .replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
+                        .replaceAll(" [Oo][Rr]\\* "," OR ")
+                        .replaceAll("[-]\\* ","- ")
+                        .replaceAll("[)]\\* ",") ")
+                        .replaceAll("[(]\\* ","( ")
+                        .replaceAll("[!]\\* ","! ")
+                        .replaceAll("[+]\\* ","+ ")
                         + "*");
             }
             org.hibernate.search.jpa.FullTextQuery hibQuery = getFullTextEntityManager().createFullTextQuery( luceneQuery, entityClass );
 
             return hibQuery.getResultSize();
-        } catch (ParseException ex) {
+        } catch (Exception ex) {
             LOG.error("Error counting [entityClass=" + entityClass.getSimpleName() + ", query=" + query + "]",ex);
         }
         return -1;
