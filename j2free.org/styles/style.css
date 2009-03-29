@@ -1,0 +1,272 @@
+/*--------------------------------------------
+Reset
+--------------------------------------------*/
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+
+/* remember to define focus styles! */
+:focus {
+	outline: 0;
+}
+
+/* remember to highlight inserts somehow! */
+ins {
+	text-decoration: none;
+}
+del {
+	text-decoration: line-through;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+/*--------------------------------------------
+Clearfix
+--------------------------------------------*/
+
+.clearfix:after { 
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+}
+
+.clearfix {
+    display: inline-block;
+}
+
+/* start commented backslash hack \*/
+* html .clearfix { height: 1%; }
+.clearfix { display: block; }
+/* close commented backslash hack */
+
+
+/*--------------------------------------------
+Defaults
+--------------------------------------------*/
+* {
+    font-family: "Myriad Pro", Myriad, "Lucida Grande", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    color: #111;
+    font-size: 10pt;
+    line-height: 1.3em;
+}
+
+/*--------------------------------------------
+Universal Link Properties
+--------------------------------------------*/
+a:link img, a:visited img { border-style: none; text-decoration: none; }
+a:link, a:visited { color: #2A57A4;  text-decoration: none;}
+a:link:hover, a:visited:hover { text-decoration: none; color: #444; }
+
+/*--------------------------------------------
+Structure / Partitioning
+--------------------------------------------*/
+#container {
+    min-height: 100%;
+    position: relative;
+}
+
+#header {
+    width: 100%;
+	background: #fff url('../img/header-repeat.png') repeat-x scroll top left;
+	height: 173px;
+}
+#header_content {
+    width: 1035px;
+    margin: 0 auto;
+    background: transparent url('../img/header.png') no-repeat top left;
+    height: 173px;
+}
+
+#subhead {
+    width: 100%;
+	background: #fff url('../img/sub-header-repeat.png') repeat-x scroll top left;
+	height: 169px;
+}
+#tagline {
+    width: 950px;
+    margin: 0 auto;
+    height: 53px;
+    background: transparent url('../img/tagline.png') no-repeat scroll top left;
+}
+#features {
+    padding: 58px 10px 0;
+}
+
+#body {
+    padding-bottom: 100px;
+}
+
+#content {
+    width: 930px;
+    padding: 30px 0px 50px;
+    text-align: left;
+    margin: 0 auto;
+}
+
+#footer {
+    position: absolute;
+    bottom: 0;
+    height: 100px;
+    width: 100%;
+    text-align: center;
+    background: transparent url('../img/footer-repeat.png') repeat-x scroll bottom center;
+    border-top: 1px #666 solid;
+}
+
+/*--------------------------------------------
+Features bar
+--------------------------------------------*/
+div.feature {
+    font-weight: bold;
+    font-size: 1.8em;
+    text-transform: lowercase;
+    float: left;
+    vertical-align: baseline;
+    margin-right: 32px;
+    line-height: 1.9em;
+    color: #464540;
+    cursor: pointer;
+}
+div.feature:hover {
+    color: #222;
+}
+div.feature span {
+    color: #66655f;
+    font-size: 2em;
+    text-transform: none;
+}
+
+/*--------------------------------------------
+Get Started box
+--------------------------------------------*/
+#getstarted {
+    width: 250px;
+    height: 277px;
+    background: #fff url('../img/light-blue-gradient.png') repeat-x scroll top left;
+    float: right;
+    border: 2px #c0c0c0 solid;
+}
+#getstarted div.head {
+    color: #9a9a9a;
+    margin: 16px 20px;
+    font-size: 1.6em;
+    line-height: 1.4em;
+}
+#getstarted div.head div {
+    color: #666;
+    font-weight: bold;
+    font-size: 1.8em;
+}
+#getstarted div.action {
+    border: 2px #d9e9f1 solid;
+    padding: 14px 10px 14px 70px;
+    margin: 16px 20px;
+    color: #9c9fa1;
+    cursor: pointer;
+}
+#getstarted div.action:hover {
+    background-color: #D6F0F5;
+    border-color: #B7DFF3;
+}
+#getstarted div.download {
+    background: #f2fdff url('../img/download.png') no-repeat scroll 10px 50%;
+}
+#getstarted div.documentation {
+    background: #f2fdff url('../img/documentation.png') no-repeat scroll 15px 50%;
+}
+#getstarted div.action div:first-child {
+    font-size: 1.3em;
+    color: #222;
+    margin-bottom: 1px;
+    font-weight: bold;
+}
+
+/*--------------------------------------------
+Creators
+--------------------------------------------*/
+#creators {
+    margin-top: 30px;
+    float: right;
+    color: #999;
+    width: 250px;
+}
+#creators div {
+    margin: 15px 6px;
+    font-size: 1.05em;
+    line-height: 1.4em;
+    text-align: justify;
+}
+
+/*--------------------------------------------
+Examples
+--------------------------------------------*/
+#description {
+    float: left;
+    width: 650px;
+    padding-top: 4px;
+}
+
+#description .head {
+    font-size: 1.75em;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+div.example {
+    margin-top: 30px;
+}
+div.example div.screenshot {
+    padding: 3px;
+    border: 1px #d0d0d0 solid;
+    float: left;
+    margin-right: 15px;
+}
+div.example div.title {
+    font-size: 1.5em;
+    padding: 10px 10px 5px;
+    color: #444;
+}
+div.example div.explanation {
+    color: #666;
+    font-size: 1.05em;
+}
+
+#footer div {
+    padding-top: 50px;
+    color: #484848;
+    font-size: 1.4em;
+}
