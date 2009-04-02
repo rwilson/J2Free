@@ -225,6 +225,27 @@ public class DateTimeUtils {
         }
     }
     
+    public static String asEllapsedDays(Date date) {
+
+        if (date == null)
+            return "";
+
+        int days = ((Double)Math.floor((System.currentTimeMillis() - date.getTime()) / (1000 * 60 * 60 * 24))).intValue();
+
+        if (days == 0) {
+
+            return "Today";
+
+        } else if (days == 1) {
+
+            return "Yesterday";
+
+        } else {
+
+            return days + " days ago";
+        }
+    }
+
     public static String formatDateNoTime(Date date) {
         
         if (date == null)
