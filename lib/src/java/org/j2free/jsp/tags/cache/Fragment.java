@@ -10,56 +10,105 @@
  */
 package org.j2free.jsp.tags.cache;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  *
  * @author ryan
  */
 public class Fragment {
 
-    private String  key;
-    private String  condition;
+    private String content;
+    private String condition;
+    
+    private long   timeout;
+    private long   updated;
 
-    private long    timeout;
+    private final ReentrantLock lock;
 
-    private boolean disable;
-
-    public Fragment(String key, String condition, long timeout, boolean disable) {
-        this.key       = key;
+    public Fragment(String condition, long timeout) {
         this.condition = condition;
         this.timeout   = timeout;
-        this.disable   = disable;
+
+        this.content   = null;
+        this.updated   = System.currentTimeMillis();
+        this.lock      = new ReentrantLock();
     }
 
-    public String getKey() {
-        return key;
+    /**
+     * If content is null, this method will block until content is available.
+     * Otherwise, it will return content immediately, even if currently locked
+     * for update.
+     *
+     * @return the content
+     */
+    public synchronized String getContent() throws InterruptedException {
+        while (content == null)
+            wait();
+
+        return content;
     }
 
-    public String getCondition() {
-        return condition;
-    }
+    /**
+     *  Checks that the caller Thread owns the update lock; if so
+     *  updates the content and notifies other threads that may be
+     *  waiting to get the content, otherwise returns false.
+     *
+     *  @param content the content to set
+     */
+    public synchronized boolean tryUpdateAndRelease(String content, String condition) {
 
-    public long getTimeout() {
-        return timeout;
-    }
+        // Make sure the caller owns the lock
+        if (!lock.isHeldByCurrentThread())
+            return false;
 
-    public boolean isDisabled() {
-        return disable;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public void setCondition(String condition) {
+        this.content   = content;
         this.condition = condition;
+        this.updated   = System.currentTimeMillis();
+
+        // Notify all, because Threads may be waiting on getContent()
+        notifyAll();
+
+        // Unlock the lock for update
+        lock.unlock();
+
+        return true;
     }
 
-    public void setTimeout(long timeout) {
-        this.timeout = timeout;
-    }
+    /**
+     * Atomic bundling of a few tasks:
+     *  (a) Check if this fragment is expired
+     *  (b) Check if the condition under which this fragment was created has expired
+     *  (c) Check that no other Thread currently has a lock-for-update on this Fragment
+     *  - If (a || b) && c then lock this Fragment for update by the calling Thread
+     *    and return true; otherwise return false.
+     *
+     * @param The current condition
+     * @return true if this fragment has been locked for update by the
+     *         calling thread, otherwise false
+     */
+    public synchronized boolean tryAcquireUpdate(final String condition) {
 
-    public void setDisable(boolean disable) {
-        this.disable = disable;
+        // If the caller Thread is already the owner, just return true
+        if (lock.isHeldByCurrentThread())
+            return true;
+
+        // If this Fragment is currently locked for update by a different Thread
+        // and the lock has not expired, return false.
+        if (lock.isLocked())
+            return false;
+
+        // Check the conditions for update
+        boolean expired     = (System.currentTimeMillis() - updated) > timeout;
+        boolean condChanged = !condition.equals(this.condition);
+
+        // If either of the conditions have changed, lock the lock
+        if (expired || condChanged) {
+            lock.lock();
+            return true;
+        }
+
+        return false;
     }
 
 }

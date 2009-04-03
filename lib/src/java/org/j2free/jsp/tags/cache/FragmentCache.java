@@ -6,23 +6,18 @@
 
 package org.j2free.jsp.tags.cache;
 
+
 import java.io.IOException;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.j2free.cache.Computable;
-import org.j2free.cache.Memoizer;
-import static org.j2free.etc.ServletUtils.*;
 
 /**
  * Generated tag handler class.
@@ -37,15 +32,9 @@ public class FragmentCache extends BodyTagSupport {
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
 
-    private static final Computable<Fragment,String>  cache           = new Memoizer<Fragment, String>();
+    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>();
 
-    /**
-     *  @TODO implement cron expression based expiration to allow for easy definition
-     *        of expiration times in absolute terms
-     */
-    
     // Cache Timeout
-    // -1 will force expiration and the result will not be cached
     private long timeout;
     
     // Cache Key
@@ -53,7 +42,8 @@ public class FragmentCache extends BodyTagSupport {
     
     // Cache Condition, used to specify a value to monitor for a change
     private String condition;
-    
+
+    // If true, the cache will be ignored for this request
     private boolean disable;
     
     public FragmentCache() {
@@ -76,81 +66,81 @@ public class FragmentCache extends BodyTagSupport {
     public void setDisable(boolean disable) {
         this.disable = disable;
     }
-    
+
+    /**
+     *  To evaluate the BODY and have control passed to doAfterBody, return EVAL_BODY_BUFFERED
+     *  To use the cached content, writed the fragment content to the page, then return SKIP_BODY
+     *
+     *  Rules:
+     *
+     *    - Conditionts under which the body should be evaluated:
+     *      - Caching is disabled
+     *      - Caching is enabled, but no cached fragment exists
+     *      - Caching is enabled, but the cache has expired and no other thread is currently refreshing the cache
+     *      - Caching is enabled, but the condition has changed, and no other thread is currently refreshing the cache
+     *
+     *    - Conditions under which the body should NOT be evaluated:
+     *      - Caching is enabled and a cached version exists
+     *      - Caching is enabled, the cache has expired, but another thread is refreshing the cache
+     *      - Caching is enabled, the condition has changed, but another thread is refreshing the cache
+     *
+     */
     @Override
     public int doStartTag() throws JspException {
 
-        // Construct the Fragment to evaluate
-        Fragment fragment = new Fragment(key,condition,timeout,disable);
-
-        // Check for a globalDisableFlat
-        String globalDisableFlag = (String)pageContext.getServletContext().getAttribute(ATTRIBUTE_DISABLE_GLOBALLY);
-
-        // If the globalDisableFlag is set and the fragment would otherwise evaluate, override the disable value for the fragment
-        if (globalDisableFlag != null && !fragment.isDisabled()) {
-            log.trace("globalDisableFlag = " + globalDisableFlag);
-            try {
-                fragment.setDisable(Boolean.parseBoolean(globalDisableFlag));
-            } catch (Exception e) {
-                log.warn("Invalid value for " + ATTRIBUTE_DISABLE_GLOBALLY + " context-param: " + globalDisableFlag + ", expected [true|false]");
-            }
-        }
-
-        while (true) {
-            Future<String> futureResult = cache.get(key);
-            if (futureResult == null) {
-                
-            }
-            try {
-                return futureResult.get();
-            } catch (CancellationException e) {
-                cache.remove(key,futureResult);
-            } catch (ExecutionException e) {
-                throw new JspException(e);
-            }
-        }
-
-        /** 
-         * Reasons to evaluate the body:
-         *  1. Nothing is cached under the key
-         *  2. The nocache attribute is set
-         *  3. the disable attribute is set
-         */
-        if (!cache.containsKey(key) || pageContext.getAttribute(ATTRIBUTE_DISABLE_ONCE) != null || disable) {
-            if (log.isTraceEnabled()) {
-                log.trace("Evaluating body: [key=" + key + ",containsKey=" + cache.containsKey(key) + ",nocache=" + (pageContext.getAttribute(ATTRIBUTE_DISABLE_ONCE) != null) + ",disable=" + disable + "]");
-            }
-            log.debug("Evaluating body for key: " + key);
-            return EVAL_BODY_BUFFERED;
-        }
         
-        long now = System.currentTimeMillis();
-        long exp = 0;
-        if (cacheTimestamps != null && !cacheTimestamps.isEmpty() && cacheTimestamps.containsKey(key)) {
-            exp = cacheTimestamps.get(key) + timeout;
-        }
-        
-        /**
-         * Reasons to evaluate the body:
-         *  1. The cache timeout has occurred
-         *  2. There is a cacheCondition saved, the condition attribute is set, and the condition attribute does not match the saved condition
-         */
-        if (exp <= now || (cacheConditions.containsKey(key) && !empty(condition) && !cacheConditions.get(key).equals(condition))) {
-            if (log.isTraceEnabled()) {
-                log.trace("Evaluating body: [key=" + key + ",exp=" + exp + ",now=" + now + ",cacheCondition.containsKey=" + cacheConditions.containsKey(key) + ",!empty(condition)=" + !empty(condition) + "]");
-                if (cacheConditions.containsKey(key) && !empty(condition)) {
-                    log.trace("cacheConditions.get(" + key + ").equals(" + condition + ") = " + cacheConditions.get(key).equals(condition));
-                }
-            }
-            log.debug("Evaluating body for key: " + key);
+
+        if (disable)
             return EVAL_BODY_BUFFERED;
+
+        // See if there is a cached Fragment already
+        Fragment cached = cache.get(key);
+
+        // If not ...
+        if (cached == null) {
+
+            // Create a Fragment
+            Fragment fragment = new Fragment(condition, timeout);
+
+            // Acquire the lock on this fragment now, otherwise it could be
+            // acquired by a different thread after being put in the map
+            fragment.tryAcquireUpdate(condition);
+
+            // Necessary to use putIfAbset, because the map could have changed
+            // between calling cache.get(key) above, and now
+            cached = cache.putIfAbsent(key, fragment);
+
+            // If putIfAbsent(key,fragment) returned null, then there was not
+            // a Fragment for this key in the map, even by this point, so
+            // that means this thread should definitely render the fragment
+            if (cached == null) {
+                cached = fragment;
+                return EVAL_BODY_BUFFERED;
+            }
         }
 
+        // Try to acquire the lock for update.  If successful, then
+        // the Fragment needs to be updated and this Thread has taken
+        // the responsibility to do so.
+        if (cached.tryAcquireUpdate(condition))
+            return EVAL_BODY_BUFFERED;
+
+        // Try to get the content, cached.getContent() will block if
+        // the content of the fragment is not yet set, so catch an
+        // InterruptedException
+        String response = null;
         try {
-            log.debug("Writing cached body for key: " + key);
-            pageContext.getOut().print(cache.get(key));
-        } catch (IOException ex) {
-            throw new JspException(ex);
+            response = cached.getContent();
+        } catch (InterruptedException e) {
+            log.error("Error writing Fragment.getContent() to page",e);
+            response = "Caching error, please reload the page.";
+        }
+
+        // Write the response
+        try {
+            pageContext.getOut().write(response);
+        } catch (IOException e) {
+            log.error("Error writing Fragment.getContent() to page",e);
         }
         
         return SKIP_BODY;
@@ -161,45 +151,28 @@ public class FragmentCache extends BodyTagSupport {
         return EVAL_PAGE;
     }
 
+    /**
+     *  Write the content to the apge, try to acquire lock and update, release lock,
+     *  then return SKIP_BODY when complete
+     */
     @Override
     public int doAfterBody() throws JspException {
-        
-        // Get the BodyContent object
-        BodyContent bc = getBodyContent();
+
+        // Get the BodyContent, the result of the processing of the body of the tag
+        BodyContent body = getBodyContent();
+
+        // Attempt to write the body to the page
         try {
-
-            // Write the output to the page
-            bc.writeOut(bc.getEnclosingWriter());
-            
-        } catch (IOException ex) {
-            throw new JspException(ex);
+            body.writeOut(body.getEnclosingWriter());
+        } catch (IOException e) {
+            log.error("Error writing bodyContent to page",e);
         }
-        
-        if (disable)
-            return SKIP_BODY;
-        
-        if (timeout == -1) {
-            
-            // Clear any cached value
-            cache.remove(key);
-            cacheTimestamps.remove(key);
-            cacheConditions.remove(key);
 
-            log.debug("Clearing cached body for key: " + key);
-            
-        } else {
-            
-            // Cache the result
-            cache.put(key,bc.getString());
-            cacheTimestamps.put(key,System.currentTimeMillis());
-            
-            if (!empty(condition)) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Cache condition exists, adding to map [key=" + key + ",condition=" + condition + "]");
-                }
-                log.debug("Caching body for key: " + key);
-                cacheConditions.put(key,condition);
-            }
+        if (!disable) {
+
+            // Get a reference to the Fragment, then try to update it.
+            Fragment cached = cache.get(key);
+            cached.tryUpdateAndRelease(body.getString(), condition);
             
         }
         
