@@ -18,8 +18,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Fragment {
 
-    private static final int MAX_CONTENT_WAIT = 30;
-    private static final int MAX_LOCK_HOLD    = 60;
+    // THIS IS IN MS because it is not accompanied by a TimeUnit
+    private static final int MAX_LOCK_HOLD = 60000;
 
     private String content;
     private String condition;
