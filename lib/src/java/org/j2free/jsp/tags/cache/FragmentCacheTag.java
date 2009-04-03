@@ -1,5 +1,5 @@
 /*
- * FragmentCache.java
+ * FragmentCacheTag.java
  *
  * Created on September 30, 2008, 9:12 AM
  */
@@ -24,10 +24,11 @@ import org.apache.commons.logging.LogFactory;
  * @author  ryan
  * @version
  */
-
-public class FragmentCache extends BodyTagSupport {
+public class FragmentCacheTag extends BodyTagSupport {
     
-    private static final Log log = LogFactory.getLog(FragmentCache.class);
+    private static final Log log = LogFactory.getLog(FragmentCacheTag.class);
+
+    private static final long WARNING_COMPUTE_DURATION = 5000;
 
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
@@ -46,7 +47,7 @@ public class FragmentCache extends BodyTagSupport {
     // If true, the cache will be ignored for this request
     private boolean disable;
     
-    public FragmentCache() {
+    public FragmentCacheTag() {
         super();
         disable = false;
     }
@@ -66,6 +67,8 @@ public class FragmentCache extends BodyTagSupport {
     public void setDisable(boolean disable) {
         this.disable = disable;
     }
+
+    private long start;
 
     /**
      *  To evaluate the BODY and have control passed to doAfterBody, return EVAL_BODY_BUFFERED
@@ -88,23 +91,48 @@ public class FragmentCache extends BodyTagSupport {
     @Override
     public int doStartTag() throws JspException {
 
-        
+        start = System.currentTimeMillis();
 
-        if (disable)
+        // If the tag isn't set to disable, check for other things that might disable this ...
+        if (!disable) {
+
+            // Check for the global disable flag
+            String globalDisableFlag = (String)pageContext.getServletContext().getAttribute(ATTRIBUTE_DISABLE_GLOBALLY);
+            if (globalDisableFlag != null) {
+                try {
+                    disable = Boolean.parseBoolean(globalDisableFlag);
+                } catch (Exception e) {
+                    log.warn("Invalid value for " + ATTRIBUTE_DISABLE_GLOBALLY + " context-param: " + globalDisableFlag + ", expected [true|false]");
+                }
+            }
+
+            // Check for the request attribute
+            if (pageContext.getAttribute(ATTRIBUTE_DISABLE_ONCE) != null)
+                disable = true;
+            
+        }
+
+        // If disable is set, either by the tag, the request attribute, or the global flag, then ignore the cache
+        if (disable) {
+            if (log.isTraceEnabled()) log.trace("Cache disabled for " + key);
             return EVAL_BODY_BUFFERED;
+        }
 
         // See if there is a cached Fragment already
         Fragment cached = cache.get(key);
 
         // If not ...
-        if (cached == null) {
+        if (cached == null || (cached != null && cached.isExpired() && cached.isLockExpired())) {
 
-            // Create a Fragment
+            if (cached != null) {
+                log.warn("Found unmodifiable Fragment, removing [key: " + key + "]");
+                cache.remove(key, cached);
+            }
+
+            if (log.isTraceEnabled()) log.trace("cached == null [key: " + key + "]");
+
+            // Create a Fragment, this will lock the Fragment to the current Thread
             Fragment fragment = new Fragment(condition, timeout);
-
-            // Acquire the lock on this fragment now, otherwise it could be
-            // acquired by a different thread after being put in the map
-            fragment.tryAcquireUpdate(condition);
 
             // Necessary to use putIfAbset, because the map could have changed
             // between calling cache.get(key) above, and now
@@ -114,6 +142,7 @@ public class FragmentCache extends BodyTagSupport {
             // a Fragment for this key in the map, even by this point, so
             // that means this thread should definitely render the fragment
             if (cached == null) {
+                if (log.isTraceEnabled()) log.trace("cached == null, this thread taking responsibility [key: " + key + "]");
                 cached = fragment;
                 return EVAL_BODY_BUFFERED;
             }
@@ -121,16 +150,27 @@ public class FragmentCache extends BodyTagSupport {
 
         // Try to acquire the lock for update.  If successful, then
         // the Fragment needs to be updated and this Thread has taken
-        // the responsibility to do so.
-        if (cached.tryAcquireUpdate(condition))
+        // the responsibility to do so.  If it is not successful, check
+        // to see if the cache is expired and the cache has been locked
+        // for too long.  If so, then the previous execution probably
+        // ended in an execution and the lock was never released.  Since
+        // there isn't a way to unlock the fragment, we need to replace
+        // the fragment with a new one.
+        if (cached.tryAcquire(condition)) {
+            if (log.isTraceEnabled()) log.trace("successfully acquired lock-for-update [key: " + key + "]");
             return EVAL_BODY_BUFFERED;
+        }
+
+        if (log.isTraceEnabled()) log.trace("denied lock-for-update [key: " + key + "]");
 
         // Try to get the content, cached.getContent() will block if
         // the content of the fragment is not yet set, so catch an
         // InterruptedException
         String response = null;
         try {
+            if (log.isTraceEnabled()) log.trace("calling cached.getContent() [key: " + key + "]");
             response = cached.getContent();
+            if (log.isTraceEnabled()) log.trace("cached.getContent() returned [key: " + key + "]");
         } catch (InterruptedException e) {
             log.error("Error writing Fragment.getContent() to page",e);
             response = "Caching error, please reload the page.";
@@ -138,17 +178,21 @@ public class FragmentCache extends BodyTagSupport {
 
         // Write the response
         try {
+            if (log.isTraceEnabled()) log.trace("writing output [key: " + key + "]");
             pageContext.getOut().write(response);
         } catch (IOException e) {
             log.error("Error writing Fragment.getContent() to page",e);
         }
         
-        return SKIP_BODY;
-    }
+        long duration = System.currentTimeMillis() - start;
 
-    @Override
-    public int doEndTag() throws JspException {
-        return EVAL_PAGE;
+        if (duration > WARNING_COMPUTE_DURATION) {
+            log.debug("FragmentCache completed in " + duration + "ms [key: " + key + "]");
+        } else if (log.isTraceEnabled()) {
+            log.trace("FragmentCache completed in " + duration + "ms [key: " + key + "]");
+        }
+        
+        return SKIP_BODY;
     }
 
     /**
@@ -161,8 +205,11 @@ public class FragmentCache extends BodyTagSupport {
         // Get the BodyContent, the result of the processing of the body of the tag
         BodyContent body = getBodyContent();
 
+        if (log.isTraceEnabled()) log.trace("BodyContent rendered [key: " + key + "]");
+
         // Attempt to write the body to the page
         try {
+            if (log.isTraceEnabled()) log.trace("Writing to page [key: " + key + "]");
             body.writeOut(body.getEnclosingWriter());
         } catch (IOException e) {
             log.error("Error writing bodyContent to page",e);
@@ -170,13 +217,34 @@ public class FragmentCache extends BodyTagSupport {
 
         if (!disable) {
 
+            if (log.isTraceEnabled()) log.trace("Getting Fragment [key: " + key + "]");
+
             // Get a reference to the Fragment, then try to update it.
             Fragment cached = cache.get(key);
-            cached.tryUpdateAndRelease(body.getString(), condition);
+            if (cached == null) {
+                log.error("Fragment for key[" + key + "] became null between doStartTag and doAfterBody!");
+            }
+
+            if (!cached.tryUpdateAndRelease(body.getString(), condition)) {
+                log.warn("Failed to update and release lock on Fragment, REALLY confused why this happened... [key: " + key + "]");
+            } else {
+                log.trace("Cache updated and lock released [key: " + key + "]");
+            }
             
+        } else {
+            if (log.isTraceEnabled()) log.trace("Disable set, not caching [key: " + key + "]");
         }
         
         return SKIP_BODY;
+    }
+
+    @Override
+    public int doEndTag() throws JspException {
+        Fragment fragment = cache.get(key);
+        if (fragment != null) {
+            fragment.tryRelease();
+        }
+        return EVAL_PAGE;
     }
 
 }

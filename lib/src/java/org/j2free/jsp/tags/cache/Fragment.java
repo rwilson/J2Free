@@ -10,6 +10,8 @@
  */
 package org.j2free.jsp.tags.cache;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -18,21 +20,40 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Fragment {
 
+    private static final int MAX_CONTENT_WAIT = 30;
+    private static final int MAX_LOCK_HOLD    = 60;
+
     private String content;
     private String condition;
     
     private long   timeout;
+    private long   lockWait;
+
+    private long   locked;
     private long   updated;
 
-    private final ReentrantLock lock;
+    private final ReentrantLock updateLock = new ReentrantLock();
+    private final Condition contentSet = updateLock.newCondition();
 
+    /**
+     *
+     * @param condition An optional condition upon creation of the Fragment;
+     *        if the condition supplied to tryAcquireLock does not match this
+     *        condition, then the cache considers itself in need of update.
+     *
+     * @param timeout The timeout for this cached Fragment
+     */
     public Fragment(String condition, long timeout) {
-        this.condition = condition;
+
+        this.condition = condition.equals("") ? null : condition;
         this.timeout   = timeout;
+        this.lockWait  = MAX_LOCK_HOLD;
 
         this.content   = null;
         this.updated   = System.currentTimeMillis();
-        this.lock      = new ReentrantLock();
+        
+        updateLock.lock();
+        this.locked    = System.currentTimeMillis();
     }
 
     /**
@@ -44,35 +65,23 @@ public class Fragment {
      */
     public synchronized String getContent() throws InterruptedException {
         while (content == null)
-            wait();
+            contentSet.await(MAX_CONTENT_WAIT, TimeUnit.SECONDS);
 
         return content;
     }
 
     /**
-     *  Checks that the caller Thread owns the update lock; if so
-     *  updates the content and notifies other threads that may be
-     *  waiting to get the content, otherwise returns false.
-     *
-     *  @param content the content to set
+     * @return true if the content has expired, otherwise false
      */
-    public synchronized boolean tryUpdateAndRelease(String content, String condition) {
+    public synchronized boolean isExpired() {
+        return (System.currentTimeMillis() - updated) > timeout;
+    }
 
-        // Make sure the caller owns the lock
-        if (!lock.isHeldByCurrentThread())
-            return false;
-
-        this.content   = content;
-        this.condition = condition;
-        this.updated   = System.currentTimeMillis();
-
-        // Notify all, because Threads may be waiting on getContent()
-        notifyAll();
-
-        // Unlock the lock for update
-        lock.unlock();
-
-        return true;
+    /**
+     * @return true if the Fragment is locked and the lockWait has passed, otherwise false
+     */
+    public synchronized boolean isLockExpired() {
+        return updateLock.isLocked() && (System.currentTimeMillis() - locked) > lockWait;
     }
 
     /**
@@ -87,28 +96,65 @@ public class Fragment {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public synchronized boolean tryAcquireUpdate(final String condition) {
+    public synchronized boolean tryAcquire(final String condition) {
 
         // If the caller Thread is already the owner, just return true
-        if (lock.isHeldByCurrentThread())
+        if (updateLock.isHeldByCurrentThread())
             return true;
 
         // If this Fragment is currently locked for update by a different Thread
         // and the lock has not expired, return false.
-        if (lock.isLocked())
+        if (updateLock.isLocked())
             return false;
 
         // Check the conditions for update
-        boolean expired     = (System.currentTimeMillis() - updated) > timeout;
-        boolean condChanged = !condition.equals(this.condition);
+        boolean condChanged = this.condition != null && !condition.equals(this.condition);
 
-        // If either of the conditions have changed, lock the lock
-        if (expired || condChanged) {
-            lock.lock();
-            return true;
-        }
+        // If either of the conditions have changed, lock the lock, otherwise just return false
+        boolean success = (isExpired() || condChanged) ? updateLock.tryLock() : false;
 
-        return false;
+        if (success)
+            locked = System.currentTimeMillis();
+
+        return success;
     }
 
+    /**
+     *  Checks that the caller Thread owns the update lock; if so
+     *  updates the content and notifies other threads that may be
+     *  waiting to get the content, otherwise returns false.
+     *
+     *  @param content the content to set
+     *  @param condition the current condition
+     */
+    public synchronized boolean tryUpdateAndRelease(String content, String condition) {
+
+        // Make sure the caller owns the lock
+        if (!updateLock.isHeldByCurrentThread())
+            return false;
+
+        this.content   = content;
+        this.condition = condition.equals("") ? null : condition;
+        this.updated   = System.currentTimeMillis();
+
+        // Notify all, because Threads may be waiting on getContent()
+        contentSet.signalAll();
+
+        // Unlock the lock for update
+        updateLock.unlock();
+
+        return true;
+    }
+
+    /**
+     *  Attemtps to release the lock if the current thread holds it,
+     *  otherwise does nothing.
+     */
+    public synchronized void tryRelease() {
+
+        if (!updateLock.isHeldByCurrentThread())
+            return;
+
+        updateLock.unlock();
+    }
 }
