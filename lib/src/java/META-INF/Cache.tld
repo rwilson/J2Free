@@ -4,8 +4,8 @@
     <short-name>cache</short-name>
     <uri>http://tags.j2free.org/Cache</uri>
     <tag>
-        <name>resultHTML</name>
-        <tag-class>org.j2free.jsp.tags.cache.ResultHTMLCacheTag</tag-class>
+        <name>fragment</name>
+        <tag-class>org.j2free.jsp.tags.cache.FragmentCache</tag-class>
         <body-content>JSP</body-content>
         <attribute>
             <name>key</name>

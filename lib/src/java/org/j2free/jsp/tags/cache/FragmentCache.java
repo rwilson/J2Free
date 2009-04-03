@@ -1,5 +1,5 @@
 /*
- * ResultHTMLCacheTag.java
+ * FragmentCache.java
  *
  * Created on September 30, 2008, 9:12 AM
  */
@@ -7,10 +7,12 @@
 package org.j2free.jsp.tags.cache;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 
-import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
@@ -18,6 +20,8 @@ import javax.servlet.jsp.tagext.BodyTagSupport;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.cache.Computable;
+import org.j2free.cache.Memoizer;
 import static org.j2free.etc.ServletUtils.*;
 
 /**
@@ -26,17 +30,15 @@ import static org.j2free.etc.ServletUtils.*;
  * @version
  */
 
-public class ResultHTMLCacheTag extends BodyTagSupport {
+public class FragmentCache extends BodyTagSupport {
     
-    private static final Log log = LogFactory.getLog(ResultHTMLCacheTag.class);
+    private static final Log log = LogFactory.getLog(FragmentCache.class);
 
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
 
-    private static Map<String,String> cache;
-    private static Map<String,Long> cacheTimestamps;
-    private static Map<String,String> cacheConditions;
-    
+    private static final Computable<Fragment,String>  cache           = new Memoizer<Fragment, String>();
+
     /**
      *  @TODO implement cron expression based expiration to allow for easy definition
      *        of expiration times in absolute terms
@@ -54,13 +56,7 @@ public class ResultHTMLCacheTag extends BodyTagSupport {
     
     private boolean disable;
     
-    static {
-        cache           = Collections.synchronizedMap(new HashMap<String,String>(200));
-        cacheTimestamps = Collections.synchronizedMap(new HashMap<String,Long>(200));
-        cacheConditions = Collections.synchronizedMap(new HashMap<String,String>(200));
-    }
-    
-    public ResultHTMLCacheTag() {      
+    public FragmentCache() {
         super();
         disable = false;
     }
@@ -84,18 +80,36 @@ public class ResultHTMLCacheTag extends BodyTagSupport {
     @Override
     public int doStartTag() throws JspException {
 
+        // Construct the Fragment to evaluate
+        Fragment fragment = new Fragment(key,condition,timeout,disable);
+
+        // Check for a globalDisableFlat
         String globalDisableFlag = (String)pageContext.getServletContext().getAttribute(ATTRIBUTE_DISABLE_GLOBALLY);
 
-        if (globalDisableFlag != null && !disable) {
+        // If the globalDisableFlag is set and the fragment would otherwise evaluate, override the disable value for the fragment
+        if (globalDisableFlag != null && !fragment.isDisabled()) {
             log.trace("globalDisableFlag = " + globalDisableFlag);
             try {
-                disable = Boolean.parseBoolean(globalDisableFlag);
+                fragment.setDisable(Boolean.parseBoolean(globalDisableFlag));
             } catch (Exception e) {
                 log.warn("Invalid value for " + ATTRIBUTE_DISABLE_GLOBALLY + " context-param: " + globalDisableFlag + ", expected [true|false]");
-                disable = false;
             }
         }
-        
+
+        while (true) {
+            Future<String> futureResult = cache.get(key);
+            if (futureResult == null) {
+                
+            }
+            try {
+                return futureResult.get();
+            } catch (CancellationException e) {
+                cache.remove(key,futureResult);
+            } catch (ExecutionException e) {
+                throw new JspException(e);
+            }
+        }
+
         /** 
          * Reasons to evaluate the body:
          *  1. Nothing is cached under the key
