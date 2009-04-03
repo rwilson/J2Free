@@ -124,15 +124,19 @@ public class FragmentCacheTag extends BodyTagSupport {
         // If not ...
         if (cached == null || (cached != null && cached.isExpired() && cached.isLockExpired())) {
 
-            if (cached != null) {
-                log.warn("Found unmodifiable Fragment, removing [key: " + key + "]");
+            Fragment fragment;
+
+            if (cached == null) {
+                // Create a Fragment, this will lock the Fragment to the current Thread
+                if (log.isTraceEnabled()) log.trace("cached == null [key: " + key + "]");
+                fragment = new Fragment(condition, timeout);
+            } else {
+                // Remove the old Fragment, then create a new one starting with the old content
+                log.warn("Found unmodifiable Fragment, removing [key: " + key + "], then recreating");
                 cache.remove(key, cached);
+                fragment = new Fragment(cached.get(),condition,timeout);
             }
 
-            if (log.isTraceEnabled()) log.trace("cached == null [key: " + key + "]");
-
-            // Create a Fragment, this will lock the Fragment to the current Thread
-            Fragment fragment = new Fragment(condition, timeout);
 
             // Necessary to use putIfAbset, because the map could have changed
             // between calling cache.get(key) above, and now
@@ -163,13 +167,13 @@ public class FragmentCacheTag extends BodyTagSupport {
 
         if (log.isTraceEnabled()) log.trace("denied lock-for-update [key: " + key + "]");
 
-        // Try to get the content, cached.getContent() will block if
+        // Try to get the content, cached.getWhenAvailable() will block if
         // the content of the fragment is not yet set, so catch an
         // InterruptedException
         String response = null;
         try {
             if (log.isTraceEnabled()) log.trace("calling cached.getContent() [key: " + key + "]");
-            response = cached.getContent();
+            response = cached.getWhenAvailable();
             if (log.isTraceEnabled()) log.trace("cached.getContent() returned [key: " + key + "]");
         } catch (InterruptedException e) {
             log.error("Error writing Fragment.getContent() to page",e);
@@ -217,7 +221,7 @@ public class FragmentCacheTag extends BodyTagSupport {
 
         if (!disable) {
 
-            if (log.isTraceEnabled()) log.trace("Getting Fragment [key: " + key + "]");
+            if (log.isTraceEnabled()) log.trace("doAfterBody Getting Fragment [key: " + key + "]");
 
             // Get a reference to the Fragment, then try to update it.
             Fragment cached = cache.get(key);

@@ -10,8 +10,6 @@
  */
 package org.j2free.jsp.tags.cache;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -33,7 +31,6 @@ public class Fragment {
     private long   updated;
 
     private final ReentrantLock updateLock = new ReentrantLock();
-    private final Condition contentSet = updateLock.newCondition();
 
     /**
      *
@@ -44,14 +41,27 @@ public class Fragment {
      * @param timeout The timeout for this cached Fragment
      */
     public Fragment(String condition, long timeout) {
+        this(null,condition,timeout);
+    }
 
-        this.condition = condition.equals("") ? null : condition;
+    /**
+     *
+     * @param content An start value for the content of this Fragment
+     * @param condition An optional condition upon creation of the Fragment;
+     *        if the condition supplied to tryAcquireLock does not match this
+     *        condition, then the cache considers itself in need of update.
+     *
+     * @param timeout The timeout for this cached Fragment
+     */
+    public Fragment(String content, String condition, long timeout) {
+
+        this.content   = content;
+        this.condition = (condition != null && condition.equals("")) ? null : condition;
         this.timeout   = timeout;
         this.lockWait  = MAX_LOCK_HOLD;
 
-        this.content   = null;
         this.updated   = System.currentTimeMillis();
-        
+
         updateLock.lock();
         this.locked    = System.currentTimeMillis();
     }
@@ -63,10 +73,14 @@ public class Fragment {
      *
      * @return the content
      */
-    public synchronized String getContent() throws InterruptedException {
+    public synchronized String getWhenAvailable() throws InterruptedException {
         while (content == null)
-            contentSet.await(MAX_CONTENT_WAIT, TimeUnit.SECONDS);
+            wait();
 
+        return content;
+    }
+
+    public synchronized String get() {
         return content;
     }
 
@@ -134,11 +148,11 @@ public class Fragment {
             return false;
 
         this.content   = content;
-        this.condition = condition.equals("") ? null : condition;
+        this.condition = (condition != null && condition.equals("")) ? null : condition;
         this.updated   = System.currentTimeMillis();
 
-        // Notify all, because Threads may be waiting on getContent()
-        contentSet.signalAll();
+        // Notify all, because Threads may be waiting on getWhenAvailable()
+        notifyAll();
 
         // Unlock the lock for update
         updateLock.unlock();
