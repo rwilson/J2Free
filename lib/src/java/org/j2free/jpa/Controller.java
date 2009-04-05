@@ -99,10 +99,30 @@ public class Controller {
     public void setUserTransaction(UserTransaction tx) {
         this.tx = tx;
     }
+
+    public void clear() {
+        em.clear();
+    }
     
     public void flush() {
         try {
             em.flush();
+        } catch (OptimisticLockException ole) {
+            LOG.error("OptimisticLockException[" + ole.getEntity() + "]");
+        } catch (StaleObjectStateException sose) {
+            LOG.error("StaleObjectStateException[" + sose.getEntityName() + "=" + sose.getIdentifier() + "]");
+        } catch (InvalidStateException ise) {
+            this.errors = ise.getInvalidValues();
+        } catch (Exception e) {
+            this.errors = new InvalidValue[0];
+            LOG.error("Error flushing transaction",e);
+        }
+    }
+
+    public void flushAndClear() {
+        try {
+            em.flush();
+            em.clear();
         } catch (OptimisticLockException ole) {
             LOG.error("OptimisticLockException[" + ole.getEntity() + "]");
         } catch (StaleObjectStateException sose) {
