@@ -51,7 +51,7 @@ import org.hibernate.search.jpa.Search;
 import org.hibernate.validator.InvalidStateException;
 import org.hibernate.validator.InvalidValue;
 
-import org.j2free.etc.Pair;
+import org.j2free.util.Pair;
 
 /**
  *

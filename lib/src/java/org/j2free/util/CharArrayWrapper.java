@@ -1,4 +1,4 @@
-package org.j2free.etc;
+package org.j2free.util;
 
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;

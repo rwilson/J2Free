@@ -17,7 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.j2free.annotations.URLMapping;
 
-import static org.j2free.etc.ServletUtils.*;
+import static org.j2free.util.ServletUtils.*;
 
 /**
  * @author Ryan Wilson (http://blog.augmentedfragments.com)

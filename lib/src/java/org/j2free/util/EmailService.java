@@ -1,21 +1,22 @@
 /*
- * Emailer.java
+ * EmailService.java
  *
  * Created on November 2, 2007, 9:42 AM
  *
  */
 
-package org.j2free.etc;
+package org.j2free.util;
 
 import java.io.UnsupportedEncodingException;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -33,9 +34,9 @@ import org.apache.commons.logging.LogFactory;
  *
  * @author ryan
  */
-public class Emailer {
+public class EmailService {
     
-    private static Log log = LogFactory.getLog(Emailer.class);
+    private static Log log = LogFactory.getLog(EmailService.class);
     
     private static final String CONTENT_TYPE_PLAIN = "text/plain";
     private static final String CONTENT_TYPE_HTML  = "text/html";
@@ -54,13 +55,13 @@ public class Emailer {
      *
      */
     
-    private static final Map<String,Emailer> instances = Collections.synchronizedMap(new HashMap<String,Emailer>());
+    private static final ConcurrentMap<String,EmailService> instances = new ConcurrentHashMap<String,EmailService>(100,0.8f,100);
     
-    public static void registerInstance(String key, Emailer em) {
-        instances.put(key,em);
+    public static void registerInstance(String key, EmailService em) {
+        instances.putIfAbsent(key,em);
     }
     
-    public static Emailer getInstance(String key) {
+    public static EmailService getInstance(String key) {
         return instances.get(key);
     }
     
@@ -71,35 +72,35 @@ public class Emailer {
      */
     
     private Map<String,String> templates;
-    private final EmailQueue requests;
+    private final LinkedBlockingQueue<MimeMessage> requests;
     
     private boolean dummy;
     
     private Session session;
 
     /**
-     * Creates a new <code>Emailer</code> using the provided session. Dummy mode is
+     * Creates a new <code>EmailService</code> using the provided session. Dummy mode is
      * disabled.
      *
      * @param session The session to use
      */
-    public Emailer(Session session) {
+    public EmailService(Session session) {
         this(session,false);
     }
 
     /**
-     * Creates a new <code>Emailer</code> using the provided session.
+     * Creates a new <code>EmailService</code> using the provided session.
      *
      * @param session The session to use
      * @param dummy If true, dummy mode is enabled, otherwise false.  In dummy mode,
-     *        the Emailer will not attempt to send e-mails and will dump what it would
+     *        the EmailService will not attempt to send e-mails and will dump what it would
      *        have sent to the log instead.
      */
-    public Emailer(Session session, boolean dummy) {
+    public EmailService(Session session, boolean dummy) {
         
         this.session = session;
 
-        requests     = new EmailQueue();
+        requests     = new LinkedBlockingQueue<MimeMessage>();
         templates    = Collections.synchronizedMap(new HashMap<String,String>());
         
         this.dummy = dummy;
@@ -112,8 +113,8 @@ public class Emailer {
                      * NOTE: This is NOT busy waiting because requests.remove() blocks
                      *       until a request exists using wait() and notifyAll()
                      */
-                    for (;;)
-                        send(requests.remove());
+                    while (true)
+                        send(requests.take());
 
                 } catch (InterruptedException ie) {
                     log.debug("Emailer service interrupted, re-interrupting to exit...");
@@ -304,7 +305,7 @@ public class Emailer {
 
             }
             
-            requests.add(message);
+            requests.offer(message);
             
         } catch (AddressException e) {
             log.error("Error creating MimeMessage",e);
@@ -321,27 +322,4 @@ public class Emailer {
         }
     }
     
-    /**************************************************************************
-     *
-     *  EmailQueue implementation
-     *
-     */
-    
-    private static class EmailQueue {
-        
-        private Queue<MimeMessage> queue = new LinkedList<MimeMessage>();
-        
-        public synchronized void add(MimeMessage message) {
-            queue.offer(message);
-            notifyAll();
-        }
-        
-        public synchronized MimeMessage remove() throws InterruptedException {
-            
-            while (queue.size() == 0)
-                wait();
-            
-            return queue.remove();
-        }
-    }
 }

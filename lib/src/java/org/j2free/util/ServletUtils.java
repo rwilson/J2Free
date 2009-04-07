@@ -4,7 +4,7 @@
  * Created on September 14, 2007, 4:06 AM
  *
  */
-package org.j2free.etc;
+package org.j2free.util;
 
 import java.io.IOException;
 import java.io.PrintWriter;
