@@ -16,7 +16,7 @@
 package org.j2free.jsp.tags.cache;
 
 import java.util.concurrent.locks.ReentrantLock;
-import org.j2free.etc.ServletUtils;
+import org.j2free.util.ServletUtils;
 
 /**
  *
