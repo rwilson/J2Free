@@ -102,8 +102,7 @@ public class Fragment {
     public synchronized boolean isExpiredAndAbandoned() {
         final long now = System.currentTimeMillis();
         return (now - updated) > timeout && // expired
-               (now - locked) > lockWait && // untouchable
-               updateLock.isLocked();
+               (now - locked) > lockWait && updateLock.isLocked(); // Abandoned
     }
 
     /**
