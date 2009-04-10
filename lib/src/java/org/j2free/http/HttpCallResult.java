@@ -11,6 +11,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
+ * Thread safe because it is immutable.
  *
  * @author ryan
  */

@@ -1,9 +1,4 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/*
  * HttpQueryParam.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
@@ -13,6 +8,7 @@ package org.j2free.http;
 import net.jcip.annotations.Immutable;
 
 /**
+ * Thread safe because it is immutable.
  *
  * @author ryan
  */
