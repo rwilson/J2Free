@@ -6,11 +6,9 @@
 
 package org.j2free.jsp.tags.cache;
 
-
 import java.io.IOException;
 
 import java.util.Calendar;
-import java.util.Iterator;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -26,9 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Generated tag handler class.
- * @author  ryan
- * @version
+ * @author  Ryan
  */
 public class FragmentCacheTag extends BodyTagSupport {
     
@@ -43,7 +39,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final long REQUEST_WAIT_TIMEOUT     = 20 * 1000;
 
     // This is specified in seconds
-    private static final long CLEANER_INTERVAL         = 2 * 60 * 60;
+    private static final long CLEANER_INTERVAL         = 2 * 60;// * 60;
 
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
@@ -51,17 +47,17 @@ public class FragmentCacheTag extends BodyTagSupport {
     // A single-threaded executor to run the cleaner task
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
+    // The backing map
+    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(2000,0.8f,32);
+
     // Schedule the cleaner task.  NOTE: This method of determining the delay until the first execution based on
     // the current time ONLY works when CLEANER_INTERVAL is less than 24 * 60 * 60
     static {
         Calendar cal = Calendar.getInstance();
         long seconds = (cal.get(Calendar.HOUR_OF_DAY) * 60 * 60) + (cal.get(Calendar.MINUTE) * 60) + cal.get(Calendar.SECOND);
         long delay   = CLEANER_INTERVAL - (seconds % CLEANER_INTERVAL);
-        executor.scheduleAtFixedRate(new FragmentCleaner(), delay, CLEANER_INTERVAL, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new FragmentCleaner(cache), delay, CLEANER_INTERVAL, TimeUnit.SECONDS);
     }
-
-    // The backing map
-    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(2000,0.8f,32);
 
     // Cache Timeout
     private long timeout;
@@ -279,38 +275,5 @@ public class FragmentCacheTag extends BodyTagSupport {
             fragment.tryRelease();
         }
         return EVAL_PAGE;
-    }
-
-    /**
-     *  FragmentCleaner runs to clean out expired fragments.  For a fragment to
-     *  be removed, it must (1) orphaned, or (2) expired and not locked-for-update.
-     *  Fragments that are expired and locked for update, should be left. 
-     */
-    private static class FragmentCleaner implements Runnable {
-
-        public void run() {
-
-            long start = System.currentTimeMillis();
-            
-            Iterator<String> iterator = cache.keySet().iterator();
-
-            int num = 0;
-
-            String   key;
-            Fragment fragment;
-            while (iterator.hasNext()) {
-                key      = iterator.next();
-                fragment = cache.get(key);
-
-                if (fragment != null && fragment.isExpiredUnlockedOrAbandoned()) {
-                    if (cache.remove(key,fragment))
-                        num++;
-                }
-
-            }
-
-            log.info("FragmentCleaner completed in " + (System.currentTimeMillis() - start) + "ms, removed " + num + " fragments.");
-        }
-        
     }
 }

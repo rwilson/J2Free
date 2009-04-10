@@ -56,7 +56,7 @@ public class Fragment {
      */
     public Fragment(Fragment oldFragment, String condition, long timeout) {
 
-        this.content   = oldFragment.content;
+        this.content   = oldFragment != null ? oldFragment.content : "";
         this.condition = (condition != null && condition.equals("")) ? null : condition;
         this.timeout   = timeout;
         this.lockWait  = MAX_LOCK_HOLD;
