@@ -11,6 +11,7 @@
 package org.j2free.jsp.tags.cache;
 
 import java.util.concurrent.locks.ReentrantLock;
+import org.j2free.etc.ServletUtils;
 
 /**
  *
@@ -53,9 +54,9 @@ public class Fragment {
      *
      * @param timeout The timeout for this cached Fragment
      */
-    public Fragment(String content, String condition, long timeout) {
+    public Fragment(Fragment oldFragment, String condition, long timeout) {
 
-        this.content   = content;
+        this.content   = oldFragment.content;
         this.condition = (condition != null && condition.equals("")) ? null : condition;
         this.timeout   = timeout;
         this.lockWait  = MAX_LOCK_HOLD;
@@ -73,17 +74,20 @@ public class Fragment {
      *
      * @return the content
      */
-    public synchronized String getWhenAvailable() throws InterruptedException {
+    public synchronized String get() throws InterruptedException {
         while (content == null)
             wait();
 
         return content;
     }
-
-    public synchronized String get() {
+    
+    public synchronized String get(long waitFor) throws InterruptedException {
+        while (content == null)
+            wait(waitFor);
+        
         return content;
     }
-
+    
     /**
      * @return true if the content has expired, otherwise false
      */
@@ -92,10 +96,32 @@ public class Fragment {
     }
 
     /**
-     * @return true if the Fragment is locked and the lockWait has passed, otherwise false
+     * @return true if the Fragment is expired, locked, and the lockWait has passed,
+     *         otherwise false.
      */
-    public synchronized boolean isLockExpired() {
+    public synchronized boolean isExpiredAndAbandoned() {
+        final long now = System.currentTimeMillis();
+        return (now - updated) > timeout && // expired
+               (now - locked) > lockWait && // untouchable
+               updateLock.isLocked();
+    }
+
+    /**
+     * @return true if the Fragment is locked and the lockWait has passed
+     */
+    public synchronized boolean isAbandoned() {
         return updateLock.isLocked() && (System.currentTimeMillis() - locked) > lockWait;
+    }
+
+    /**
+     * @return true if the Fragment is expired and unlocked, or if the fragment
+     *         abandoned.
+     */
+    public synchronized boolean isExpiredUnlockedOrAbandoned() {
+        final long now = System.currentTimeMillis();
+        final boolean isLocked = updateLock.isLocked();
+        return ((now - updated) > timeout  && !isLocked) ||
+               ((now - locked ) > lockWait &&  isLocked);
     }
 
     /**
@@ -147,11 +173,12 @@ public class Fragment {
         if (!updateLock.isHeldByCurrentThread())
             return false;
 
-        this.content   = content;
+        this.content   = ServletUtils.compress(content);
+
         this.condition = (condition != null && condition.equals("")) ? null : condition;
         this.updated   = System.currentTimeMillis();
 
-        // Notify all, because Threads may be waiting on getWhenAvailable()
+        // Notify all, because Threads may be waiting on get()
         notifyAll();
 
         // Unlock the lock for update

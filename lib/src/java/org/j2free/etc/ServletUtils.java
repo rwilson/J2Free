@@ -310,9 +310,8 @@ public class ServletUtils {
 
             String responseString = responseWrapper.toString();
 
-            if (compress) {
-                responseString = responseString.replaceAll("\n", " ").replaceAll("\\s{2,}", " ").replaceAll(" />", "/>");
-            }
+            if (compress)
+                responseString = compress(responseString);
 
             response.setContentLength(responseString.length());
             response.setContentType(contentType);
@@ -325,6 +324,19 @@ public class ServletUtils {
                 out.close();
             }
         }
+    }
+
+    /**
+     * Expects to compress HTML by replacing line breaks with spaces, and reducing whitespace to single spaces.
+     *
+     * @param content The string to compress.
+     * @return the compressed String, or an empty string if <code>content</code> is null.
+     */
+    public static String compress(String content) {
+        if (content == null)
+            return "";
+
+        return content.replaceAll("\n", " ").replaceAll("\\s{2,}", " ").replaceAll(" />", "/>");
     }
 
     // Will return the controller if using the default

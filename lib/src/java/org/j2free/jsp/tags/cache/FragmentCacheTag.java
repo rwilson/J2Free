@@ -9,8 +9,14 @@ package org.j2free.jsp.tags.cache;
 
 import java.io.IOException;
 
+import java.util.Calendar;
+import java.util.Iterator;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
@@ -30,10 +36,32 @@ public class FragmentCacheTag extends BodyTagSupport {
 
     private static final long WARNING_COMPUTE_DURATION = 5000;
 
+    // This is the max amount of time a thread will wait() on another thread
+    // that is currently updating the Fragment.  If the updating thread does
+    // not complete the update within REQUEST_WAIT_TIMEOUT, the waiting thread
+    // will print a message to refresh the page.
+    private static final long REQUEST_WAIT_TIMEOUT     = 20 * 1000;
+
+    // This is specified in seconds
+    private static final long CLEANER_INTERVAL         = 2 * 60 * 60;
+
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
 
-    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>();
+    // A single-threaded executor to run the cleaner task
+    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+    // Schedule the cleaner task.  NOTE: This method of determining the delay until the first execution based on
+    // the current time ONLY works when CLEANER_INTERVAL is less than 24 * 60 * 60
+    static {
+        Calendar cal = Calendar.getInstance();
+        long seconds = (cal.get(Calendar.HOUR_OF_DAY) * 60 * 60) + (cal.get(Calendar.MINUTE) * 60) + cal.get(Calendar.SECOND);
+        long delay   = CLEANER_INTERVAL - (seconds % CLEANER_INTERVAL);
+        executor.scheduleAtFixedRate(new FragmentCleaner(), delay, CLEANER_INTERVAL, TimeUnit.SECONDS);
+    }
+
+    // The backing map
+    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(2000,0.8f,32);
 
     // Cache Timeout
     private long timeout;
@@ -122,7 +150,9 @@ public class FragmentCacheTag extends BodyTagSupport {
         Fragment cached = cache.get(key);
 
         // If not ...
-        if (cached == null || (cached != null && cached.isExpired() && cached.isLockExpired())) {
+        // Or if it exists but has expired and is abandoned (meaning its' lock-for-update
+        // has been held past its' lock wait timeout.
+        if (cached == null || (cached != null && cached.isExpiredAndAbandoned())) {
 
             Fragment fragment;
 
@@ -134,7 +164,7 @@ public class FragmentCacheTag extends BodyTagSupport {
                 // Remove the old Fragment, then create a new one starting with the old content
                 log.warn("Found unmodifiable Fragment, removing [key: " + key + "], then recreating");
                 cache.remove(key, cached);
-                fragment = new Fragment(cached.get(),condition,timeout);
+                fragment = new Fragment(cached,condition,timeout);
             }
 
 
@@ -167,17 +197,17 @@ public class FragmentCacheTag extends BodyTagSupport {
 
         if (log.isTraceEnabled()) log.trace("denied lock-for-update [key: " + key + "]");
 
-        // Try to get the content, cached.getWhenAvailable() will block if
+        // Try to get the content, cached.get() will block if
         // the content of the fragment is not yet set, so catch an
         // InterruptedException
         String response = null;
         try {
             if (log.isTraceEnabled()) log.trace("calling cached.getContent() [key: " + key + "]");
-            response = cached.getWhenAvailable();
+            response = cached.get(REQUEST_WAIT_TIMEOUT);
             if (log.isTraceEnabled()) log.trace("cached.getContent() returned [key: " + key + "]");
         } catch (InterruptedException e) {
             log.error("Error writing Fragment.getContent() to page",e);
-            response = "Caching error, please reload the page.";
+            response = "Sorry, fetching from the cache took longer than we expected.  Please refresh the page.";
         }
 
         // Write the response
@@ -226,17 +256,17 @@ public class FragmentCacheTag extends BodyTagSupport {
             // Get a reference to the Fragment, then try to update it.
             Fragment cached = cache.get(key);
             if (cached == null) {
-                log.error("Fragment for key[" + key + "] became null between doStartTag and doAfterBody!");
-            }
-
-            if (!cached.tryUpdateAndRelease(body.getString(), condition)) {
-                log.warn("Failed to update and release lock on Fragment, REALLY confused why this happened... [key: " + key + "]");
+                log.warn("Fragment for key[" + key + "] became null between doStartTag and doAfterBody, probably removed by cleaner");
             } else {
-                log.trace("Cache updated and lock released [key: " + key + "]");
+                if (!cached.tryUpdateAndRelease(body.getString(), condition)) {
+                    log.warn("Failed to update Fragment, unable to obtain lock.  Fragment must have changed since doStartTag.");
+                } else if (log.isTraceEnabled()) {
+                    log.trace("Cache updated and lock released [key: " + key + "]");
+                }
             }
             
-        } else {
-            if (log.isTraceEnabled()) log.trace("Disable set, not caching [key: " + key + "]");
+        } else if (log.isTraceEnabled()) {
+            log.trace("Disable set, not caching [key: " + key + "]");
         }
         
         return SKIP_BODY;
@@ -251,4 +281,36 @@ public class FragmentCacheTag extends BodyTagSupport {
         return EVAL_PAGE;
     }
 
+    /**
+     *  FragmentCleaner runs to clean out expired fragments.  For a fragment to
+     *  be removed, it must (1) orphaned, or (2) expired and not locked-for-update.
+     *  Fragments that are expired and locked for update, should be left. 
+     */
+    private static class FragmentCleaner implements Runnable {
+
+        public void run() {
+
+            long start = System.currentTimeMillis();
+            
+            Iterator<String> iterator = cache.keySet().iterator();
+
+            int num = 0;
+
+            String   key;
+            Fragment fragment;
+            while (iterator.hasNext()) {
+                key      = iterator.next();
+                fragment = cache.get(key);
+
+                if (fragment != null && fragment.isExpiredUnlockedOrAbandoned()) {
+                    if (cache.remove(key,fragment))
+                        num++;
+                }
+
+            }
+
+            log.info("FragmentCleaner completed in " + (System.currentTimeMillis() - start) + "ms, removed " + num + " fragments.");
+        }
+        
+    }
 }
