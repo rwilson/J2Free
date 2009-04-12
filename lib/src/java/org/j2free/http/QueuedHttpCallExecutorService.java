@@ -7,6 +7,7 @@ package org.j2free.http;
 
 import java.io.IOException;
 
+import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -89,7 +90,12 @@ public class QueuedHttpCallExecutorService {
         });
     }
 
-    public boolean shutdown() {
-        
+    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+        executor.shutdown();
+        return executor.awaitTermination(timeout, unit);
+    }
+
+    public List<Runnable> shutdownNow() {
+        return executor.shutdownNow();
     }
 }
