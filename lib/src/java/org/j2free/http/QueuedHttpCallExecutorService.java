@@ -78,8 +78,12 @@ public class QueuedHttpCallExecutorService {
                 int statusCode;
                 try {
 
+                    log.debug("Making HTTP call [url=" + task.getUrl() + "]");
+
                     statusCode = httpClient.executeMethod(method);
                     task.setResult(new HttpCallResult(statusCode,method.getResponseBodyAsString()));
+                    
+                    log.debug("Call returned [status=" + statusCode + "]");
 
                 } catch (IOException e) {
                     throw LaunderThrowable.launderThrowable(e);
