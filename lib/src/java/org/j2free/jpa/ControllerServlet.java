@@ -21,8 +21,6 @@
 package org.j2free.jpa;
 
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Ryan Wilson (http://blog.augmentedfragments.com)

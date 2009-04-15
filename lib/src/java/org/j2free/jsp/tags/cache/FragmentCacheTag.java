@@ -54,7 +54,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final long REQUEST_WAIT_TIMEOUT     = 20 * 1000;
 
     // This is specified in seconds
-    private static final long CLEANER_INTERVAL         = 2 * 60 * 60;
+    private static final long CLEANER_INTERVAL         = 30 * 60;
 
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
@@ -63,7 +63,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     // The backing map
-    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(2000,0.8f,32);
+    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(50000,0.8f,50);
 
     // Schedule the cleaner task.  NOTE: This method of determining the delay until the first execution based on
     // the current time ONLY works when CLEANER_INTERVAL is less than 24 * 60 * 60
