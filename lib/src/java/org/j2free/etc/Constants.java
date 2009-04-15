@@ -34,5 +34,5 @@ public class Constants {
     // Production 
     public static final int RUN_MODE_PRODUCTION  = 2;
 
-    public static int RUN_MODE = RUN_MODE_PRODUCTION;
+    public static volatile int RUN_MODE = RUN_MODE_PRODUCTION;
 }

@@ -1,9 +1,20 @@
 /*
  * FragmentCacheTag.java
  *
- * Created on September 30, 2008, 9:12 AM
+ * Created on April 2nd, 2009
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package org.j2free.jsp.tags.cache;
 
 import java.io.IOException;
@@ -24,7 +35,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * @author  Ryan
+ *  Implementation of a fragment cache as a custom tag.  This fragment cache
+ *  guarantees that only a single thread may trigger an update
+ * 
+ * @author  Ryan Wilson
+ * @version 1.0
  */
 public class FragmentCacheTag extends BodyTagSupport {
     
@@ -48,7 +63,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     // The backing map
-    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(2000,0.8f,32);
+    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(50000,0.8f,50);
 
     // Schedule the cleaner task.  NOTE: This method of determining the delay until the first execution based on
     // the current time ONLY works when CLEANER_INTERVAL is less than 24 * 60 * 60
@@ -153,11 +168,12 @@ public class FragmentCacheTag extends BodyTagSupport {
             Fragment fragment;
 
             if (cached == null) {
-                // Create a Fragment, this will lock the Fragment to the current Thread
+                // If the fragment didn't exist, create a Fragment, this will lock the Fragment to the current Thread
                 if (log.isTraceEnabled()) log.trace("cached == null [key: " + key + "]");
                 fragment = new Fragment(condition, timeout);
             } else {
-                // Remove the old Fragment, then create a new one starting with the old content
+                // If we're here, it means that a thread hit an exception while updating the old fragment and was never
+                // able to unlock the fragment.  So, remove the old fragment, then create a new one starting with the old content
                 log.warn("Found unmodifiable Fragment, removing [key: " + key + "], then recreating");
                 cache.remove(key, cached);
                 fragment = new Fragment(cached,condition,timeout);
@@ -165,12 +181,12 @@ public class FragmentCacheTag extends BodyTagSupport {
 
 
             // Necessary to use putIfAbset, because the map could have changed
-            // between calling cache.get(key) above, and now
+            // since calling cache.get(key) above
             cached = cache.putIfAbsent(key, fragment);
 
             // If putIfAbsent(key,fragment) returned null, then there was not
             // a Fragment for this key in the map, even by this point, so
-            // that means this thread should definitely render the fragment
+            // this thread should render the fragment
             if (cached == null) {
                 if (log.isTraceEnabled()) log.trace("cached == null, this thread taking responsibility [key: " + key + "]");
                 cached = fragment;
