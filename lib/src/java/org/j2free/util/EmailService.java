@@ -9,10 +9,7 @@ package org.j2free.util;
 
 import java.io.UnsupportedEncodingException;
 
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -55,7 +52,7 @@ public class EmailService {
      *
      */
     
-    private static final ConcurrentMap<String,EmailService> instances = new ConcurrentHashMap<String,EmailService>(100,0.8f,100);
+    private static final ConcurrentMap<String,EmailService> instances = new ConcurrentHashMap<String,EmailService>();
     
     public static void registerInstance(String key, EmailService em) {
         instances.putIfAbsent(key,em);
@@ -71,7 +68,7 @@ public class EmailService {
      *
      */
     
-    private Map<String,String> templates;
+    private final ConcurrentMap<String,String> templates;
     private final LinkedBlockingQueue<MimeMessage> requests;
     
     private boolean dummy;
@@ -101,7 +98,7 @@ public class EmailService {
         this.session = session;
 
         requests     = new LinkedBlockingQueue<MimeMessage>();
-        templates    = Collections.synchronizedMap(new HashMap<String,String>());
+        templates    = new ConcurrentHashMap<String,String>();
         
         this.dummy = dummy;
         
@@ -109,10 +106,6 @@ public class EmailService {
             public void run() {
                 try {
 
-                    /**
-                     * NOTE: This is NOT busy waiting because requests.remove() blocks
-                     *       until a request exists using wait() and notifyAll()
-                     */
                     while (true)
                         send(requests.take());
 
