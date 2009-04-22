@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.Entity;
-import org.j2free.etc.Marshaller;
+import org.j2free.util.Marshaller;
 
 /**
  * @author Ryan Wilson (http://blog.augmentedfragments.com)

@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package org.j2free.etc;
+package org.j2free.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

@@ -66,7 +66,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(50000,0.8f,50);
 
     // Schedule the cleaner task.  NOTE: This method of determining the delay until the first execution based on
-    // the current time ONLY works when CLEANER_INTERVAL is less than 24 * 60 * 60
+    // the current time ONLY works when CLEANER_INTERVAL is less than a day
     static {
         Calendar cal = Calendar.getInstance();
         long seconds = (cal.get(Calendar.HOUR_OF_DAY) * 60 * 60) + (cal.get(Calendar.MINUTE) * 60) + cal.get(Calendar.SECOND);

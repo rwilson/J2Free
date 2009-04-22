@@ -10,7 +10,7 @@ package org.j2free.jpa;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.j2free.etc.Pair;
+import org.j2free.util.Pair;
 
 /**
  *

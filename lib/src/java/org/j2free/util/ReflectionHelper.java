@@ -6,7 +6,7 @@
  * Copyright (c) 2008 FooBrew, Inc.
  */
 
-package org.j2free.etc;
+package org.j2free.util;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;

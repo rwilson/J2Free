@@ -16,7 +16,7 @@
 package org.j2free.jsp.tags.cache;
 
 import java.util.concurrent.locks.ReentrantLock;
-import org.j2free.etc.ServletUtils;
+import org.j2free.util.ServletUtils;
 
 /**
  *
@@ -87,6 +87,14 @@ public class Fragment {
         return content;
     }
     
+    /**
+     * If content is null, this method will block until content is available or
+     * until <code>waitFor</code> has passed.  Otherwise, it will return content
+     * immediately, even if currently locked for update.
+     *
+     * @param how long to wait
+     * @return the content
+     */
     public synchronized String get(long waitFor) throws InterruptedException {
         while (content == null)
             wait(waitFor);

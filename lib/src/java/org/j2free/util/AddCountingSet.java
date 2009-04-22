@@ -5,7 +5,7 @@
  *
  */
 
-package org.j2free.etc;
+package org.j2free.util;
 
 import java.util.*;
 

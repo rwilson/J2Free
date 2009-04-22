@@ -36,10 +36,10 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.j2free.annotations.URLMapping;
 
-import org.j2free.etc.CharArrayWrapper;
-import org.j2free.etc.Marshaller;
-import org.j2free.etc.MarshallingException;
-import org.j2free.etc.ServletUtils;
+import org.j2free.util.CharArrayWrapper;
+import org.j2free.util.Marshaller;
+import org.j2free.util.MarshallingException;
+import org.j2free.util.ServletUtils;
 import org.j2free.jpa.ControllerServlet;
 
 /**

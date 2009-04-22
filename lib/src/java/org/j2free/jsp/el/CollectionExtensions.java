@@ -10,7 +10,7 @@ package org.j2free.jsp.el;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.j2free.etc.ServletUtils;
+import org.j2free.util.ServletUtils;
 import org.j2free.jpa.Controller;
 
 /**

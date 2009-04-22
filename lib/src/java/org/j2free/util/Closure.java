@@ -1,9 +1,9 @@
 /*
- * MarshallingException.java
+ * Closure.java
  *
- * Created on June 29, 2008, 3:15 PM
+ * Created on April 7, 2008, 3:28 PM
  *
- * Copyright (c) 2008 FooBrew, Inc.
+ * Copyright (c) 2008 Publi.us
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,20 @@
  * limitations under the License.
  */
 
-package org.j2free.etc;
+package org.j2free.util;
+
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * @author Ryan Wilson (http://blog.augmentedfragments.com)
  */
-public class MarshallingException extends Exception {
-
-    public MarshallingException() {
-        super();
+public abstract class Closure {
+    
+    public Closure() {
     }
     
-    public MarshallingException(String message) {
-        super(message);
-    }
+    public abstract Object applyTo(Object obj);
     
-    public MarshallingException(Throwable cause) {
-        super(cause);
-    }
-    
-    public MarshallingException(String message, Throwable cause) {
-        super(message, cause);
-    }
     
 }

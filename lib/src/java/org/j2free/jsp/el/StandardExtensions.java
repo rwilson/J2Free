@@ -12,7 +12,7 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
 
-import static org.j2free.etc.ServletUtils.*;
+import static org.j2free.util.ServletUtils.*;
 
 /**
  *
