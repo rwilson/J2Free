@@ -962,19 +962,11 @@ public class Controller {
 
             //org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim().replaceAll(" ","~ ").replaceAll(" [Aa][Nn][Dd]~ "," AND ").replaceAll(" [Oo][Rr]~ "," OR ") + "~");
             //org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim());
-            org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim());
-            if (!query.contains("\"")) {
-                luceneQuery = parser.parse(query.trim()
-                        .replaceAll(" ","* ")
-                        .replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
-                        .replaceAll(" [Oo][Rr]\\* "," OR ")
-                        .replaceAll("[-]\\* ","- ")
-                        .replaceAll("[)]\\* ",") ")
-                        .replaceAll("[(]\\* ","( ")
-                        .replaceAll("[!]\\* ","! ")
-                        .replaceAll("[+]\\* ","+ ")
-                        + "*");
-            }
+            org.apache.lucene.search.Query luceneQuery;
+                        
+            query = filterLuceneQuery(query);
+            luceneQuery = parser.parse(query);
+
             org.hibernate.search.jpa.FullTextQuery hibQuery = getFullTextEntityManager().createFullTextQuery( luceneQuery, entityClass );
 
             if (start >= 0 && limit > 0) {
@@ -999,19 +991,11 @@ public class Controller {
 
             //org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim().replaceAll(" ","~ ").replaceAll(" [Aa][Nn][Dd]~ "," AND ").replaceAll(" [Oo][Rr]~ "," OR ") + "~");
             //org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim());
-            org.apache.lucene.search.Query luceneQuery = parser.parse(query.trim());
-            if (!query.contains("\"")) {
-                luceneQuery = parser.parse(query.trim()
-                        .replaceAll(" ","* ")
-                        .replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
-                        .replaceAll(" [Oo][Rr]\\* "," OR ")
-                        .replaceAll("[-]\\* ","- ")
-                        .replaceAll("[)]\\* ",") ")
-                        .replaceAll("[(]\\* ","( ")
-                        .replaceAll("[!]\\* ","! ")
-                        .replaceAll("[+]\\* ","+ ")
-                        + "*");
-            }
+            org.apache.lucene.search.Query luceneQuery;
+            
+            query = filterLuceneQuery(query);
+            luceneQuery = parser.parse(query);
+
             org.hibernate.search.jpa.FullTextQuery hibQuery = getFullTextEntityManager().createFullTextQuery( luceneQuery, entityClass );
 
             return hibQuery.getResultSize();
@@ -1019,6 +1003,34 @@ public class Controller {
             LOG.error("Error counting [entityClass=" + entityClass.getSimpleName() + ", query=" + query + "]",ex);
         }
         return -1;
+    }
+    
+    private String filterLuceneQuery(String queryOrig) {
+        
+        String query = queryOrig;
+        
+        query = query.trim()
+                .replaceAll("\\s+","* ")
+                .replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
+                .replaceAll(" [Oo][Rr]\\* "," OR ")
+                .replaceAll("[-]\\* ","- ")
+                .replaceAll("[)]\\* ",") ")
+                .replaceAll("[(]\\* ","( ")
+                .replaceAll("[!]\\* ","! ")
+                .replaceAll("[+]\\* ","+ ");
+                
+                
+       query = query.replaceAll("[-]","\\\\-")
+                .replaceAll("[)]","\\\\)")
+                .replaceAll("[(]","\\\\(")
+                .replaceAll("[!]","\\\\!")
+                .replaceAll("[+]","\\\\+");
+        
+        if (query.matches("[\\w\\d]$")) {
+            query += "*";
+        }
+
+        return query; 
     }
 
     public <T extends Object> Criteria createCriteria(Class<T> entityClass) {
