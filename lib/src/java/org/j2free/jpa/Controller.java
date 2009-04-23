@@ -1017,6 +1017,8 @@ public class Controller {
                 .replaceAll("[)]\\* ",") ")
                 .replaceAll("[(]\\* ","( ")
                 .replaceAll("[!]\\* ","! ")
+                .replaceAll("[?]\\* ","? ")
+                .replaceAll("[:]\\* ",": ")
                 .replaceAll("[+]\\* ","+ ");
                 
                 
@@ -1024,6 +1026,8 @@ public class Controller {
                 .replaceAll("[)]","\\\\)")
                 .replaceAll("[(]","\\\\(")
                 .replaceAll("[!]","\\\\!")
+                .replaceAll("[?]","\\\\?")
+                .replaceAll("[:]","\\\\:")
                 .replaceAll("[+]","\\\\+");
         
         if (query.matches("[\\w\\d]$")) {
