@@ -1030,7 +1030,7 @@ public class Controller {
                 .replaceAll("[:]","\\\\:")
                 .replaceAll("[+]","\\\\+");
         
-        if (query.matches("[\\w\\d]$")) {
+        if (query.matches(".*?[\\w\\d]$")) {
             query += "*";
         }
 
