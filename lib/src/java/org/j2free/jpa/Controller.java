@@ -1009,17 +1009,19 @@ public class Controller {
         
         String query = queryOrig;
         
-        query = query.trim()
-                .replaceAll("\\s+","* ")
-                .replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
+        query = query.trim().replaceAll("\\s+","* ");
+        
+        query += "*";
+                
+        query = query.replaceAll(" [Aa][Nn][Dd]\\* "," AND ")
                 .replaceAll(" [Oo][Rr]\\* "," OR ")
-                .replaceAll("[-]\\* ","- ")
-                .replaceAll("[)]\\* ",") ")
-                .replaceAll("[(]\\* ","( ")
-                .replaceAll("[!]\\* ","! ")
-                .replaceAll("[?]\\* ","? ")
-                .replaceAll("[:]\\* ",": ")
-                .replaceAll("[+]\\* ","+ ");
+                .replaceAll("[-]\\*","-")
+                .replaceAll("[)]\\*",")")
+                .replaceAll("[(]\\*","(")
+                .replaceAll("[!]\\*","!")
+                .replaceAll("[?]\\*","?")
+                .replaceAll("[:]\\*",":")
+                .replaceAll("[+]\\*","+");
                 
                 
        query = query.replaceAll("[-]","\\\\-")
@@ -1029,10 +1031,6 @@ public class Controller {
                 .replaceAll("[?]","\\\\?")
                 .replaceAll("[:]","\\\\:")
                 .replaceAll("[+]","\\\\+");
-        
-        if (query.matches("[\\w\\d]$")) {
-            query += "*";
-        }
 
         return query; 
     }
