@@ -15,7 +15,7 @@
  */
 package org.j2free.jsp.tags.cache;
 
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.j2free.util.ServletUtils;
 
 /**
@@ -37,7 +37,7 @@ public class Fragment {
     private long   locked;
     private long   updated;
 
-    private final ReentrantLock updateLock = new ReentrantLock();
+    private final ReentrantReadWriteLock updateLock = new ReentrantReadWriteLock();
 
     /**
      *
@@ -69,7 +69,7 @@ public class Fragment {
 
         this.updated   = System.currentTimeMillis();
 
-        updateLock.lock();
+        updateLock.writeLock();
         this.locked    = System.currentTimeMillis();
     }
 
@@ -80,7 +80,7 @@ public class Fragment {
      *
      * @return the content
      */
-    public synchronized String get() throws InterruptedException {
+    public String get() throws InterruptedException {
         while (content == null)
             wait();
 
@@ -95,7 +95,7 @@ public class Fragment {
      * @param how long to wait
      * @return the content
      */
-    public synchronized String get(long waitFor) throws InterruptedException {
+    public String get(long waitFor) throws InterruptedException {
         while (content == null)
             wait(waitFor);
         
@@ -128,13 +128,13 @@ public class Fragment {
 
     /**
      * @return true if the Fragment is expired and unlocked, or if the fragment
-     *         abandoned.
+     *         abandoned (has been locked for > than lockWaitTimeout)
      */
     public synchronized boolean isExpiredUnlockedOrAbandoned() {
         final long now = System.currentTimeMillis();
         final boolean isLocked = updateLock.isLocked();
-        return ((now - updated) > timeout  && !isLocked) ||
-               ((now - locked ) > lockWait &&  isLocked);
+        return (!isLocked && (now - updated) > timeout ) ||
+               ( isLocked && (now - locked ) > lockWait);
     }
 
     /**
@@ -149,7 +149,7 @@ public class Fragment {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public synchronized boolean tryAcquire(final String condition) {
+    public boolean tryAcquire(final String condition) {
 
         // If the caller Thread is already the owner, just return true
         if (updateLock.isHeldByCurrentThread())
@@ -180,7 +180,7 @@ public class Fragment {
      *  @param content the content to set
      *  @param condition the current condition
      */
-    public synchronized boolean tryUpdateAndRelease(String content, String condition) {
+    public boolean tryUpdateAndRelease(String content, String condition) {
 
         // Make sure the caller owns the lock
         if (!updateLock.isHeldByCurrentThread())
@@ -204,7 +204,7 @@ public class Fragment {
      *  Attemtps to release the lock if the current thread holds it,
      *  otherwise does nothing.
      */
-    public synchronized void tryRelease() {
+    public void tryRelease() {
 
         if (!updateLock.isHeldByCurrentThread())
             return;

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.jsp.JspException;
@@ -54,25 +55,25 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final long REQUEST_WAIT_TIMEOUT     = 20 * 1000;
 
     // This is specified in seconds
-    private static final long CLEANER_INTERVAL         = 30 * 60;
+    private static final long DEFAULT_CLEANER_INTERVAL = 30 * 60;
 
     private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-fragment-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
 
+    // The backing ConcurrentMap
+    private static final ConcurrentMap<String,Fragment> cache =
+            new ConcurrentHashMap<String,Fragment>(50000,0.8f,50);
+
+    // The cleaner instance
+    private static final FragmentCleaner cleaner = new FragmentCleaner(cache);
+
     // A single-threaded executor to run the cleaner task
-    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService executor =
+            Executors.newSingleThreadScheduledExecutor();
 
-    // The backing map
-    private static final ConcurrentMap<String,Fragment> cache = new ConcurrentHashMap<String,Fragment>(50000,0.8f,50);
-
-    // Schedule the cleaner task.  NOTE: This method of determining the delay until the first execution based on
-    // the current time ONLY works when CLEANER_INTERVAL is less than a day
-    static {
-        Calendar cal = Calendar.getInstance();
-        long seconds = (cal.get(Calendar.HOUR_OF_DAY) * 60 * 60) + (cal.get(Calendar.MINUTE) * 60) + cal.get(Calendar.SECOND);
-        long delay   = CLEANER_INTERVAL - (seconds % CLEANER_INTERVAL);
-        executor.scheduleAtFixedRate(new FragmentCleaner(cache), delay, CLEANER_INTERVAL, TimeUnit.SECONDS);
-    }
+    // A ScheduledFuture representing the cleaner task
+    private static ScheduledFuture cleanerFuture =
+            executor.scheduleAtFixedRate(cleaner, DEFAULT_CLEANER_INTERVAL, DEFAULT_CLEANER_INTERVAL, TimeUnit.SECONDS);
 
     // Cache Timeout
     private long timeout;
@@ -291,5 +292,24 @@ public class FragmentCacheTag extends BodyTagSupport {
             fragment.tryRelease();
         }
         return EVAL_PAGE;
+    }
+
+    /**
+     * Synchronized method so two threads can't modify the cleaner interval at the same time.
+     *
+     * @param interval The time interval
+     * @param unit The time unit the interval is in
+     */
+    public synchronized static void setCleanerInterval(long interval, TimeUnit unit) {
+
+        if (cleanerFuture != null) {
+            cleanerFuture.cancel(false);
+        }
+
+        // We don't want to go a long time without running the cleaner, so run it once after
+        // cancelling but before rescheduling.
+        cleaner.run();
+        
+        cleanerFuture = executor.scheduleAtFixedRate(cleaner, interval, interval, unit);
     }
 }
