@@ -9,25 +9,28 @@ package org.j2free.util;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+
 import org.j2free.jpa.Controller;
 import org.j2free.security.SecurityUtils;
+
+import static org.j2free.util.Constants.*;
 
 /**
  *
  * @author ryan
  */
 public class ServletUtils {
-
-    public static final String EMPTY_STRING = "";
 
     public static int getIntParameter(HttpServletRequest req, String paramName) {
         return getIntParameter(req, paramName, -1);
@@ -356,7 +359,7 @@ public class ServletUtils {
      */
     public static boolean all(Object... objects) {
         for (Object o : objects) {
-            if (o == null || (o instanceof String && o.equals(EMPTY_STRING))) {
+            if (o == null || (o instanceof String && o.equals(EMPTY))) {
                 return false;
             }
         }
@@ -370,7 +373,7 @@ public class ServletUtils {
      */
     public static boolean any(Object... objects) {
         for (Object o : objects) {
-            if (o != null || (o instanceof String && !o.equals(EMPTY_STRING))) {
+            if (o != null || (o instanceof String && !o.equals(EMPTY))) {
                 return true;
             }
         }
@@ -384,7 +387,7 @@ public class ServletUtils {
      */
     public static boolean none(Object... objects) {
         for (Object o : objects) {
-            if (o != null || (o instanceof String && !o.equals(EMPTY_STRING))) {
+            if (o != null || (o instanceof String && !o.equals(EMPTY))) {
                 return false;
             }
         }
@@ -395,7 +398,7 @@ public class ServletUtils {
      *  @return true if the String argument is null or an empty String, otherwise false
      */
     public static boolean empty(String str) {
-        return str == null || str.equals(EMPTY_STRING);
+        return str == null || str.equals(EMPTY);
     }
 
     public static String toCamelCase(String source) {

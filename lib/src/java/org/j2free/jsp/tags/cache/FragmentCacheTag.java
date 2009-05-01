@@ -56,7 +56,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     // This is specified in seconds
     private static final long CLEANER_INTERVAL         = 30 * 60;
 
-    private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-html-cache";
+    private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-fragment-cache";
     private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
 
     // A single-threaded executor to run the cleaner task

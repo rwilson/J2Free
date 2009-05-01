@@ -24,15 +24,41 @@ package org.j2free.util;
  * @author Ryan Wilson (http://blog.augmentedfragments.com)
  */
 public class Constants {
-    
-    // Development with no network access
-    public static final int RUN_MODE_LOCAL       = 0;
-    
-    // Enables network access
-    public static final int RUN_MODE_DEVELOPMENT = 1;
-    
-    // Production 
-    public static final int RUN_MODE_PRODUCTION  = 2;
 
-    public static volatile int RUN_MODE = RUN_MODE_PRODUCTION;
+    // Run modes
+    public static enum RunMode {
+        LOCAL,       // Development with no network access
+        DEVELOPMENT, // Enables network access
+        PRODUCTION;
+
+        public int getOrdinal() {
+            return ordinal();
+        }
+    };
+
+
+    // Context-attributes
+    public static final String CONTEXT_ATTR_RUN_MODE           = "run-mode";
+    public static final String CONTEXT_ATTR_EMAIL_TEMPLATE_DIR = "email-template-dir";
+
+    // Default values for context-attributes
+    public static final RunMode DEFAULT_RUN_MODE               = RunMode.PRODUCTION;
+    public static final String DEFAULT_EMAIL_TEMPLATE_DIR      = "/WEB-INF/email-templates/";
+
+    // run mode
+    public static volatile RunMode RUN_MODE = DEFAULT_RUN_MODE;
+
+    // for time-based decay algorithms
+    public static final long DECAY_EPOCH = 1134028003;
+
+    // Useful constants
+    public static final byte NULL_BYTE   = 0x0;
+    public static final String UTF_16    = "UTF-16";
+    public static final String EMPTY     = "";
+
+    // JavaMail Properties
+    public static final String SMTP_PROPERTY_HOST = "mail.smtp.host";
+    public static final String SMTP_PROPERTY_PORT = "mail.smtp.port";
+    public static final String SMTP_PROPERTY_AUTH = "mail.smtp.auth";
+
 }
