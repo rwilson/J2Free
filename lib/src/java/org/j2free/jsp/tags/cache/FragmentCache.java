@@ -223,7 +223,7 @@ public class FragmentCache extends BodyTagSupport {
         long duration = System.currentTimeMillis() - start;
 
         if (duration > WARNING_COMPUTE_DURATION) {
-            log.warn("FragmentCache completed in " + duration + "ms [key: " + key + "]");
+            log.warn("Warning: slow FragmentCache, " + duration + "ms [key: " + key + "]");
         } else if (log.isTraceEnabled()) {
             log.trace("FragmentCache completed in " + duration + "ms [key: " + key + "]");
         }
