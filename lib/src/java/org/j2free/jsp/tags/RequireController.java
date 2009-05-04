@@ -21,8 +21,10 @@ import org.j2free.jpa.Controller;
 public class RequireController extends TagSupport {
 
     private static final String ATTRIBUTE = "controller";
+
     private Controller controller;
     private HttpServletRequest request;
+    
     private boolean closeTx;
 
     @Override
@@ -43,7 +45,11 @@ public class RequireController extends TagSupport {
 
             closeTx = true;
 
-            controller.startTransaction();
+            try {
+                controller.startTransaction();
+            } catch (Exception e) {
+                return SKIP_BODY;
+            }
             request.setAttribute("controller", controller);
         }
 
