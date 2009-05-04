@@ -30,7 +30,7 @@ public class FragmentCleaner implements Runnable {
 
         Iterator<String> iterator = cache.keySet().iterator();
 
-        int num = 0;
+        int num = 0, count = 0;
         
         String key;
         Fragment fragment;
@@ -43,8 +43,10 @@ public class FragmentCleaner implements Runnable {
                 if (cache.remove(key, fragment))
                     num++;
             }
+
+            count++;
         }
         
-        log.info("FragmentCleaner complete [" + (System.currentTimeMillis() - start) + "ms, " + num + " cleaned]");
+        log.info("FragmentCleaner complete [" + (System.currentTimeMillis() - start) + "ms, " + num + " of " + count + " cleaned]");
     }
 }

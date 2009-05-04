@@ -15,29 +15,47 @@
  */
 package org.j2free.jsp.tags.cache;
 
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+
+import net.jcip.annotations.GuardedBy;
+import net.jcip.annotations.ThreadSafe;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.j2free.util.ServletUtils;
 
 /**
+ * Fragment may be safely accessed by multiple threads because it's thread-safety
+ * is encapsulated.  Fragment uses a one-time <code>CountDownLatch</code> to determine
+ * whether it has been initialized yet.  It also uses a <code>ReentrantLock</code> to
+ * lock-for-update, so that only a single thread may acquire the right to update this
+ * Fragment.  Access to the actual content of the frament is synchronized on the objects
+ * internal monitor, as is the condition, and the locked and updated timestamps.
  *
  * @author Ryan Wilson
  * @version 1.0
  */
+@ThreadSafe
 public class Fragment {
 
+    private static final Log log = LogFactory.getLog(Fragment.class);
+
     // Max time in ms that a thread may hold the lock-for-update on this Fragment
-    private static final int MAX_LOCK_HOLD = 60000;
+    private static final int MAX_LOCK_HOLD = 90000;
 
-    private String content;
-    private String condition;
+    @GuardedBy("this") private String content;
+    @GuardedBy("this") private String condition;
     
-    private long   timeout;
-    private long   lockWait;
+    @GuardedBy("this") private long   locked;
+    @GuardedBy("this") private long   updated;
 
-    private long   locked;
-    private long   updated;
+    private final long   timeout;
 
-    private final ReentrantReadWriteLock updateLock = new ReentrantReadWriteLock();
+    private final ReentrantLock  updateLock;
+    private final CountDownLatch initialized;
 
     /**
      *
@@ -62,68 +80,55 @@ public class Fragment {
      */
     public Fragment(Fragment oldFragment, String condition, long timeout) {
 
-        this.content   = oldFragment != null ? oldFragment.content : "";
+        this.content   = oldFragment != null ? oldFragment.content : null;
         this.condition = (condition != null && condition.equals("")) ? null : condition;
         this.timeout   = timeout;
-        this.lockWait  = MAX_LOCK_HOLD;
+        
+        this.updateLock  = new ReentrantLock();
+        this.initialized = new CountDownLatch(1);
 
-        this.updated   = System.currentTimeMillis();
-
-        updateLock.writeLock();
-        this.locked    = System.currentTimeMillis();
+        this.updated = System.currentTimeMillis();
+        this.locked  = -1;
     }
 
     /**
-     * If content is null, this method will block until content is available.
-     * Otherwise, it will return content immediately, even if currently locked
-     * for update.
+     * If the content of this Fragment has not yet been initialized, this method
+     * will block until it has.  Otherwise, it returns content immediately.
      *
      * @return the content
      */
     public String get() throws InterruptedException {
-        while (content == null)
-            wait();
-
-        return content;
+        initialized.await();
+        synchronized (this) {
+            return content;
+        }
     }
     
     /**
-     * If content is null, this method will block until content is available or
-     * until <code>waitFor</code> has passed.  Otherwise, it will return content
-     * immediately, even if currently locked for update.
+     * If the content of this Fragment has not yet been initialized, this method
+     * will block until either (1) it is initialized, or (2) <code>waitFor</code>
+     * has passed.  Otherwise, it will return content immediately, even if currently
+     * locked for update.
      *
-     * @param how long to wait
+     * @param waitFor how long to wait
+     * @param unit the TimeUnit to wait for
      * @return the content
      */
-    public String get(long waitFor) throws InterruptedException {
-        while (content == null)
-            wait(waitFor);
-        
-        return content;
+    public String get(long waitFor, TimeUnit unit) throws InterruptedException {
+        initialized.await(waitFor, unit);
+        synchronized (this) {
+            return content;
+        }
     }
     
-    /**
-     * @return true if the content has expired, otherwise false
-     */
-    public synchronized boolean isExpired() {
-        return (System.currentTimeMillis() - updated) > timeout;
-    }
-
     /**
      * @return true if the Fragment is expired, locked, and the lockWait has passed,
      *         otherwise false.
      */
     public synchronized boolean isExpiredAndAbandoned() {
         final long now = System.currentTimeMillis();
-        return (now - updated) > timeout && // expired
-               (now - locked) > lockWait && updateLock.isLocked(); // Abandoned
-    }
-
-    /**
-     * @return true if the Fragment is locked and the lockWait has passed
-     */
-    public synchronized boolean isAbandoned() {
-        return updateLock.isLocked() && (System.currentTimeMillis() - locked) > lockWait;
+        return (now - updated) >= timeout &&                              // expired
+               (now - locked ) >= MAX_LOCK_HOLD && updateLock.isLocked(); // Abandoned
     }
 
     /**
@@ -133,8 +138,8 @@ public class Fragment {
     public synchronized boolean isExpiredUnlockedOrAbandoned() {
         final long now = System.currentTimeMillis();
         final boolean isLocked = updateLock.isLocked();
-        return (!isLocked && (now - updated) > timeout ) ||
-               ( isLocked && (now - locked ) > lockWait);
+        return (!isLocked && (now - updated) >= timeout ) ||
+               ( isLocked && (now - locked ) >= MAX_LOCK_HOLD);
     }
 
     /**
@@ -149,26 +154,40 @@ public class Fragment {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryAcquire(final String condition) {
+    public boolean tryAcquireForUpdate(final String condition) {
 
         // If the caller Thread is already the owner, just return true
-        if (updateLock.isHeldByCurrentThread())
+        if (updateLock.isHeldByCurrentThread()) {
+            if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: current thread already has the lock, short-circuiting...");
             return true;
+        }
 
         // If this Fragment is currently locked for update by a different Thread
         // and the lock has not expired, return false.
-        if (updateLock.isLocked())
+        if (updateLock.isLocked()) {
+            if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: Fragment currently locked by another thread, returning false...");
             return false;
+        }
 
-        // Check the conditions for update
-        boolean condChanged = this.condition != null && !condition.equals(this.condition);
+        boolean success = false;
 
-        // If either of the conditions have changed, lock the lock, otherwise just return false
-        boolean success = (isExpired() || condChanged) ? updateLock.tryLock() : false;
+        synchronized (this) {
+            
+            // Check the conditions for update
+            boolean condChanged = this.condition != null && !condition.equals(this.condition);
 
-        if (success)
-            locked = System.currentTimeMillis();
+            // If the content is null, the condition has changed, or the Fragment is expired, try to acquire the lock
+            success = (content == null || (System.currentTimeMillis() - updated) >= timeout || condChanged) ? updateLock.tryLock() : false;
 
+            if (log.isTraceEnabled()) {
+                log.trace("tryAcquireForUpdate: success status [content == null ? " + (content == null) + ", condChanged = " + condChanged + ", expired = " + ((System.currentTimeMillis() - updated) >= timeout) + "]");
+            }
+
+            if (success)
+                locked = System.currentTimeMillis();
+            
+        }
+        
         return success;
     }
 
@@ -186,16 +205,19 @@ public class Fragment {
         if (!updateLock.isHeldByCurrentThread())
             return false;
 
-        this.content   = ServletUtils.compress(content);
-
-        this.condition = (condition != null && condition.equals("")) ? null : condition;
-        this.updated   = System.currentTimeMillis();
-
-        // Notify all, because Threads may be waiting on get()
-        notifyAll();
+        // Update the fields
+        synchronized (this) {
+            this.content   = ServletUtils.compress(content);
+            this.condition = (condition != null && condition.equals("")) ? null : condition;
+            this.updated   = System.currentTimeMillis();
+        }
 
         // Unlock the lock for update
         updateLock.unlock();
+
+        // initialized guards content from being returned until this method has been
+        // called at least once. So, count down the latch.
+        initialized.countDown();
 
         return true;
     }
