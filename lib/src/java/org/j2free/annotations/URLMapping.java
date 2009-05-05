@@ -3,8 +3,7 @@
  *
  * Created on April 8, 2008, 2:49 AM
  *
- * To change this template, choose Tools | Template Manager
- * and open the template in the editor.
+ * Modified May 5, 2009 to include regex property.
  */
 
 package org.j2free.annotations;
@@ -13,9 +12,10 @@ import java.lang.annotation.*;
 /**
  *
  * @author Arjun
+ * @author Ryan
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface URLMapping {
     public String[] urls();
-    //public String regexUrl() default "";
+    public String regex() default "";
 }

@@ -44,6 +44,8 @@ public class Constants {
     // Default values for context-attributes
     public static final RunMode DEFAULT_RUN_MODE               = RunMode.PRODUCTION;
     public static final String DEFAULT_EMAIL_TEMPLATE_DIR      = "/WEB-INF/email-templates/";
+    public static final String DEFAULT_STATIC_JSP_DIR          = "/WEB-INF/static-jsps/";
+    public static final String DEFAULT_KNOWN_STATIC_PATH       = ".*?\\.(swf|flv)";
 
     // run mode
     public static volatile RunMode RUN_MODE = DEFAULT_RUN_MODE;
@@ -61,4 +63,7 @@ public class Constants {
     public static final String SMTP_PROPERTY_PORT = "mail.smtp.port";
     public static final String SMTP_PROPERTY_AUTH = "mail.smtp.auth";
 
+    // Static JSP location
+    public static volatile String STATIC_JSP_CONTEXT_PATH = "/";
+    public static volatile String STATIC_JSP_DIR          = DEFAULT_STATIC_JSP_DIR;
 }
