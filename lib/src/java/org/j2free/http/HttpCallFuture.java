@@ -5,84 +5,50 @@
  */
 package org.j2free.http;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import net.jcip.annotations.ThreadSafe;
 
 
 /**
- *  HttpCallFuture is thread safe by a combination of effective immutability and 
- *  monitor synchronization when accessing the only mutable field <code>result</code>.
+ * Convenience class that wraps a HttpCallTask and Future
+ * representing the result of the HttpCallTask.
  *
  * @author ryan
  */
 @ThreadSafe
-public class HttpCallFuture implements Comparable<HttpCallFuture> {
+public class HttpCallFuture {
 
-    public enum Priority {
-        LOW,
-        DEFAULT,
-        HIGH,
-        YESTERDAY;
-    }
+    private final HttpCallTask task;
+    
+    private Future<HttpCallResult> future;
 
-    private final String       url;
-    private final Priority     priority;
-    private final long         created;
-
-    private HttpCallResult     result;
-
-    public HttpCallFuture(String url) {
-        this(url,Priority.DEFAULT);
-    }
-
-    public HttpCallFuture(String url, Priority priority) {
-        this.url       = url;
-        this.priority  = priority;
-        this.created   = System.currentTimeMillis();
-
-        this.result    = null;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public synchronized HttpCallResult getResult() throws InterruptedException {
-        while (result == null)
-            wait();
-        
-        return result;
-    }
-
-    public synchronized void setResult(HttpCallResult result) {
-        this.result = result;
-        notifyAll();
+    public HttpCallFuture(HttpCallTask task, Future<HttpCallResult> future) {
+        this.task   = task;
+        this.future = future;
     }
 
     /**
+     * Will block until the result is available
      *
-     * @param other The other HttpCallFuture
-     * @return 1 if this future should run first, -1 if the other future should run first, 0 if they are equal
+     * @return
+     * @throws java.lang.InterruptedException
      */
-    public int compareTo(HttpCallFuture other) {
-        if (other == null)
-            return 1;
+    public HttpCallResult getResult() throws InterruptedException, ExecutionException {
+        return future.get();
+    }
 
-        int thisP  = this.priority.ordinal();
-        int otherP = other.priority.ordinal();
-
-        if (thisP > otherP)
-            return 1;
-
-        if (thisP < otherP)
-            return -1;
-
-        if (this.created < other.created)
-            return 1;
-
-        if (this.created > other.created)
-            return -1;
-
-        return 0;
+    /**
+     * Will block until the result is available or for
+     * the specified amount of time.
+     *
+     * @return
+     * @throws java.lang.InterruptedException
+     */
+    public HttpCallResult getResult(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        return future.get(timeout,unit);
     }
 
 }
