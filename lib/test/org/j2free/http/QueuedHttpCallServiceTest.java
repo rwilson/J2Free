@@ -15,7 +15,7 @@ import static java.lang.System.out;
  */
 public class QueuedHttpCallServiceTest extends TestCase {
 
-    private static final int N_THREADS = 1000;
+    private static final int N_THREADS = 3;
 
     public void testSubmit() throws InterruptedException {
 
@@ -53,8 +53,8 @@ public class QueuedHttpCallServiceTest extends TestCase {
 
                         counter.add(task.url);
 
-
-                        out.println(getName() + " finished fetching " + task.url + " [resultStatus=" + result.getStatusCode() + "]");
+                        out.println(getName() + " finished fetching " + task.url + " [resultStatus=" + result.getStatusCode() + ",statusLine=" + result.getStatusLine().toString() + "]");
+                        out.print(result.getResponse());
                         
                     } catch (Exception e) {
                         out.println(getName() + " failed with an excepiton: " + e.getMessage());
