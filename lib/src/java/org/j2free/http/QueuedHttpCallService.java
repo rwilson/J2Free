@@ -121,10 +121,10 @@ public final class QueuedHttpCallService {
 
                 log.debug("Making HTTP call [url=" + task.url + "]");
 
-                statusCode = httpClient.executeMethod(method);
-                log.debug("Call returned [status=" + statusCode + "]");
+                httpClient.executeMethod(method);
+                log.debug("Call returned [status=" + method.getStatusCode() + "]");
 
-                return new HttpCallResult(statusCode,method.getResponseBodyAsString());
+                return new HttpCallResult(method);
 
             } catch (IOException e) {
                 throw LaunderThrowable.launderThrowable(e);
