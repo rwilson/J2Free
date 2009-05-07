@@ -43,6 +43,7 @@ public class Constants {
 
     // Default values for context-attributes
     public static final RunMode DEFAULT_RUN_MODE               = RunMode.PRODUCTION;
+    
     public static final String DEFAULT_EMAIL_TEMPLATE_DIR      = "/WEB-INF/email-templates/";
     public static final String DEFAULT_STATIC_JSP_DIR          = "/WEB-INF/static-jsps/";
     public static final String DEFAULT_KNOWN_STATIC_PATH       = ".*?\\.(swf|flv)";
