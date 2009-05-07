@@ -10,9 +10,10 @@ package org.j2free.util;
 import java.util.*;
 
 /**
- *
+ * @deprecated not thread-safe, use <tt>org.j2free.util.concurrent.CountingSet</tt> instead.
  * @author ryan
  */
+@Deprecated
 public class AddCountingSet<E> extends HashSet<E> {
     
     public static final boolean ORDER_ASC  = true;
