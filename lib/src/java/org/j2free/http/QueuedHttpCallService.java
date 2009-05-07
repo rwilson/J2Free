@@ -8,8 +8,8 @@ package org.j2free.http;
 import java.io.IOException;
 
 import java.util.List;
+
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -32,10 +32,15 @@ import org.j2free.util.LaunderThrowable;
  * that is configured to use a <tt>PriorityBlockingQueue</tt> to order tasks
  * by priority.
  *
+ * The <tt>HttpCallTask</tt> objects are executed in instances of the internal
+ * <tt>HttpCallable</tt>, which is intentionally not published.  <tt>QueuedHttpCallService</tt>
+ * is final specifically to prevent subclassing from publishing <tt>HttpCallable</tt> to
+ * alien code.
+ *
  * @author ryan
  */
 @ThreadSafe
-public class QueuedHttpCallService {
+public final class QueuedHttpCallService {
 
     private static final Log log = LogFactory.getLog(QueuedHttpCallService.class);
 
@@ -76,9 +81,10 @@ public class QueuedHttpCallService {
         if (task == null)
             throw new IllegalArgumentException("HttpCallTask cannot be null");
 
-        Future<HttpCallResult> resultFuture = executor.submit(new HttpCallable(task));
+        HttpCallFuture future = new HttpCallFuture(task, new HttpCallable(task));
+        executor.execute(future);
 
-        return new HttpCallFuture(task,resultFuture);
+        return future;
     }
 
     public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
@@ -93,24 +99,27 @@ public class QueuedHttpCallService {
     /**
      * Implementation of Callable that takes a HttpCallTask and,
      * when called, returns the result of the task as a HttpCallResult.
+     *
+     * This class is <tt>protected</tt> because it needs to be seen by <tt>HttpCallFuture</tt>
+     * but should never be access outside of <tt>HttpCallFuture</tt> or <tt>QueuedHttpCallService</tt>
      */
-    private static class HttpCallable implements Callable<HttpCallResult> {
+    protected static class HttpCallable implements Callable<HttpCallResult> {
 
         private final HttpCallTask task;
 
-        public HttpCallable(HttpCallTask task) {
+        private HttpCallable(HttpCallTask task) {
             this.task = task;
         }
 
         public HttpCallResult call() {
 
-            GetMethod method = new GetMethod(task.getUrl());
-            method.setFollowRedirects(true);
+            GetMethod method = new GetMethod(task.url);
+            method.setFollowRedirects(task.followRedirects);
 
             int statusCode;
             try {
 
-                log.debug("Making HTTP call [url=" + task.getUrl() + "]");
+                log.debug("Making HTTP call [url=" + task.url + "]");
 
                 statusCode = httpClient.executeMethod(method);
                 log.debug("Call returned [status=" + statusCode + "]");
@@ -123,5 +132,6 @@ public class QueuedHttpCallService {
                 method.releaseConnection();
             }
         }
+
     }
 }

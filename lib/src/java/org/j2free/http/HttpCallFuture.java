@@ -5,50 +5,32 @@
  */
 package org.j2free.http;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import net.jcip.annotations.ThreadSafe;
+import java.util.concurrent.FutureTask;
 
+import net.jcip.annotations.ThreadSafe;
+import org.j2free.http.QueuedHttpCallService.HttpCallable;
 
 /**
- * Convenience class that wraps a HttpCallTask and Future
- * representing the result of the HttpCallTask.
+ * Extends FutureTask so that instances of HttpCallTask can be ordered by
+ * priority in a PriorityBlockingQueue in the QueuedHttpCallService.
  *
  * @author ryan
  */
 @ThreadSafe
-public class HttpCallFuture {
+public final class HttpCallFuture extends FutureTask<HttpCallResult> implements Comparable<HttpCallFuture> {
 
     private final HttpCallTask task;
-    
-    private Future<HttpCallResult> future;
 
-    public HttpCallFuture(HttpCallTask task, Future<HttpCallResult> future) {
-        this.task   = task;
-        this.future = future;
+    public HttpCallFuture(HttpCallTask task, HttpCallable callable) {
+        super(callable);
+        this.task = task;
     }
 
     /**
-     * Will block until the result is available
-     *
-     * @return
-     * @throws java.lang.InterruptedException
+     * This implementation of comparable compares <tt>HttpCallFuture</tt> instances
+     * calling <tt>compareTo</tt> on the underlying <tt>HttpCallTask</tt> objects.
      */
-    public HttpCallResult getResult() throws InterruptedException, ExecutionException {
-        return future.get();
+    public int compareTo(HttpCallFuture other) {
+        return task.compareTo(other.task);
     }
-
-    /**
-     * Will block until the result is available or for
-     * the specified amount of time.
-     *
-     * @return
-     * @throws java.lang.InterruptedException
-     */
-    public HttpCallResult getResult(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return future.get(timeout,unit);
-    }
-
 }

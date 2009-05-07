@@ -7,8 +7,10 @@
 package org.j2free.jpa;
 
 import java.io.Serializable;
+
 import java.util.Collection;
 import java.util.List;
+
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -18,6 +20,7 @@ import javax.persistence.Query;
 
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -28,8 +31,8 @@ import org.apache.commons.logging.LogFactory;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
-
 import org.apache.lucene.queryParser.ParseException;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Criteria;
 import org.hibernate.FlushMode;
@@ -60,11 +63,15 @@ import org.j2free.util.Pair;
 public class Controller {
 
     protected Log LOG = LogFactory.getLog(Controller.class);
+
     public static final String ATTRIBUTE_KEY = "controller";
+
     protected UserTransaction tx;
     protected EntityManager em;
     protected FullTextEntityManager fullTextEntityManager;
+
     private boolean markedForRollback;
+
     protected Throwable problem;
     protected InvalidValue[] errors;
 
@@ -109,10 +116,6 @@ public class Controller {
             problem = null;
         } catch (InvalidStateException ise) {
             this.errors = ise.getInvalidValues();
-        } catch (Exception e) {
-            this.problem = e;
-            this.errors = new InvalidValue[0];
-            LOG.error("Error flushing transaction", e);
         }
     }
 
@@ -123,10 +126,6 @@ public class Controller {
             problem = null;
         } catch (InvalidStateException ise) {
             this.errors = ise.getInvalidValues();
-        } catch (Exception e) {
-            this.problem = e;
-            this.errors = new InvalidValue[0];
-            LOG.error("Error flushing transaction", e);
         }
     }
 
@@ -150,18 +149,17 @@ public class Controller {
         return fullTextEntityManager;
     }
 
-    public void startTransaction() {
-        try {
-            tx.begin();
-            em.joinTransaction(); // make sure the entity manager knows the transaction has begun
-            markedForRollback = false; // make sure that a transaction always starts clean
-            problem = null;
-            errors = null;
-        } catch (Exception e) {
-            problem = e;
-            LOG.error("Error beginning transaction", e);
-            tx = null;
-        }
+    public void startTransaction() throws NotSupportedException, SystemException {
+        
+        tx.begin();
+
+        // make sure the entity manager knows the transaction has begun
+        em.joinTransaction();
+
+        // make sure that a transaction always starts clean
+        markedForRollback = false; 
+        problem           = null;
+        errors            = null;
     }
 
     public void endTransaction() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {

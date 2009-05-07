@@ -5,6 +5,8 @@
  */
 package org.j2free.http;
 
+import java.util.Date;
+
 import net.jcip.annotations.Immutable;
 
 /**
@@ -23,48 +25,43 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         YESTERDAY;
     }
 
-    private final String url;
-    private final Priority priority;
-    private final long created;
+    public final String url;
+    public final boolean followRedirects;
+    public final Priority priority;
+    public final Date created;
 
+    /**
+     * Returns a new <tt>HttpCallTask</tt> to the provided url
+     * using <tt>HttpCallTask.Priority.DEFAULT</tt> that will
+     * not follow redirects.
+     */
     public HttpCallTask(String url) {
-        this(url,Priority.DEFAULT);
+        this(url,false,Priority.DEFAULT);
     }
 
-    public HttpCallTask(String url, Priority priority) {
-        this.url       = url;
-        this.priority  = priority;
-        this.created   = System.currentTimeMillis();
+    public HttpCallTask(String url, boolean followRedirects) {
+        this(url,followRedirects,Priority.DEFAULT);
     }
-
-    public String getUrl() {
-        return url;
+    
+    public HttpCallTask(String url, boolean followRedirects, Priority priority) {
+        this.url = url;
+        this.followRedirects = followRedirects;
+        this.priority = priority;
+        this.created = new Date();
     }
 
     /**
-     *
-     * @param other The other HttpCallFuture
-     * @return 1 if this future should run first, -1 if the other future should run first, 0 if they are equal
+     * This implementation of <tt>compareTo</tt> compares <tt>HttpCallTask</tt>
+     * instances first on priority of the task, then using the creation time of
+     * so that tasks of equal priority will run in FIFO order.
      */
     public int compareTo(HttpCallTask other) {
-        if (other == null)
-            return 1;
 
-        int thisP  = this.priority.ordinal();
-        int otherP = other.priority.ordinal();
+        int c = this.priority.compareTo(other.priority);
 
-        if (thisP > otherP)
-            return 1;
+        if (c != 0)
+            return c;
 
-        if (thisP < otherP)
-            return -1;
-
-        if (this.created < other.created)
-            return 1;
-
-        if (this.created > other.created)
-            return -1;
-
-        return 0;
+        return this.created.compareTo(other.created);
     }
 }
