@@ -7,6 +7,7 @@ package org.j2free.http;
 
 import java.util.Date;
 import net.jcip.annotations.Immutable;
+import org.j2free.util.Priority;
 
 /**
  * Immutable representation of a HTTP call that can be sorted
@@ -16,13 +17,6 @@ import net.jcip.annotations.Immutable;
  */
 @Immutable
 public class HttpCallTask implements Comparable<HttpCallTask> {
-
-    public enum Priority {
-        LOW,
-        DEFAULT,
-        HIGH,
-        YESTERDAY;
-    }
 
     public final String url;
     public final boolean followRedirects;

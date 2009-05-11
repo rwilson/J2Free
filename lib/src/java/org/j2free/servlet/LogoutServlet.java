@@ -1,5 +1,5 @@
 /*
- * Logout.java
+ * LogoutServlet.java
  *
  * Created on June 13, 2008, 1:31 PM
  */
@@ -7,26 +7,24 @@
 package org.j2free.servlet;
 
 import java.io.*;
-import java.net.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
-import org.j2free.annotations.URLMapping;
 
 /**
- *
- * @author ryan
+ * @author Ryan Wilson
  * @version
  */
-@URLMapping(urls={"/logout"})
-public class Logout extends HttpServlet {
-    
+public class LogoutServlet extends HttpServlet {
+
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         request.getSession(true).invalidate();
         response.sendRedirect("/");
     }
     
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         doGet(request,response);

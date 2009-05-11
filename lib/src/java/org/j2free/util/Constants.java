@@ -3,7 +3,7 @@
  *
  * Created on April 5, 2008, 1:44 AM
  *
- * Copyright (c) 2008 Publi.us
+ * Copyright (c) 2008 FooBrew, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,35 +36,87 @@ public class Constants {
         }
     };
 
-
-    // Context-attributes
-    public static final String CONTEXT_ATTR_RUN_MODE           = "run-mode";
-    public static final String CONTEXT_ATTR_EMAIL_TEMPLATE_DIR = "email-template-dir";
-
-    // Default values for context-attributes
-    public static final RunMode DEFAULT_RUN_MODE               = RunMode.PRODUCTION;
-    
-    public static final String DEFAULT_EMAIL_TEMPLATE_DIR      = "/WEB-INF/email-templates/";
-    public static final String DEFAULT_STATIC_JSP_DIR          = "/WEB-INF/static-jsps/";
-    public static final String DEFAULT_KNOWN_STATIC_PATH       = ".*?\\.(swf|flv)";
-
     // run mode
-    public static volatile RunMode RUN_MODE = DEFAULT_RUN_MODE;
+    public static volatile RunMode RUN_MODE = RunMode.PRODUCTION;
 
-    // for time-based decay algorithms
-    public static final long DECAY_EPOCH = 1134028003;
+    // Context attributes
+    public static final String CONTEXT_ATTR_CONFIG       = "j2free-config";
+    public static final String CONTEXT_ATTR_CONFIG_PATH  = "config-file";
+    public static final String CONTEXT_ATTR_TASK_MANAGER = "task-manager";
 
     // Useful constants
     public static final byte NULL_BYTE   = 0x0;
     public static final String UTF_16    = "UTF-16";
     public static final String EMPTY     = "";
 
-    // JavaMail Properties
-    public static final String SMTP_PROPERTY_HOST = "mail.smtp.host";
-    public static final String SMTP_PROPERTY_PORT = "mail.smtp.port";
-    public static final String SMTP_PROPERTY_AUTH = "mail.smtp.auth";
+    // SMTP Properties
+    public static final String PROP_SMTP_HOST             = "mail.smtp.host";
+    public static final String PROP_SMTP_PORT             = "mail.smtp.port";
+    public static final String PROP_SMTP_AUTH             = "mail.smtp.auth";
+    public static final String PROP_SMTP_USER             = "mail.smtp.user";
+    public static final String PROP_SMTP_PASS             = "mail.smtp.pass";
 
-    // Static JSP location
-    public static volatile String STATIC_JSP_CONTEXT_PATH = "/";
-    public static volatile String STATIC_JSP_DIR          = DEFAULT_STATIC_JSP_DIR;
+    // EmailService config
+    public static final String PROP_MAIL_DUMMY_MODE       = "mail.dummy.enabled";
+    public static final String PROP_MAIL_TEMPLATE_DIR     = "mail.template.dir";
+    public static final String PROP_MAIL_DEFAULT_TEMPLATE = "mail.template.defalt";
+
+    public static final String PROP_RUNMODE               = "run-mode";
+
+    // Invoker Servlet config
+    public static final String PROP_INVOKER_ON            = "filter.invoker.enabled";
+    public static final String PROP_INVOKER_CONTROLLER    = "filter.invoker.controller.className";
+    public static final String PROP_INVOKER_BENCHMARK     = "filter.invoker.benchmark.enabled";
+    public static final String PROP_INVOKER_BYPASSPATH    = "filter.invoker.bypass.path";
+
+    // Task Execution config
+    public static final String PROP_TASK_EXECUTOR_ON      = "task.executor.enabled";
+    public static final String PROP_TASK_EXECUTOR_THREADS = "task.executor.threads";
+
+    public static final String PROP_DECAY_EPOCH           = "decay.epoch";
+
+    // Fragment Cache Config
+    public static final String PROP_FRAGMENT_CACHE_ON         = "fragment.cache.enabled";
+    public static final String PROP_FRAGMENT_REQUEST_TIMEOUT  = "fragment.cache.request.timeout"; // In Seconds
+    public static final String PROP_FRAGMENT_WARNING_DURATION = "fragment.cache.warning.duration"; // In Seconds
+    public static final String PROP_FRAGMENT_CLEANER_INTERVAL = "fragment.cleaner.interval"; // In Seconds
+
+    // Servlet Config
+    public static final String PROP_STATICJSP_ON              = "servlet.static-jsp.enabled";
+    public static final String PROP_STATICJSP_DIR             = "servlet.static-jsp.dir";
+    public static final String PROP_STATICJSP_PATH            = "servlet.static-jsp.path";
+    
+    public static final String PROP_SERVLET_LOGOUT_ON         = "servlet.logout.enabled";
+    public static final String PROP_SERVLET_LOGOUT_PATH       = "servlet.logout.path";
+
+    public static final String PROP_SERVLET_SECURE_ON         = "servlet.secure.enabled";
+    public static final String PROP_SERVLET_SECURE_PATH       = "servlet.secure.path";
+
+    public static final String PROP_SERVLET_PROXY_ON          = "servlet.proxy.enabled";
+    public static final String PROP_SERVLET_PROXY_PATH        = "servlet.proxy.path";
+
+    public static final String PROP_SERVLET_ADMIN_ON          = "servlet.admin.enabled";
+    public static final String PROP_SERVLET_ADMIN_PATH        = "servlet.admin.path";
+
+    // Default config file location
+    public static final String DEFAULT_CONFIG_PATH            = "/etc/j2free.properties";
+
+    // EmailService defaults
+    public static final String DEFAULT_EMAIL_TEMPLATE_DIR     = "/WEB-INF/email-templates/";
+
+    // Servlet defaults
+    // Can use , to separate multiple paths
+    public static final String DEFAULT_STATICJSP_PATH         = "/";
+    public static final String DEFAULT_LOGOUT_PATH            = "/logout";
+    public static final String DEFAULT_PROXY_PATH             = "/proxy/*";
+    public static final String DEFAULT_SECURE_PATH            = "/secure/*";
+    public static final String DEFAULT_ADMIN_PATH             = "/j2free,/j2free/*";
+
+    public static final String DEFAULT_STATICJSP_DIR          = "/WEB-INF/static-jsps/";
+
+    // Task execution defaults
+    public static final int DEFAULT_TASK_EXECUTOR_THREADS     = 3;
+
+    // Fragment defaults
+    public static final long DEFAULT_FRAGMENT_CLEANER_INTERVAL =  15 * 60; // In Seconds
 }

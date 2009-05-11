@@ -1,5 +1,5 @@
 /*
- * Proxy.java
+ * ProxyServlet.java
  *
  * Created on June 18, 2008
  */
@@ -7,23 +7,24 @@ package org.j2free.servlet;
 
 import java.io.*;
 
+import java.util.concurrent.ExecutionException;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.j2free.annotations.URLMapping;
+import org.j2free.http.HttpCallFuture;
+import org.j2free.http.HttpCallResult;
+import org.j2free.http.HttpCallTask;
+import org.j2free.http.QueuedHttpCallService;
 
 /**
- * @author ryan
+ * @author Ryan Wilson
  * @version 1.0
  */
-@URLMapping(urls = {"/proxy/*"})
-public class Proxy extends HttpServlet {
+public class ProxyServlet extends HttpServlet {
 
-    private static Log log = LogFactory.getLog(Proxy.class);
+    private static Log log = LogFactory.getLog(ProxyServlet.class);
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -63,26 +64,22 @@ public class Proxy extends HttpServlet {
         buff = buff.replaceAll("\n", " ").replaceAll("\\s{2,}", " ");
          */
 
-        HttpClient client = new HttpClient();
+        HttpCallTask task = new HttpCallTask(fetchUrl);
+        HttpCallFuture future = QueuedHttpCallService.submit(task);
+        HttpCallResult result;
 
-        GetMethod get = new GetMethod(fetchUrl);
-
-        int httpResult;
-        String result;
         try {
-
-            httpResult   = client.executeMethod(get);
-            result = get.getResponseBodyAsString();
-
-        } catch (IOException ioe) {
-            log.error("Error fetching song and tracks from server",ioe);
+            result = future.get();
+        } catch (InterruptedException ie) {
+            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             return;
-        } finally {
-            get.releaseConnection();
+        } catch (ExecutionException ee) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         PrintWriter out = response.getWriter();
-        out.print(result);
+        out.print(result.getResponse());
         out.flush();
         out.close();
     }
