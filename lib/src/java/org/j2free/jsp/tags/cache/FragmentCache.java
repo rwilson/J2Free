@@ -27,6 +27,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
@@ -44,19 +47,17 @@ public class FragmentCache extends BodyTagSupport {
     
     private static final Log log = LogFactory.getLog(FragmentCache.class);
 
-    private static final long WARNING_COMPUTE_DURATION = 10000;
+    public static final AtomicLong WARNING_COMPUTE_DURATION = new AtomicLong(10000);
+
+    public static final AtomicBoolean ENABLED = new AtomicBoolean(false);
 
     // This is the max amount of time a thread will wait() on another thread
     // that is currently updating the Fragment.  If the updating thread does
-    // not complete the update within REQUEST_WAIT_TIMEOUT, the waiting thread
+    // not complete the update within REQUEST_TIMEOUT, the waiting thread
     // will print a message to refresh the page.
-    private static final long REQUEST_WAIT_TIMEOUT     = 20;
+    public static final AtomicLong REQUEST_TIMEOUT = new AtomicLong(20);
 
-    // This is specified in seconds
-    private static final long CLEANER_INTERVAL = 15 * 60;
-
-    private static final String ATTRIBUTE_DISABLE_GLOBALLY = "disable-fragment-cache";
-    private static final String ATTRIBUTE_DISABLE_ONCE     = "nocache";
+    private static final String ATTRIBUTE_DISABLE_ONCE = "nocache";
 
     // The backing ConcurrentMap
     private static final ConcurrentMap<String,Fragment> cache =
@@ -69,8 +70,7 @@ public class FragmentCache extends BodyTagSupport {
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     // A ScheduledFuture representing the cleaner task
-    private static ScheduledFuture cleanerFuture =
-            executor.scheduleAtFixedRate(cleaner, CLEANER_INTERVAL, CLEANER_INTERVAL, TimeUnit.SECONDS);
+    private static volatile ScheduledFuture cleanerFuture = null;
 
     // Cache Timeout
     private long timeout;
@@ -130,18 +130,10 @@ public class FragmentCache extends BodyTagSupport {
 
         start = System.currentTimeMillis();
 
+        disable = ENABLED.get();
+
         // If the tag isn't set to disable, check for other things that might disable this ...
         if (!disable) {
-
-            // Check for the global disable flag
-            String globalDisableFlag = (String)pageContext.getServletContext().getAttribute(ATTRIBUTE_DISABLE_GLOBALLY);
-            if (globalDisableFlag != null) {
-                try {
-                    disable = Boolean.parseBoolean(globalDisableFlag);
-                } catch (Exception e) {
-                    log.warn("Invalid value for " + ATTRIBUTE_DISABLE_GLOBALLY + " context-param: " + globalDisableFlag + ", expected [true|false]");
-                }
-            }
 
             // Check for the request attribute
             if (pageContext.getAttribute(ATTRIBUTE_DISABLE_ONCE) != null)
@@ -205,7 +197,7 @@ public class FragmentCache extends BodyTagSupport {
         String response = null;
         try {
             if (log.isTraceEnabled()) log.trace("calling cached.getContent() [key: " + key + "]");
-            response = cached.get(REQUEST_WAIT_TIMEOUT, TimeUnit.SECONDS);
+            response = cached.get(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
             if (log.isTraceEnabled()) log.trace("cached.getContent() returned [key: " + key + "]");
         } catch (InterruptedException e) {
             log.error("Error writing Fragment.getContent() to page",e);
@@ -222,7 +214,7 @@ public class FragmentCache extends BodyTagSupport {
         
         long duration = System.currentTimeMillis() - start;
 
-        if (duration > WARNING_COMPUTE_DURATION) {
+        if (duration > WARNING_COMPUTE_DURATION.get()) {
             log.warn("Warning: slow FragmentCache, " + duration + "ms [key: " + key + "]");
         } else if (log.isTraceEnabled()) {
             log.trace("FragmentCache completed in " + duration + "ms [key: " + key + "]");
@@ -286,21 +278,20 @@ public class FragmentCache extends BodyTagSupport {
     }
 
     /**
-     * Synchronized method so two threads can't modify the cleaner interval at the same time.
+     * Non-blocking method, so two threads could theoretically schedule the cleaner
+     * at the same time and not interfere with each other.
      *
      * @param interval The time interval
      * @param unit The time unit the interval is in
      */
-    public synchronized static void scheduleCleaner(long interval, TimeUnit unit) {
+    public static void scheduleCleaner(long interval, TimeUnit unit, boolean runNow) {
 
-        if (cleanerFuture != null) {
+        if (cleanerFuture != null)
             cleanerFuture.cancel(false);
-        }
 
-        // We don't want to go a long time without running the cleaner, so run it once after
-        // cancelling but before rescheduling.
-        cleaner.run();
-        
+        if (runNow)
+            cleaner.run();
+
         cleanerFuture = executor.scheduleAtFixedRate(cleaner, interval, interval, unit);
     }
 }

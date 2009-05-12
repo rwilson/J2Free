@@ -1,5 +1,5 @@
 /*
- * AdminGenerator.java
+ * J2FreeAdminServlet.java
  *
  * Created on April 3, 2008, 1:07 AM
  *
@@ -34,7 +34,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
-import org.j2free.annotations.URLMapping;
 
 import org.j2free.util.CharArrayWrapper;
 import org.j2free.util.Marshaller;
@@ -47,10 +46,9 @@ import org.j2free.jpa.ControllerServlet;
  * @author ryan
  * @version
  */
-@URLMapping(urls = {"/j2free","/j2free/*"})
-public class AdminGenerator extends ControllerServlet {
+public class J2FreeAdminServlet extends ControllerServlet {
     
-    private static Log log = LogFactory.getLog(AdminGenerator.class);
+    private static Log log = LogFactory.getLog(J2FreeAdminServlet.class);
     
     private static TreeMap<String,Class> entityLookup;
     
@@ -60,7 +58,8 @@ public class AdminGenerator extends ControllerServlet {
     private static final String DISPATCH_ENTITY_EDIT     = "/WEB-INF/j2free/jsp/EntityEdit.jsp";
     private static final String DISPATCH_ENTITY_INSPECT  = "/WEB-INF/j2free/jsp/EntityInspect.jsp";
     private static final String DISPATCH_ENTITY_CREATE   = "/WEB-INF/j2free/jsp/EntityCreate.jsp";
-    
+
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         
@@ -120,7 +119,8 @@ public class AdminGenerator extends ControllerServlet {
         
         request.getRequestDispatcher(DISPATCH_ADMIN_JSP).forward(request,response);
     }
-    
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         
@@ -451,7 +451,7 @@ public class AdminGenerator extends ControllerServlet {
          * you want.  It's not the best way for this process, but still pretty
          * fucking cool.
         try {
-            ClassLoader cl = AdminGenerator.class.getClassLoader();
+            ClassLoader cl = J2FreeAdminServlet.class.getClassLoader();
             Class clClass  = cl.getClass();
             while (clClass != java.lang.ClassLoader.class) {
                 clClass = clClass.getSuperclass();

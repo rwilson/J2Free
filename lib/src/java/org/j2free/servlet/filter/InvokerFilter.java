@@ -8,11 +8,19 @@ package org.j2free.servlet.filter;
 
 import java.io.*;
 import java.net.URL;
-import java.util.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -21,11 +29,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.j2free.annotations.URLMapping;
+
 import org.j2free.jpa.Controller;
 import org.j2free.jpa.ControllerServlet;
-import org.j2free.servlet.AdminGenerator;
 
-import org.j2free.servlet.StaticJspServlet;
+
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
@@ -79,9 +87,10 @@ public class InvokerFilter implements Filter {
     // configured.
     private FilterConfig filterConfig = null;
 
-    private boolean benchmarkAccess  = false;
-    private String extendedClassName = null;
-    private String knownStaticPath   = null;
+    private static final AtomicBoolean benchmark                     = new AtomicBoolean(false);
+    
+    private static final AtomicReference<String> controllerClassName = new AtomicReference(EMPTY);
+    private static final AtomicReference<String> bypassPath          = new AtomicReference(EMPTY);
 
     // ConcurrentMap holds mappings from urls to classes (specifically)
     private static final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap = 
@@ -91,7 +100,8 @@ public class InvokerFilter implements Filter {
     private static final ConcurrentMap<String,Class<? extends HttpServlet>> regexMap =
             new ConcurrentHashMap<String,Class<? extends HttpServlet>>();
 
-    private static final CountDownLatch initialized = new CountDownLatch(1);
+    private static final CountDownLatch latch   = new CountDownLatch(1);
+    private static final AtomicBoolean  enabled = new AtomicBoolean(false);
 
     /**
      *
@@ -124,9 +134,15 @@ public class InvokerFilter implements Filter {
             response.setHeader("Pragma", "cache");
         }
 
+        // This will let all threads through if the Invoker isn't enabled
+        if (!enabled.get()) {
+            chain.doFilter(req, resp);
+            return;
+        }
+
         // This will block all threads until the gate opens
         try {
-            initialized.await();
+            latch.await();
         } catch (InterruptedException ie) {
             log.warn("Interrupted while waiting for urlMap to be initialized...");
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -150,7 +166,7 @@ public class InvokerFilter implements Filter {
             chain.doFilter(req, resp);
             run  = System.currentTimeMillis();
             
-        } else if (currentPath.matches(knownStaticPath)) {
+        } else if (currentPath.matches(bypassPath.get())) {
 
             if (log.isDebugEnabled()) log.debug("Processing known static regex-path: " + currentPath);
 
@@ -164,7 +180,7 @@ public class InvokerFilter implements Filter {
             
         } else {
 
-            log.debug("InvokerFilter for path: " + currentPath);
+            if (log.isDebugEnabled()) log.debug("InvokerFilter for path: " + currentPath);
 
             // if the exact match wasn't found, look for wildcard matches
             if (klass == null) {
@@ -228,6 +244,7 @@ public class InvokerFilter implements Filter {
 
                 // If we found a class in any way, register it with the currentPath for faster future lookups
                 if (klass != null) {
+                    if (log.isDebugEnabled()) log.debug("Matched path " + currentPath + " to " + klass.getName());
                     urlMap.putIfAbsent(currentPath, klass);
                 }
             }
@@ -252,10 +269,10 @@ public class InvokerFilter implements Filter {
 
                     if (klass.getSuperclass() == ControllerServlet.class) {
 
-                        if (extendedClassName == null) {
+                        if (controllerClassName.get().equals(EMPTY)) {
                             controller = new Controller();
                         } else {
-                            controller = (Controller) (Class.forName(extendedClassName).newInstance());
+                            controller = (Controller) (Class.forName(controllerClassName.get()).newInstance());
                         }
                         
                         if (log.isDebugEnabled()) log.debug("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
@@ -294,6 +311,9 @@ public class InvokerFilter implements Filter {
 
                     run = System.currentTimeMillis();
 
+                    if (log.isDebugEnabled())
+                        log.debug("Error servicing " + currentPath, e);
+
                     String userAgent = request.getHeader("User-Agent");
                     if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
                         /*
@@ -313,7 +333,7 @@ public class InvokerFilter implements Filter {
 
         finish = System.currentTimeMillis();
 
-        if (benchmarkAccess) log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
+        if (benchmark.get()) log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
     }
 
     /**
@@ -340,68 +360,36 @@ public class InvokerFilter implements Filter {
     }
 
     /**
-     * Init method for this filter
-     *
-     */
-    public void init(FilterConfig filterConfig) {
-
-        log.debug("Initializing InvokerFilter...");
-
-        this.filterConfig = filterConfig;
-
-        // This is the location of jsps that will be mapped to StaticJspServlet
-        String staticJspDir = filterConfig.getInitParameter(ATTR_STATIC_JSP_DIR);
-        if (!empty(staticJspDir)) {
-            STATIC_JSP_DIR = staticJspDir;
-        }
-
-        // In case the user has let us know about paths that are guaranteed static
-        knownStaticPath = filterConfig.getInitParameter(ATTR_KNOWN_STATIC_PATH);
-        if (empty(knownStaticPath))
-            knownStaticPath = DEFAULT_KNOWN_STATIC_PATH;
-
-        // In case the application using J2Free has extended Controller...
-        extendedClassName= filterConfig.getInitParameter(ATTR_CONTROLLER_CLASS);
-
-        // Can enable benchmarking globally
-        String temp = filterConfig.getInitParameter("benchmark-access");
-        benchmarkAccess = temp != null && (temp.equals("true") || temp.equals("1"));
-
-        // Do this last because mo request can go through until this runs, so it acts
-        // like a semi-synchronization on extendedClassName, knownStaticPath, and
-        // benchmarkAccess, which would otherwise need to be accesses synchronously above
-        initURLMappings();
-    }
-
-    /**
-     * Return a String representation of this object.
-     */
-    @Override
-    public String toString() {
-
-        if (filterConfig == null) {
-            return ("InvokerFilter()");
-        }
-        StringBuffer sb = new StringBuffer("InvokerFilter(");
-        sb.append(filterConfig);
-        sb.append(")");
-        return (sb.toString());
-
-    }
-
-    /**
-     *  @description Finds all classes annotated with URLMapping and maps the class to 
+     *  @description Finds all classes annotated with URLMapping and maps the class to
      *               the url specified in the annotation.  Wildcard urls are allowed in
      *               the form of *.extension or /some/path/*
      */
-    private void initURLMappings() {
+    public void init(FilterConfig filterConfig) {
+        this.filterConfig = filterConfig;
+    }
+
+
+    public static void enable(String bypass, String controllerClass, boolean doBenchmark) {
+
+        if (enabled.get())
+            return;
+
+        log.debug("Enabling InvokerFilter...");
+
+        // In case the user has let us know about paths that are guaranteed static
+        bypassPath.set(bypass);
+
+        // In case the application using J2Free has extended Controller...
+        controllerClassName.set(controllerClass);
+
+        // Can enable benchmarking globally
+        benchmark.set(doBenchmark);
 
         // (1) Look for any classes annotated with @URLMapping
         try {
             LinkedList<URL> urlList = new LinkedList<URL>();
             urlList.addAll(Arrays.asList(ClasspathUrlFinder.findResourceBases("")));
-            urlList.add(ClasspathUrlFinder.findClassBase(AdminGenerator.class));
-
+            
             URL[] urls = new URL[urlList.size()];
             urls = urlList.toArray(urls);
 
@@ -418,20 +406,24 @@ public class InvokerFilter implements Filter {
                 if (classNames != null) {
                     for (String c : classNames) {
                         try {
+                            
                             Class<? extends HttpServlet> klass = (Class<? extends HttpServlet>)Class.forName(c);
+                            
                             if (klass.isAnnotationPresent(URLMapping.class)) {
+
                                 URLMapping anno = (URLMapping) klass.getAnnotation(URLMapping.class);
 
                                 if (anno.urls() != null) {
                                     for (String url : anno.urls()) {
-                                        if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)")) {
+
+                                        if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
                                             url = url.replaceAll("\\*", "");
+
+                                        if (urlMap.putIfAbsent(url, klass) == null)
                                             log.debug("Mapping servlet " + klass.getName() + " to path " + url);
-                                            urlMap.putIfAbsent(url, klass);
-                                        } else {
-                                            urlMap.putIfAbsent(url, klass);
-                                            log.debug("Mapping servlet " + klass.getName() + " to path " + url);
-                                        }
+                                        else
+                                            log.error("Unable to map servlet  " + klass.getName() + " to path " + url + ", path already mapped to " + urlMap.get(url).getName());
+
                                     }
                                 }
 
@@ -450,22 +442,18 @@ public class InvokerFilter implements Filter {
             log.error("Error initializing urlMappings",e);
         }
 
-        // (2) Look for any JSPs in the static-jsp directory and map to the StaticJspServlet
-        ServletContext context = filterConfig.getServletContext();
-        Set<String> staticJsps = context.getResourcePaths(STATIC_JSP_DIR);
-        if (staticJsps != null && !staticJsps.isEmpty()) {
-            for (String jsp : staticJsps) {
-                jsp = STATIC_JSP_CONTEXT_PATH + jsp.replace(STATIC_JSP_DIR, EMPTY).replaceAll("\\.jsp$", EMPTY);
-                urlMap.putIfAbsent(jsp, StaticJspServlet.class);
-                log.debug("Mapping StaticJspServlet.class to path " + jsp);
-            }
-        }
-
-        // Open the gate
-        initialized.countDown();
+        // Mark that we've run this and open the gate
+        enabled.set(true);
+        latch.countDown();
     }
 
-    public static void addServletMapping(String path, Class<? extends HttpServlet> klass) {
-        urlMap.putIfAbsent(path, klass);
+    /**
+     * @param path The path to map a Servlet to
+     * @param klass The Servlet to map
+     * @return true if the servlet was mapped to the path, false if another servlet was already mapped to that path
+     */
+    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass) {
+        log.debug("Mapping servlet " + klass.getName() + " to path " + path);
+        return urlMap.putIfAbsent(path, klass);
     }
 }

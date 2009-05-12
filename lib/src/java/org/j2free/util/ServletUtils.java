@@ -407,7 +407,7 @@ public class ServletUtils {
             return "";
         }
 
-        source = source.replaceAll("-|_", " ");
+        source = source.replaceAll("-|_|\\.", " ");
 
         String[] parts = source.split(" ");
 
