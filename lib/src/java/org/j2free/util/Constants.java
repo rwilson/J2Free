@@ -50,30 +50,43 @@ public class Constants {
     public static final String EMPTY     = "";
 
     // SMTP Properties
-    public static final String PROP_SMTP_HOST             = "mail.smtp.host";
-    public static final String PROP_SMTP_PORT             = "mail.smtp.port";
-    public static final String PROP_SMTP_AUTH             = "mail.smtp.auth";
-    public static final String PROP_SMTP_USER             = "mail.smtp.user";
-    public static final String PROP_SMTP_PASS             = "mail.smtp.pass";
+    public static final String PROP_SMTP_HOST              = "mail.smtp.host";
+    public static final String PROP_SMTP_PORT              = "mail.smtp.port";
+    public static final String PROP_SMTP_AUTH              = "mail.smtp.auth";
+    public static final String PROP_SMTP_USER              = "mail.smtp.user";
+    public static final String PROP_SMTP_PASS              = "mail.smtp.pass";
 
     // EmailService config
-    public static final String PROP_MAIL_DUMMY_MODE       = "mail.dummy.enabled";
-    public static final String PROP_MAIL_TEMPLATE_DIR     = "mail.template.dir";
-    public static final String PROP_MAIL_DEFAULT_TEMPLATE = "mail.template.defalt";
+    public static final String PROP_MAIL_SERVICE_ON        = "mail.service.enabled";
+    public static final String PROP_MAIL_SERVICE_COREPOOL  = "mail.service.threads.core";
+    public static final String PROP_MAIL_SERVICE_MAXPOOL   = "mail.service.threads.max";
+    public static final String PROP_MAIL_SERVICE_KEEPALIVE = "mail.service.threads.keep-alive";
+    public static final String PROP_MAIL_ERROR_POLICY      = "mail.service.error-policy";
+    public static final String PROP_MAIL_REQUEUE_PRIORITY  = "mail.service.error-policy.requeue.priority";
+    public static final String PROP_MAIL_RQAP_PRIORITY     = "mail.service.error-policy.requeue-and-pause.priority";
+    public static final String PROP_MAIL_RQAP_INTERVAL     = "mail.service.error-policy.requeue-and-pause.interval";
 
-    public static final String PROP_RUNMODE               = "run-mode";
+    public static final String VALUE_MAIL_POLICY_DISCARD   = "discard";
+    public static final String VALUE_MAIL_POLICY_REQUEUE   = "requeue";
+    public static final String VALUE_MAIL_POLICY_RQAP      = "requeue-and-pause";
+
+    public static final String PROP_MAIL_DUMMY_MODE        = "mail.service.dummy.enabled";
+    public static final String PROP_MAIL_TEMPLATE_DIR      = "mail.service.template.dir";
+    public static final String PROP_MAIL_DEFAULT_TEMPLATE  = "mail.service.template.default";
+
+    public static final String PROP_RUNMODE                = "run-mode";
 
     // Invoker Servlet config
-    public static final String PROP_INVOKER_ON            = "filter.invoker.enabled";
-    public static final String PROP_INVOKER_CONTROLLER    = "filter.invoker.controller.className";
-    public static final String PROP_INVOKER_BENCHMARK     = "filter.invoker.benchmark.enabled";
-    public static final String PROP_INVOKER_BYPASSPATH    = "filter.invoker.bypass.path";
+    public static final String PROP_INVOKER_ON             = "filter.invoker.enabled";
+    public static final String PROP_INVOKER_CONTROLLER     = "filter.invoker.controller.className";
+    public static final String PROP_INVOKER_BENCHMARK      = "filter.invoker.benchmark.enabled";
+    public static final String PROP_INVOKER_BYPASSPATH     = "filter.invoker.bypass.path";
 
     // Task Execution config
-    public static final String PROP_TASK_EXECUTOR_ON      = "task.executor.enabled";
-    public static final String PROP_TASK_EXECUTOR_THREADS = "task.executor.threads";
+    public static final String PROP_TASK_EXECUTOR_ON       = "task.executor.enabled";
+    public static final String PROP_TASK_EXECUTOR_THREADS  = "task.executor.threads";
 
-    public static final String PROP_DECAY_EPOCH           = "decay.epoch";
+    public static final String PROP_DECAY_EPOCH            = "decay.epoch";
 
     // Fragment Cache Config
     public static final String PROP_FRAGMENT_CACHE_ON         = "fragment.cache.enabled";
@@ -103,6 +116,12 @@ public class Constants {
 
     // EmailService defaults
     public static final String DEFAULT_EMAIL_TEMPLATE_DIR     = "/WEB-INF/email-templates/";
+
+    public static final int  DEFAULT_MAIL_SERVICE_MAXPOOL     = 10;
+    public static final int  DEFAULT_MAIL_SERVICE_COREPOOL    = DEFAULT_MAIL_SERVICE_MAXPOOL / 2;
+    public static final long DEFAULT_MAIL_SERVICE_KEEPALIVE   = 180;
+
+    public static final String DEFAULT_MAIL_RQAP_INTERVAL     = "5m";
 
     // Servlet defaults
     // Can use , to separate multiple paths

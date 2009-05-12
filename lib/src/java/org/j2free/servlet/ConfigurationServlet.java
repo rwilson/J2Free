@@ -1,9 +1,4 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/*
  * ConfigurationServlet.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
@@ -30,10 +25,11 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.email.EmailService;
 import org.j2free.jsp.tags.cache.FragmentCache;
 import org.j2free.servlet.filter.InvokerFilter;
-import org.j2free.util.ServletUtils;
 
+import org.j2free.util.Priority;
 import static org.j2free.util.Constants.*;
 
 
@@ -230,6 +226,56 @@ public class ConfigurationServlet extends HttpServlet {
                     taskExecutor = Executors.newScheduledThreadPool(threads);
                 
                 context.setAttribute(CONTEXT_ATTR_TASK_MANAGER,taskExecutor);
+            }
+
+            // (13) Email Service
+            if (config.getBoolean(PROP_MAIL_SERVICE_ON, false)) {
+
+                EmailService.initialize(
+                        config.getInt(PROP_MAIL_SERVICE_COREPOOL),
+                        config.getInt(PROP_MAIL_SERVICE_MAXPOOL),
+                        config.getLong(PROP_MAIL_SERVICE_KEEPALIVE)
+                    );
+
+                if (config.getBoolean(PROP_MAIL_DUMMY_MODE,false))
+                    EmailService.enableDummyMode();
+                else
+                    EmailService.disableDummyMode();
+
+                String policy = config.getString(PROP_MAIL_ERROR_POLICY);
+                if (policy != null) {
+                    if (policy.equals(VALUE_MAIL_POLICY_DISCARD)) {
+
+                        EmailService.setErrorPolicy(new EmailService.DiscardPolicy());
+                        
+                    } else if (policy.equals(VALUE_MAIL_POLICY_REQUEUE)) {
+
+                        Priority priority = null;
+                        try {
+                            priority = Priority.valueOf(config.getString(PROP_MAIL_REQUEUE_PRIORITY));
+                        } catch (Exception e) {
+                            log.warn("Error reading requeue policy priority: " + config.getString(PROP_MAIL_REQUEUE_PRIORITY,"") + ", using default");
+                        }
+
+                        if (priority == null)
+                            EmailService.setErrorPolicy(new EmailService.RequeuePolicy());
+                        else
+                            EmailService.setErrorPolicy(new EmailService.RequeuePolicy(priority));
+
+                    } else if (policy.equals(VALUE_MAIL_POLICY_RQAP)) {
+                        
+                        Priority priority = null;
+                        try {
+                            priority = Priority.valueOf(config.getString(PROP_MAIL_RQAP_PRIORITY));
+                        } catch (Exception e) {
+                            log.warn("Error reading requeue-and-pause policy priority: " + config.getString(PROP_MAIL_RQAP_PRIORITY,"") + ", using default");
+                        }
+
+                        String pattern = config.getString(PROP_MAIL_RQAP_INTERVAL,DEFAULT_MAIL_RQAP_INTERVAL);
+                        EmailService.setErrorPolicy(new EmailService.RequeueAndPause(priority, pattern));
+
+                    }
+                }
             }
 
         } catch (ConfigurationException ce) {

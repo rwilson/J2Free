@@ -12,10 +12,10 @@ package org.j2free.util;
  */
 public enum Priority {
 
-    MIN,
-    LOW,
-    DEFAULT,
+    MAX,
     HIGH,
-    MAX
+    DEFAULT,
+    LOW,
+    MIN
             
 }

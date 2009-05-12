@@ -9,15 +9,22 @@ package org.j2free.email;
 
 import java.io.UnsupportedEncodingException;
 
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.mail.AuthenticationFailedException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -28,28 +35,35 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import net.jcip.annotations.ThreadSafe;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.j2free.util.Constants;
 import org.j2free.util.HtmlFilter;
 import org.j2free.util.Pair;
+import org.j2free.util.PausableThreadPoolExecutor;
 import org.j2free.util.Priority;
+import org.j2free.util.PriorityFuture;
 import org.j2free.util.PriorityReference;
 
 /**
+ * A service for sending e-mails that provides support for "instances"
+ * encapsulating session properties, including authorization, as well
+ * as templating and priority queuing of e-mails to send.
  *
- * @author ryan
+ * @author Ryan Wilson
  */
-public class EmailService {
+@ThreadSafe
+public final class EmailService {
     
     private static Log log = LogFactory.getLog(EmailService.class);
     
     private static final String CONTENT_TYPE_PLAIN = "text/plain";
     private static final String CONTENT_TYPE_HTML  = "text/html";
     
-    private static final boolean CC_SENDER = true;
-    private static final boolean NO_CC     = false;
+    private static final boolean NO_CC = false;
 
     private static enum ContentType {
         PLAIN,
@@ -58,10 +72,10 @@ public class EmailService {
     
     /***************************************************************************
      *
-     *  static convenience methods
+     *  static methods
      *
      */
-    
+
     private static final ConcurrentMap<String,EmailService> instances = new ConcurrentHashMap<String,EmailService>();
     
     public static void registerInstance(String key, EmailService em) {
@@ -71,84 +85,318 @@ public class EmailService {
     public static EmailService getInstance(String key) {
         return instances.get(key);
     }
+
+    private static final ReentrantLock lock    = new ReentrantLock();
+    private static final Condition initialized = lock.newCondition();
+
+    private static final AtomicBoolean dummy   = new AtomicBoolean(false);
+
+    private static final AtomicBoolean initing = new AtomicBoolean(false);
+    private static final AtomicBoolean running = new AtomicBoolean(false);
+
+    public static void enableDummyMode() {
+        log.info("Dummy mode enabled...");
+        dummy.set(true);
+    }
+
+    public static void disableDummyMode() {
+        log.info("Dummy mode disabled...");
+        dummy.set(false);
+    }
+    
+    private static volatile PausableThreadPoolExecutor executor;
+
+    public static void initialize() {
+        initialize(
+            Constants.DEFAULT_MAIL_SERVICE_COREPOOL,
+            Constants.DEFAULT_MAIL_SERVICE_MAXPOOL,
+            Constants.DEFAULT_MAIL_SERVICE_KEEPALIVE
+        );
+    }
+
+    /**
+     * Uses non-blocking algorithm to avoid synchronizing.  This isn't really necessary to
+     * be non-blocking, but it was a bit of an exercise in thinking about thread-safe CAS
+     * algorithms and, done right, certainly can't hurt.
+     *
+     * @param corePoolSize @see java.util.concurrent.ThreadPoolExecutor
+     * @param maxPoolSize @see java.util.concurrent.ThreadPoolExecutor
+     * @param threadKeepAlive  @see java.util.concurrent.ThreadPoolExecutor
+     */
+    public static void initialize(int corePoolSize, int maxPoolSize, long threadKeepAlive) {
+
+        if (initing.get() || running.get())
+            return;
+
+        // IF we don't succeed the CAS, just return since another thread must have done
+        // it for us.
+        if (!initing.compareAndSet(false, true))
+            return;
+
+        log.info("Initializing EmailService [core=" + corePoolSize + ",max=" + maxPoolSize + ",keep-alive=" + threadKeepAlive + "]");
+
+        executor = new PausableThreadPoolExecutor(
+                corePoolSize,
+                maxPoolSize,
+                threadKeepAlive,
+                TimeUnit.SECONDS,
+                new PriorityBlockingQueue<Runnable>()
+            );
+
+        running.set(true);
+
+        lock.lock();
+        try {
+            initialized.signalAll();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static void reconfigure(int corePoolSize, int maxPoolSize, long threadKeepAlive, TimeUnit unit) {
+        log.info("Reconfiguring EmailService [core=" + corePoolSize + ",max=" + maxPoolSize + ",keep-alive=" + threadKeepAlive + "]");
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaximumPoolSize(maxPoolSize);
+        executor.setKeepAliveTime(threadKeepAlive, unit);
+    }
+
+    /**
+     * Pauses the <tt>EmailService</tt> executor that actually sends the e-mails.  New messages
+     * will still be accepted, but there is a risk of resource exhaustion if the service
+     * is paused for too long.
+     */
+    public static void pause() {
+        executor.pause();
+        log.info("EmailService paused.");
+    }
+
+    /**
+     * Unpauses the <tt>EmailService</tt> executor to resume sending e-mails.
+     */
+    public static void unpause() {
+        executor.unpause();
+        log.info("EmailService unpaused.");
+    }
+
+    public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+        if (!running.get())
+            throw new IllegalStateException("Illegal call to shutdown when the executor is not running.");
+
+        log.info("EmailService shutting down...");
+        executor.shutdown();
+        return executor.awaitTermination(timeout, unit);
+    }
+
+    public static List<Runnable> shutdownNow() {
+        if (running.get())
+            throw new IllegalStateException("Illegal call to shutdown when the executor is not running.");
+
+        log.info("EmailService shutting down...");
+        return executor.shutdownNow();
+    }
+
+    private static final class EmailSendTask implements Runnable {
+
+        private final PriorityReference<MimeMessage> message;
+
+        public EmailSendTask(PriorityReference<MimeMessage> message) {
+            this.message = message;
+        }
+
+        public void run() {
+            try {
+                
+                MimeMessage mime = message.get();
+
+                if (dummy.get()) {
+                    try {
+                        log.info("Skipping send [dummy=true, priority=" + message.getPriority() + ", subject=" + mime.getSubject() + "]");
+                        return;
+                    } catch(Exception e) { }
+                }
+                
+                Transport.send(mime);
+                
+            } catch (Exception e) {
+                errorPolicy.get().handleException(message,e);
+            }
+        }
+    }
+
+    /**************************************************************************
+     *
+     * Policies for when a send fails
+     *
+     */
+    private static final AtomicReference<ErrorPolicy> errorPolicy = new AtomicReference<ErrorPolicy>(new DiscardPolicy());
+
+    public static void setErrorPolicy(ErrorPolicy policy) {
+        log.info("EmailService configured to use error-policy: " + policy);
+        errorPolicy.set(policy);
+    }
+
+    public static interface ErrorPolicy {
+        public void handleException(PriorityReference<MimeMessage> message, Throwable t);
+    }
+
+    /**
+     * Implements {@link ErrorPolicy} to discard failed messages writing only a message to the log.
+     */
+    public static final class DiscardPolicy implements ErrorPolicy {
+        public void handleException(PriorityReference<MimeMessage> message, Throwable t) {
+            log.error("Error sending e-mail", t);
+        }
+
+        @Override
+        public String toString() {
+            return "Discard";
+        }
+    }
+
+    /**
+     * Implements {@link ErrorPolicy} to requeue the message at the specified {@link Priority}.
+     * 
+     * Note: this policy includes a high risk of livelock if the requeue priority is above default.
+     * The message will be requeued and could ascend immediately to the front of the queue.  If it 
+     * does, and continues to fail, EmailService will make little or no progress on the queue.
+     * 
+     */
+    public static final class RequeuePolicy implements ErrorPolicy {
+
+        private final Priority priority;
+
+        public RequeuePolicy() {
+            this(null);
+        }
+
+        public RequeuePolicy(Priority priority) {
+            this.priority = priority;
+        }
+
+        public void handleException(PriorityReference<MimeMessage> message, Throwable t) {
+
+            log.warn("Error sending message, requeuing...");
+
+            EmailSendTask task = new EmailSendTask(message);
+            PriorityFuture future = new PriorityFuture(Executors.callable(task), priority == null ? message.getPriority() : priority);
+            executor.execute(future);
+        }
+
+        @Override
+        public String toString() {
+            return "Requeue [priority=" + (priority == null ? "original" : priority) + "]";
+        }
+    }
+
+    /**
+     * Implements {@link ErrorPolicy} to requeue the message at the
+     * specified {@link Priority} then pause the executor for the
+     * <tt>interval</tt> amount of {@link TimeUnit}
+     */
+    public static final class RequeueAndPause implements ErrorPolicy {
+
+        private final Priority priority;
+        private final StringBuilder pattern;
+
+        public RequeueAndPause() {
+            this(null, Constants.DEFAULT_MAIL_RQAP_INTERVAL + "s");
+        }
+
+        public RequeueAndPause(Priority priority, String pattern) {
+            this.priority = priority;
+            this.pattern  = new StringBuilder(pattern.trim());
+        }
+
+        public void handleException(PriorityReference<MimeMessage> message, Throwable t) {
+
+            // Pause the executor
+            executor.pause();
+
+            // Requeue the message
+            EmailSendTask task = new EmailSendTask(message);
+            PriorityFuture future = new PriorityFuture(Executors.callable(task), priority == null ? message.getPriority() : priority);
+            executor.execute(future);
+
+            long interval;
+            TimeUnit unit;
+
+            // If it's a straight interval + unit ...
+            if (pattern.toString().matches("\\d+(m|s|h)")) {
+
+                char u = pattern.charAt(pattern.length() - 1);
+                pattern.deleteCharAt(pattern.length() - 1);
+
+                interval = Long.valueOf(pattern.toString());
+
+                switch (u) {
+                    case 's':
+                        unit      = TimeUnit.SECONDS;
+                        break;
+                    case 'm':
+                        unit      = TimeUnit.SECONDS;
+                        interval *= 60;
+                        break;
+                    case 'h':
+                        unit      = TimeUnit.SECONDS;
+                        interval *= 60 * 60;
+                    default:
+                        unit      = TimeUnit.SECONDS;
+                }
+            } else if (pattern.toString().matches("%\\s?60")) {
+
+                // the pattern %60 specifies the remainder of the hour
+                Calendar cal = Calendar.getInstance();
+                interval = (cal.get(Calendar.MINUTE) % 60) * 60;
+                unit     = TimeUnit.SECONDS;
+
+            } else {
+                throw new IllegalStateException("Invalid requeue-and-pause interval pattern!");
+            }
+
+            log.warn("Error sending message, requeuing, then pausing for " + interval + " " + unit);
+            
+            // Schedule a task to unpause the executor
+            ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+            service.schedule(
+                    new Runnable() {
+                        public void run() {
+                            executor.unpause();
+                        }
+                    },
+                    interval,
+                    unit
+                );
+        }
+
+
+        @Override
+        public String toString() {
+            return "RequeueAndPause [priority=" + (priority == null ? "original" : priority) + ", interval=" + pattern + "]";
+        }
+    }
     
     /***************************************************************************
      *
      *  Instance Implementation
      *
      */
-    
+
     private final ConcurrentMap<String,String> templates;
-    private final PriorityBlockingQueue<PriorityReference<MimeMessage>> requests;
+    private final AtomicReference<String> defaultTemplate;
 
-    private AtomicReference<String> defaultTemplate;
-
-    private AtomicBoolean dummy;
-    
-    private Session session;
-
-    /**
-     * Creates a new <code>EmailService</code> using the provided session
-     * setting dummy mode enabled for any RunMode except PRODUCTION.
-     *
-     * @param session The session to use
-     */
-    public EmailService(Session session) {
-        this(session,Constants.RUN_MODE != Constants.RunMode.PRODUCTION);
-    }
+    private final Session session;
 
     /**
      * Creates a new <code>EmailService</code> using the provided session.
      *
      * @param session The session to use
-     * @param dummy If true, dummy mode is enabled, otherwise false.  In dummy mode,
-     *        the EmailService will not attempt to send e-mails and will dump what it would
-     *        have sent to the log instead.
      */
-    public EmailService(Session session, boolean dummy) {
+    public EmailService(Session session) {
+
+        this.session    = session;
+        templates       = new ConcurrentHashMap<String,String>();
+        defaultTemplate = new AtomicReference<String>(Constants.EMPTY);
         
-        this.session = session;
-
-        requests  = new PriorityBlockingQueue<PriorityReference<MimeMessage>>();
-        templates = new ConcurrentHashMap<String,String>();
-        
-        defaultTemplate = new AtomicReference<String>(null);
-        
-        this.dummy = new AtomicBoolean(dummy);
-        
-        Runnable service = new Runnable() {
-            public void run() {
-                try {
-
-                    PriorityReference<MimeMessage> message;
-                    while (true) {
-                        message = requests.take();
-
-                        try {
-                            Transport.send(message.get());
-                        } catch (AuthenticationFailedException afe) {
-                            log.warn("Authentication failed, re-queueing message...");
-                            requests.put(message);
-                        } catch (MessagingException me) {
-
-                        }
-                    }
-
-                } catch (InterruptedException ie) {
-                    log.debug("Emailer service interrupted, re-interrupting to exit...");
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
-        new Thread(service).start();
-    }
-
-    /**
-     *  If dummy mode is enabled, the mailer will not attempt to send any e-mails,
-     *  but instead write to the log what it would have e-mailed.
-     */
-    public void enableDummy() {
-        dummy.set(true);
     }
 
     /**
@@ -172,9 +420,8 @@ public class EmailService {
         log.info("Registering template: " + key + (isDefault ? " [DEFAULT]" : ""));
         templates.put(key,template);
 
-        if (isDefault) {
+        if (isDefault)
             defaultTemplate.set(key);
-        }
     }
 
     /**
@@ -185,9 +432,10 @@ public class EmailService {
      * @param subject The subject of the e-mail
      * @param body The body of the message
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendPlain(Pair<String,String> from, String to, String subject, String body) 
-            throws AddressException, MessagingException {
+            throws AddressException, MessagingException, RejectedExecutionException {
         sendPlain(from,to,subject,body,Priority.DEFAULT,NO_CC);
     }
     
@@ -200,9 +448,10 @@ public class EmailService {
      * @param body The body of the message
      * @param priority The priority this message should take if there are other queued messages
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendPlain(Pair<String,String> from, String to, String subject, String body, Priority priority)
-            throws AddressException, MessagingException {
+            throws AddressException, MessagingException, RejectedExecutionException {
         sendPlain(from,to,subject,body,priority,NO_CC);
     }
 
@@ -216,9 +465,10 @@ public class EmailService {
      * @param priority The priority this message should take if there are other queued messages
      * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendPlain(Pair<String,String> from, String to, String subject, String body, Priority priority, boolean ccSender)
-            throws AddressException, MessagingException {
+            throws AddressException, MessagingException, RejectedExecutionException {
         try {
             send(new InternetAddress(from.getFirst(),from.getSecond()),to,subject,body,ContentType.PLAIN,priority,ccSender);
         } catch (UnsupportedEncodingException uee) {
@@ -234,9 +484,10 @@ public class EmailService {
      * @param subject The subject of the e-mail
      * @param body The body of the message
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendHTML(Pair<String,String> from, String to, String subject, String body) 
-            throws AddressException, MessagingException {
+            throws AddressException, MessagingException, RejectedExecutionException {
         sendHTML(from,to,subject,body,Priority.DEFAULT,NO_CC);
     }
 
@@ -249,9 +500,10 @@ public class EmailService {
      * @param body The body of the message
      * @param priority The priority this message should take if there are other queued messages
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendHTML(Pair<String,String> from, String to, String subject, String body, Priority priority)
-            throws AddressException, MessagingException {
+            throws AddressException, MessagingException, RejectedExecutionException {
         sendHTML(from,to,subject,body,priority,NO_CC);
     }
 
@@ -265,9 +517,10 @@ public class EmailService {
      * @param priority The priority this message should take if there are other queued messages
      * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendHTML(Pair<String,String> from, String to, String subject, String body, Priority priority, boolean ccSender)
-            throws AddressException, MessagingException {
+            throws AddressException, MessagingException, RejectedExecutionException {
         try {
             send(new InternetAddress(from.getFirst(),from.getSecond()),to,subject,body,ContentType.HTML,priority,ccSender);
         } catch (UnsupportedEncodingException uee) {
@@ -284,10 +537,11 @@ public class EmailService {
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new Pair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
      * @throws javax.mail.IllegalArgumentException if the default template has not been set
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(Pair<String,String> from, String to, String subject, Pair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException {
-        sendTemplate(from,to,subject,defaultTemplate.get(),Priority.DEFAULT,NO_CC,params);
+            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+        sendTemplate(from,to,subject,null,Priority.DEFAULT,NO_CC,params);
     }
 
     /**
@@ -300,10 +554,11 @@ public class EmailService {
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new Pair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
      * @throws javax.mail.IllegalArgumentException if the default template has not been set
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(Pair<String,String> from, String to, String subject, Priority priority, Pair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException {
-        sendTemplate(from,to,subject,defaultTemplate.get(),priority,NO_CC,params);
+            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+        sendTemplate(from,to,subject,null,priority,NO_CC,params);
     }
 
     /**
@@ -316,9 +571,10 @@ public class EmailService {
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new Pair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
      * @throws javax.mail.IllegalArgumentException if the template does not exist
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(Pair<String,String> from, String to, String subject, String templateKey, Pair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException {
+            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
         sendTemplate(from,to,subject,templateKey,Priority.DEFAULT,NO_CC,params);
     }
 
@@ -333,9 +589,10 @@ public class EmailService {
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new Pair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
      * @throws javax.mail.IllegalArgumentException if the template does not exist
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(Pair<String,String> from, String to, String subject, String templateKey, Priority priority, Pair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException {
+            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
         sendTemplate(from,to,subject,templateKey,priority,NO_CC,params);
     }
 
@@ -350,10 +607,11 @@ public class EmailService {
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new Pair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
      * @throws javax.mail.IllegalArgumentException if the default template has not been set
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(Pair<String,String> from, String to, String subject, Priority priority, boolean ccSender, Pair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException {
-        sendTemplate(from,to,subject,defaultTemplate.get(),priority, ccSender,params);
+            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+        sendTemplate(from,to,subject,null,priority, ccSender,params);
     }
 
     /**
@@ -368,10 +626,17 @@ public class EmailService {
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new Pair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
      * @throws javax.mail.IllegalArgumentException if the template does not exist
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(Pair<String,String> from, String to, String subject, String templateKey, Priority priority, boolean ccSender, Pair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException {
-        
+            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+
+        if (templateKey == null)
+            templateKey = defaultTemplate.get();
+
+        if (templateKey == null)
+            throw new IllegalArgumentException("Template argument null but no default template is set!");
+
         String body = templates.get(templateKey);
 
         if (body == null)
@@ -388,15 +653,8 @@ public class EmailService {
     }
 
     private void send(InternetAddress from, String recipients, String subject, String body, ContentType contentType, Priority priority, boolean ccSender)
-            throws AddressException, MessagingException {
-        
-        if (dummy.get()) {
-            try {
-                log.info("Skipping sending e-mail, dummy mode on. Would have sent: ['from:'" + from.getAddress() + "','subject':'" + subject + "','body':'" + body + "','ccSender':'" + ccSender + "','contentType':'" + contentType + "']");
-            } catch(Exception e) { }
-            return;
-        }
-        
+            throws AddressException, MessagingException, RejectedExecutionException {
+
         MimeMessage message = new MimeMessage(session);
         message.setFrom(from);
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients, false));
@@ -436,7 +694,22 @@ public class EmailService {
 
         }
 
-        requests.offer(new PriorityReference(message,priority));
+        EmailSendTask task    = new EmailSendTask(new PriorityReference<MimeMessage>(message, priority));
+        PriorityFuture future = new PriorityFuture(Executors.callable(task), priority);
+
+        // Do this way down here to give another thread the chance to finishing initializing the executor
+        if (!running.get())
+            throw new IllegalStateException("EmailService has not been initialized!");
+
+        // This will let these threads wait until the executor is initialized since it might be in the process
+        lock.lock();
+        try {
+            while (executor == null)
+                initialized.awaitUninterruptibly();
+        } finally {
+            lock.unlock();
+        }
+        
+        executor.execute(future);
     }
-    
 }

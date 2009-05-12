@@ -5,8 +5,6 @@
  */
 package org.j2free.util;
 
-import org.j2free.util.Priority;
-
 /**
  * A generic reference, capable of associating an element
  * with a priority. Designed specifically for using
@@ -22,7 +20,7 @@ public class PriorityReference<E> implements Comparable<PriorityReference<E>> {
     private final E        element;
 
     public PriorityReference(E element) {
-        this(element,Priority.DEFAULT);
+        this(element, Priority.DEFAULT);
     }
 
     public PriorityReference(E element, Priority priority) {
@@ -32,6 +30,10 @@ public class PriorityReference<E> implements Comparable<PriorityReference<E>> {
 
     public E get() {
         return element;
+    }
+
+    public Priority getPriority() {
+        return priority;
     }
 
     public int compareTo(PriorityReference<E> other) {
