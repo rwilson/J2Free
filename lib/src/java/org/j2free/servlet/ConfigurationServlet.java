@@ -205,7 +205,10 @@ public class ConfigurationServlet extends HttpServlet {
 
             // (10) Fragment Cache Configuration
             boolean cacheEnabled = config.getBoolean(PROP_FRAGMENT_CACHE_ON);
-            FragmentCache.ENABLED.set(cacheEnabled);
+            if (cacheEnabled) {
+                log.debug("Enabling fragment cache...");
+                FragmentCache.enabled.set(cacheEnabled);
+            }
 
             // This is expected to be in seconds
             long temp = config.getLong(PROP_FRAGMENT_REQUEST_TIMEOUT,-1l);
