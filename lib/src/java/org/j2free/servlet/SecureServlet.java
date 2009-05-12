@@ -16,6 +16,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
@@ -24,6 +27,8 @@ import static org.j2free.util.Constants.*;
  */
 public class SecureServlet extends HttpServlet {
 
+    private static final Log log = LogFactory.getLog(SecureServlet.class);
+
     public static final AtomicReference<String> path = new AtomicReference(EMPTY);
 
     @Override
@@ -31,11 +36,11 @@ public class SecureServlet extends HttpServlet {
         throws ServletException, IOException {
         
         String uri = request.getRequestURI();
-        
+
         if (empty(uri)) {
             response.sendRedirect("/");
         } else {
-            response.sendRedirect(uri.replaceFirst(path.get(),""));
+            response.sendRedirect(uri.replaceFirst(path.get(),EMPTY));
         }
         
     }

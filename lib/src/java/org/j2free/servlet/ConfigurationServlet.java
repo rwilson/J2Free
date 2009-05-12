@@ -191,7 +191,10 @@ public class ConfigurationServlet extends HttpServlet {
             // (8) SecureServlet
             if (config.getBoolean(PROP_SERVLET_SECURE_ON,false)) {
                 addServletMapping(config, PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH, SecureServlet.class);
-                SecureServlet.path.set(config.getString(PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH));
+                String path = config.getString(PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH);
+                path = path.substring(0,path.lastIndexOf("/"));
+                log.debug("Setting SecureServlet to redirect to URI - [path=" + path + "]");
+                SecureServlet.path.set(path);
             }
 
             // (9) Admin Servlet
