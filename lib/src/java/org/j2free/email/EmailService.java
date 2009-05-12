@@ -22,9 +22,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -235,6 +235,21 @@ public final class EmailService {
         errorPolicy.set(policy);
     }
 
+    /**
+     * Requeues the message.  If <tt>priority</tt> is null, at the original priority,
+     * otherwise at <tt>priority</tt>.
+     *
+     * This method is exposed to allow subclasses of {@link ErrorPolicy} to requeue a message
+     * without direct access to the executor or the prive {@link EmailSendTask}
+     *
+     * @param message
+     */
+    public static void requeue(PriorityReference<MimeMessage> message, Priority priority) {
+        EmailSendTask task    = new EmailSendTask(message);
+        PriorityFuture future = new PriorityFuture(Executors.callable(task), priority == null ? message.getPriority() : priority);
+        executor.execute(future);
+    }
+
     public static interface ErrorPolicy {
         public void handleException(PriorityReference<MimeMessage> message, Throwable t);
     }
@@ -274,12 +289,8 @@ public final class EmailService {
         }
 
         public void handleException(PriorityReference<MimeMessage> message, Throwable t) {
-
             log.warn("Error sending message, requeuing...");
-
-            EmailSendTask task = new EmailSendTask(message);
-            PriorityFuture future = new PriorityFuture(Executors.callable(task), priority == null ? message.getPriority() : priority);
-            executor.execute(future);
+            EmailService.requeue(message, priority);
         }
 
         @Override
@@ -296,15 +307,17 @@ public final class EmailService {
     public static final class RequeueAndPause implements ErrorPolicy {
 
         private final Priority priority;
-        private final StringBuilder pattern;
+        private final long     interval;
+        private final TimeUnit unit;
 
         public RequeueAndPause() {
-            this(null, Constants.DEFAULT_MAIL_RQAP_INTERVAL + "s");
+            this(null, Constants.DEFAULT_MAIL_RQAP_INTERVAL,TimeUnit.SECONDS);
         }
 
-        public RequeueAndPause(Priority priority, String pattern) {
+        public RequeueAndPause(Priority priority, long interval, TimeUnit unit) {
             this.priority = priority;
-            this.pattern  = new StringBuilder(pattern.trim());
+            this.interval = interval;
+            this.unit     = unit;
         }
 
         public void handleException(PriorityReference<MimeMessage> message, Throwable t) {
@@ -313,45 +326,7 @@ public final class EmailService {
             executor.pause();
 
             // Requeue the message
-            EmailSendTask task = new EmailSendTask(message);
-            PriorityFuture future = new PriorityFuture(Executors.callable(task), priority == null ? message.getPriority() : priority);
-            executor.execute(future);
-
-            long interval;
-            TimeUnit unit;
-
-            // If it's a straight interval + unit ...
-            if (pattern.toString().matches("\\d+(m|s|h)")) {
-
-                char u = pattern.charAt(pattern.length() - 1);
-                pattern.deleteCharAt(pattern.length() - 1);
-
-                interval = Long.valueOf(pattern.toString());
-
-                switch (u) {
-                    case 's':
-                        unit      = TimeUnit.SECONDS;
-                        break;
-                    case 'm':
-                        unit      = TimeUnit.SECONDS;
-                        interval *= 60;
-                        break;
-                    case 'h':
-                        unit      = TimeUnit.SECONDS;
-                        interval *= 60 * 60;
-                    default:
-                        unit      = TimeUnit.SECONDS;
-                }
-            } else if (pattern.toString().matches("%\\s?60")) {
-
-                // the pattern %60 specifies the remainder of the hour
-                Calendar cal = Calendar.getInstance();
-                interval = (cal.get(Calendar.MINUTE) % 60) * 60;
-                unit     = TimeUnit.SECONDS;
-
-            } else {
-                throw new IllegalStateException("Invalid requeue-and-pause interval pattern!");
-            }
+            EmailService.requeue(message, priority);
 
             log.warn("Error sending message, requeuing, then pausing for " + interval + " " + unit);
             
@@ -371,7 +346,7 @@ public final class EmailService {
 
         @Override
         public String toString() {
-            return "RequeueAndPause [priority=" + (priority == null ? "original" : priority) + ", interval=" + pattern + "]";
+            return "RequeueAndPause [priority=" + (priority == null ? "original" : priority) + ", interval=" + interval + ", unit=" + unit + "]";
         }
     }
     

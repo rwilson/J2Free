@@ -121,7 +121,7 @@ public class Constants {
     public static final int  DEFAULT_MAIL_SERVICE_COREPOOL    = DEFAULT_MAIL_SERVICE_MAXPOOL / 2;
     public static final long DEFAULT_MAIL_SERVICE_KEEPALIVE   = 180;
 
-    public static final String DEFAULT_MAIL_RQAP_INTERVAL     = "5m";
+    public static final long DEFAULT_MAIL_RQAP_INTERVAL       = 5 * 60;
 
     // Servlet defaults
     // Can use , to separate multiple paths
