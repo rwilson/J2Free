@@ -9,7 +9,6 @@ package org.j2free.email;
 
 import java.io.UnsupportedEncodingException;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -168,6 +167,13 @@ public final class EmailService {
     public static void pause() {
         executor.pause();
         log.info("EmailService paused.");
+    }
+
+    /**
+     * @return true if the <tt>EmailService</tt> is paused, otherwise false
+     */
+    public static boolean isPaused() {
+        return executor.isPaused();
     }
 
     /**
