@@ -276,8 +276,8 @@ public class ConfigurationServlet extends HttpServlet {
                             log.warn("Error reading requeue-and-pause policy priority: " + config.getString(PROP_MAIL_RQAP_PRIORITY,"") + ", using default");
                         }
 
-                        String pattern = config.getString(PROP_MAIL_RQAP_INTERVAL,DEFAULT_MAIL_RQAP_INTERVAL);
-                        EmailService.setErrorPolicy(new EmailService.RequeueAndPause(priority, pattern));
+                        interval = config.getLong(PROP_MAIL_RQAP_INTERVAL,DEFAULT_MAIL_RQAP_INTERVAL);
+                        EmailService.setErrorPolicy(new EmailService.RequeueAndPause(priority, interval, TimeUnit.SECONDS));
 
                     }
                 }
