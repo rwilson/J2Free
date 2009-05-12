@@ -453,7 +453,12 @@ public class InvokerFilter implements Filter {
      * @return true if the servlet was mapped to the path, false if another servlet was already mapped to that path
      */
     public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass) {
+
         log.debug("Mapping servlet " + klass.getName() + " to path " + path);
+        
+        if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
+            path = path.replaceAll("\\*","");
+        
         return urlMap.putIfAbsent(path, klass);
     }
 }
