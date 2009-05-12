@@ -24,7 +24,7 @@ import static org.j2free.util.Constants.*;
  */
 public class SecureServlet extends HttpServlet {
 
-    public final AtomicReference<String> path = new AtomicReference(EMPTY);
+    public static final AtomicReference<String> path = new AtomicReference(EMPTY);
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response)

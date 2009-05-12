@@ -189,8 +189,10 @@ public class ConfigurationServlet extends HttpServlet {
                 addServletMapping(config, PROP_SERVLET_PROXY_PATH, DEFAULT_PROXY_PATH, ProxyServlet.class);
 
             // (8) SecureServlet
-            if (config.getBoolean(PROP_SERVLET_SECURE_ON,false))
+            if (config.getBoolean(PROP_SERVLET_SECURE_ON,false)) {
                 addServletMapping(config, PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH, SecureServlet.class);
+                SecureServlet.path.set(config.getString(PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH));
+            }
 
             // (9) Admin Servlet
             if (config.getBoolean(PROP_SERVLET_ADMIN_ON,false))
