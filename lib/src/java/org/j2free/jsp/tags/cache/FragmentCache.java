@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
@@ -49,7 +48,7 @@ public class FragmentCache extends BodyTagSupport {
 
     public static final AtomicLong WARNING_COMPUTE_DURATION = new AtomicLong(10000);
 
-    public static final AtomicBoolean ENABLED = new AtomicBoolean(false);
+    public static final AtomicBoolean enabled = new AtomicBoolean(false);
 
     // This is the max amount of time a thread will wait() on another thread
     // that is currently updating the Fragment.  If the updating thread does
@@ -130,7 +129,8 @@ public class FragmentCache extends BodyTagSupport {
 
         start = System.currentTimeMillis();
 
-        disable = ENABLED.get();
+        // If the cache isn't enabled, make sure disable is set
+        disable |= !enabled.get();
 
         // If the tag isn't set to disable, check for other things that might disable this ...
         if (!disable) {
