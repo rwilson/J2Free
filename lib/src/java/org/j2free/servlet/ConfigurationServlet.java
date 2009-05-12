@@ -171,6 +171,8 @@ public class ConfigurationServlet extends HttpServlet {
                 String staticJspDir  = config == null ? DEFAULT_STATICJSP_DIR : config.getString(PROP_STATICJSP_DIR,DEFAULT_STATICJSP_DIR);
                 String staticJspPath = config == null ? DEFAULT_STATICJSP_PATH : config.getString(PROP_STATICJSP_PATH,DEFAULT_STATICJSP_PATH);
 
+                StaticJspServlet.directory.set(staticJspDir);
+
                 Set<String> staticJsps = context.getResourcePaths(staticJspDir);
                 if (staticJsps != null && !staticJsps.isEmpty()) {
                     for (String jsp : staticJsps) {
