@@ -5,6 +5,7 @@
  */
 package org.j2free.servlet;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -18,6 +19,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
+import net.spy.memcached.AddrUtil;
+import net.spy.memcached.MemcachedClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -55,6 +58,7 @@ import static org.j2free.util.Constants.*;
  *  - <tt>FragmentCache</tt>
  *  - <tt>FragmentCleaner</tt>
  *  - <tt>Task ScheduledExecutorService</tt>
+ *  - <tt>Spymemcached</tt>
  *
  * Lacking a <tt>Configuration</tt> default values will be used, and
  * the above items will not be initialized.
@@ -65,12 +69,12 @@ import static org.j2free.util.Constants.*;
  * extended class set to &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
  * and override the init method. The overriding class can take advantage
  * of the <tt>ConfigurationServlet</tt> functionality by calling:
- * <code>
+ * <pre>
  *  public void init() throws ServletException {
  *      super.init();
  *      ...
  *  }
- * </code>
+ * </pre>
  *
  * Finally, this method of configuration can be ignore entirely by
  * removing the <tt>servlet-mapping</tt>.
@@ -284,6 +288,22 @@ public class ConfigurationServlet extends HttpServlet {
                         interval = config.getLong(PROP_MAIL_RQAP_INTERVAL,DEFAULT_MAIL_RQAP_INTERVAL);
                         EmailService.setErrorPolicy(new EmailService.RequeueAndPause(priority, interval, TimeUnit.SECONDS));
 
+                    }
+                }
+            }
+
+            // (14) Spymemcached Client
+            if (config.getBoolean(PROP_SPYMEMCACHED_ON,false)) {
+                String addresses = config.getString(PROP_SPYMEMCACHED_ADDRESSES);
+                if (addresses == null) {
+                    log.error("Error configuring spymemcached; enabled but no addresses!");
+                } else {
+                    try {
+                        MemcachedClient client = new MemcachedClient(AddrUtil.getAddresses(addresses));
+                        context.setAttribute(CONTEXT_ATTR_SPYMEMCACHED, client);
+                        log.info("Spymemcached client created, connected to " + addresses);
+                    } catch (IOException ioe) {
+                        log.error("Error creating memcached client [addresses=" + addresses + "]", ioe);
                     }
                 }
             }
