@@ -32,6 +32,7 @@ import org.j2free.email.EmailService;
 import org.j2free.jsp.tags.cache.FragmentCache;
 import org.j2free.servlet.filter.InvokerFilter;
 
+import org.j2free.util.Global;
 import org.j2free.util.Priority;
 import static org.j2free.util.Constants.*;
 
@@ -122,7 +123,8 @@ public class ConfigurationServlet extends HttpServlet {
         try {
             
             Configuration config = new PropertiesConfiguration(configPath);
-            context.setAttribute(CONTEXT_ATTR_CONFIG,config);
+            context.setAttribute(CONTEXT_ATTR_CONFIG, config);
+            Global.put(CONTEXT_ATTR_CONFIG, config);
 
             // Anything with the value "localhost" will be set to the IP if possible
             String localhost = "localhost";
@@ -240,6 +242,7 @@ public class ConfigurationServlet extends HttpServlet {
                     taskExecutor = Executors.newScheduledThreadPool(threads);
                 
                 context.setAttribute(CONTEXT_ATTR_TASK_MANAGER,taskExecutor);
+                Global.put(CONTEXT_ATTR_TASK_MANAGER, taskExecutor);
             }
 
             // (13) Email Service
@@ -301,6 +304,7 @@ public class ConfigurationServlet extends HttpServlet {
                     try {
                         MemcachedClient client = new MemcachedClient(AddrUtil.getAddresses(addresses));
                         context.setAttribute(CONTEXT_ATTR_SPYMEMCACHED, client);
+                        Global.put(CONTEXT_ATTR_SPYMEMCACHED, client);
                         log.info("Spymemcached client created, connected to " + addresses);
                     } catch (IOException ioe) {
                         log.error("Error creating memcached client [addresses=" + addresses + "]", ioe);
