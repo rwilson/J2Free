@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.URL;
 
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -48,10 +49,6 @@ public class InvokerFilter implements Filter {
 
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
 
-    private static final String ATTR_STATIC_JSP_DIR    = "static-jsp-dir";
-    private static final String ATTR_CONTROLLER_CLASS  = "controller-class";
-    private static final String ATTR_KNOWN_STATIC_PATH = "static-path-regex";
-
     private static class Static extends HttpServlet { }
 
     /* Ignored User-Agents
@@ -71,7 +68,7 @@ public class InvokerFilter implements Filter {
     private static final String IGNORED_AGENTS =
                                 ".*?(" +
                                 "(spider|robot|bot)\\.[a-z]*?|" +
-                                "panscient\\.com|" +
+                                "panscient|" +
                                 "Googlebot|" +
                                 "nutchsearch|" +
                                 "Yahoo! Slurp|" +
@@ -79,13 +76,8 @@ public class InvokerFilter implements Filter {
                                 "Ask Jeeves/Teoma|" +
                                 "msnbot|" +
                                 "Twiceler|" +
-                                "attributor\\.com|" +
+                                "attributor|" +
                                 ").*?";
-
-    // The filter configuration object we are associated with.  If
-    // this value is null, this filter instance is not currently
-    // configured.
-    private FilterConfig filterConfig = null;
 
     private static final AtomicBoolean benchmark                     = new AtomicBoolean(false);
     
@@ -102,6 +94,11 @@ public class InvokerFilter implements Filter {
 
     private static final CountDownLatch latch   = new CountDownLatch(1);
     private static final AtomicBoolean  enabled = new AtomicBoolean(false);
+
+    // The filter configuration object we are associated with.  If
+    // this value is null, this filter instance is not currently
+    // configured.
+    private FilterConfig filterConfig = null;
 
     /**
      *
@@ -267,6 +264,28 @@ public class InvokerFilter implements Filter {
 
                 try {
 
+                    // This is a hack to create a servlet config to
+                    // properly initialize the servlet.
+                    final String className = klass.getSimpleName();
+                    ServletConfig servletConfig = new ServletConfig() {
+
+                        public String getServletName() {
+                            return className;
+                        }
+
+                        public ServletContext getServletContext() {
+                            return filterConfig.getServletContext();
+                        }
+
+                        public String getInitParameter(String arg0) {
+                            return null;
+                        }
+
+                        public Enumeration getInitParameterNames() {
+                            return null;
+                        }
+                    };
+
                     if (klass.getSuperclass() == ControllerServlet.class) {
 
                         if (controllerClassName.get().equals(EMPTY)) {
@@ -278,6 +297,7 @@ public class InvokerFilter implements Filter {
                         if (log.isDebugEnabled()) log.debug("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
 
                         ControllerServlet servlet = (ControllerServlet) klass.newInstance();
+                        servlet.init(servletConfig);
 
                         find = System.currentTimeMillis();
 
@@ -300,6 +320,7 @@ public class InvokerFilter implements Filter {
                         if (log.isDebugEnabled()) log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
 
                         HttpServlet servlet = (HttpServlet) klass.newInstance();
+                        servlet.init(servletConfig);
 
                         find = System.currentTimeMillis();
                         servlet.service(request, response);
@@ -311,21 +332,22 @@ public class InvokerFilter implements Filter {
 
                     run = System.currentTimeMillis();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Error servicing " + currentPath, e);
-
-                    String userAgent = request.getHeader("User-Agent");
-                    if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
-                        /*
-                        Emailer mailer = Emailer.getInstance();
-                        String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
-                        try {
-                        mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
-                        } catch (Exception e0) {
-                        log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
-                        }
-                         */
+                    if (RUN_MODE.compareTo(RunMode.PRODUCTION) < 1) {
                         log.error("Error servicing " + currentPath, e);
+                    } else {
+                        String userAgent = request.getHeader("User-Agent");
+                        if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
+                            /*
+                            Emailer mailer = Emailer.getInstance();
+                            String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
+                            try {
+                            mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
+                            } catch (Exception e0) {
+                            log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
+                            }
+                             */
+                            log.error("Error servicing " + currentPath, e);
+                        }
                     }
                 }
             }
@@ -367,7 +389,6 @@ public class InvokerFilter implements Filter {
     public void init(FilterConfig filterConfig) {
         this.filterConfig = filterConfig;
     }
-
 
     public static void enable(String bypass, String controllerClass, boolean doBenchmark) {
 
