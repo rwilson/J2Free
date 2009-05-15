@@ -596,7 +596,7 @@ public class Controller {
             }
         }
         try {
-            return (T) query.getSingleResult();
+            return (T) query.setMaxResults(1).getSingleResult();
         } catch (NoResultException nre) {
             return null;
         }
