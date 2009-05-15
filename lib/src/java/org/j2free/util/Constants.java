@@ -39,10 +39,13 @@ public class Constants {
     // run mode
     public static volatile RunMode RUN_MODE = RunMode.PRODUCTION;
 
+    // Context init-params
+    public static final String CONTEXT_ATTR_CONFIG_PATH  = "config-file";
+
     // Context attributes
     public static final String CONTEXT_ATTR_CONFIG       = "j2free-config";
-    public static final String CONTEXT_ATTR_CONFIG_PATH  = "config-file";
-    public static final String CONTEXT_ATTR_TASK_MANAGER = "task-manager";
+    public static final String CONTEXT_ATTR_TASK_MANAGER = "j2free-task-manager";
+    public static final String CONTEXT_ATTR_SPYMEMCACHED = "j2free-spymemcached-client";
 
     // Useful constants
     public static final byte NULL_BYTE   = 0x0;
@@ -93,6 +96,10 @@ public class Constants {
     public static final String PROP_FRAGMENT_REQUEST_TIMEOUT  = "fragment.cache.request.timeout"; // In Seconds
     public static final String PROP_FRAGMENT_WARNING_DURATION = "fragment.cache.warning.duration"; // In Seconds
     public static final String PROP_FRAGMENT_CLEANER_INTERVAL = "fragment.cleaner.interval"; // In Seconds
+
+    // Spymemcached Config
+    public static final String PROP_SPYMEMCACHED_ON           = "spymemcached.enabled";
+    public static final String PROP_SPYMEMCACHED_ADDRESSES    = "spymemcached.addresses";
 
     // Servlet Config
     public static final String PROP_STATICJSP_ON              = "servlet.static-jsp.enabled";
