@@ -219,15 +219,15 @@ public class Controller {
         return em.createNativeQuery(query);
     }
 
-    public <T extends Object> T findPrimaryKey(Class<T> entityClass, Object entityId) {
+    public <T> T findPrimaryKey(Class<T> entityClass, Object entityId) {
         return (T) em.find(entityClass, entityId);
     }
 
-    public <T extends Object> List<T> list(Class<T> entityClass) {
+    public <T> List<T> list(Class<T> entityClass) {
         return list(entityClass, -1, -1);
     }
 
-    public <T extends Object> List<T> list(Class<T> entityClass, int start, int limit) {
+    public <T> List<T> list(Class<T> entityClass, int start, int limit) {
         Query query = em.createQuery("SELECT e FROM " + entityClass.getSimpleName() + " e");
 
         if (start > 0) {
@@ -240,7 +240,7 @@ public class Controller {
         return (List<T>) query.getResultList();
     }
 
-    public <T extends Object> int count(Class<T> entityClass) {
+    public <T> int count(Class<T> entityClass) {
 
         Object o = null;
 
@@ -256,7 +256,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> int count(Query query, Pair<String, ? extends Object>... parameters) {
+    public <T> int count(Query query, Pair<String, ? extends Object>... parameters) {
         int count = -1;
         Object o = null;
         if (parameters != null) {
@@ -277,25 +277,25 @@ public class Controller {
         return count(em.createQuery(queryString), parameters);
     }
 
-    public <T extends Object> int namedCount(Class<T> entityClass, String namedQuery,
+    public <T> int namedCount(Class<T> entityClass, String namedQuery,
                                              Pair<String, ? extends Object>... parameters) {
         return count(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), parameters);
     }
 
-    public <T extends Object> T proxy(Class<T> entityClass, Object entityId) {
+    public <T> T proxy(Class<T> entityClass, Object entityId) {
         return (T) em.getReference(entityClass, entityId);
     }
 
-    public <T extends Object> T merge(T entity) {
+    public <T> T merge(T entity) {
         entity = (T) em.merge(entity);
         return entity;
     }
 
-    public <T extends Object> void refresh(T entity) {
+    public <T> void refresh(T entity) {
         em.refresh(entity);
     }
 
-    public <T extends Object> void remove(Class<T> entityClass, Object entityId) {
+    public <T> void remove(Class<T> entityClass, Object entityId) {
         T entity = (T) findPrimaryKey(entityClass, entityId);
 
         if (entity == null)
@@ -304,7 +304,7 @@ public class Controller {
         em.remove(entity);
     }
 
-    public <T extends Object> void remove(T entity) {
+    public <T> void remove(T entity) {
 
         if (entity == null)
             throw new IllegalStateException("Cannot remove null entity!");
@@ -312,11 +312,11 @@ public class Controller {
         em.remove(entity);
     }
 
-    public <T extends Object> T persist(T entity) {
+    public <T> T persist(T entity) {
         return persist(entity, false);
     }
 
-    public <T extends Object> T persist(T entity, boolean flush) {
+    public <T> T persist(T entity, boolean flush) {
         try {
             em.persist(entity);
 
@@ -397,7 +397,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> List<T> listByCriterions(Class<T> entityClass, Object... criteria) {
+    public <T> List<T> listByCriterions(Class<T> entityClass, Object... criteria) {
         return listByCriterions(entityClass, -1, -1, criteria);
     }
 
@@ -413,7 +413,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> List<T> listByCriterions(Class<T> entityClass, int numResults, Object... criteria) {
+    public <T> List<T> listByCriterions(Class<T> entityClass, int numResults, Object... criteria) {
         return listByCriterions(entityClass, 0, numResults, criteria);
     }
 
@@ -429,7 +429,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> List<T> listByCriterions(Class<T> entityClass, int firstResult, int numResults,
+    public <T> List<T> listByCriterions(Class<T> entityClass, int firstResult, int numResults,
                                                        Object... criteria) {
         try {
             Criteria search = getSession().createCriteria(entityClass);
@@ -460,7 +460,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> List<T> listByCriterea(Class<T> entityClass, int firstResult, int numResults,
+    public <T> List<T> listByCriterea(Class<T> entityClass, int firstResult, int numResults,
                                                      Criteria criteria) {
         if (firstResult > 0) {
             criteria.setFirstResult(firstResult);
@@ -478,7 +478,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> List<T> listByCriteria(Class<T> entityClass, Criteria criteria) {
+    public <T> List<T> listByCriteria(Class<T> entityClass, Criteria criteria) {
         try {
             return (List<T>) criteria.list();
         } catch (NoResultException e) {
@@ -498,7 +498,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> T findByCriterion(Class<T> entityClass, Object... criteria) {
+    public <T> T findByCriterion(Class<T> entityClass, Object... criteria) {
         try {
             Criteria search = getSession().createCriteria(entityClass);
             for (Object c : criteria) {
@@ -524,7 +524,7 @@ public class Controller {
      * See for more examples:
      * http://www.hibernate.org/hib_docs/reference/en/html/querycriteria.html#queryByFormula-criteria-naturalid
      */
-    public <T extends Object> T findNaturalId(Class<T> entityClass, NaturalIdentifier naturalId) {
+    public <T> T findNaturalId(Class<T> entityClass, NaturalIdentifier naturalId) {
         try {
             return (T) (getSession().createCriteria(entityClass).add(naturalId).setCacheable(true).uniqueResult());
         } catch (NoResultException e) {
@@ -544,7 +544,7 @@ public class Controller {
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
      **/
-    public <T extends Object> int count(Class<T> entityClass, Object... criteria) {
+    public <T> int count(Class<T> entityClass, Object... criteria) {
         try {
             Criteria search = getSession().createCriteria(entityClass);
             for (Object c : criteria) {
@@ -559,7 +559,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> List<T> listByExample(T exampleInstance, String... excludeProperties) {
+    public <T> List<T> listByExample(T exampleInstance, String... excludeProperties) {
         try {
             Example example = Example.create(exampleInstance);
             for (String prop : excludeProperties) {
@@ -572,7 +572,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> List<T> listByExample(Class<T> entityClass, Example example) {
+    public <T> List<T> listByExample(Class<T> entityClass, Example example) {
         try {
             return (List<T>) getSession().createCriteria(entityClass).add(example).list();
         } catch (NoResultException e) {
@@ -580,16 +580,16 @@ public class Controller {
         }
     }
 
-    public <T extends Object> T queryByFormula(QueryFormula formula) {
+    public <T> T queryByFormula(QueryFormula formula) {
         return (T) query(em.createQuery(formula.getQuery()), formula.getParametersAsPairArray());
     }
 
-    public <T extends Object> T query(String queryString, Pair<String, ? extends Object>... parameters) {
+    public <T> T query(String queryString, Pair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return (T) query(query, parameters);
     }
 
-    public <T extends Object> T query(Query query, Pair<String, ? extends Object>... parameters) {
+    public <T> T query(Query query, Pair<String, ? extends Object>... parameters) {
         if (parameters != null) {
             for (Pair<String, ? extends Object> parameter : parameters) {
                 query.setParameter(parameter.getFirst(), parameter.getSecond());
@@ -602,7 +602,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> T query(Class<T> entityClass, String queryString,
+    public <T> T query(Class<T> entityClass, String queryString,
                                       Pair<String, ? extends Object>... parameters) {
         try {
             return (T) query(em.createQuery(queryString), parameters);
@@ -611,7 +611,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> T namedQuery(Class<T> entityClass, String namedQuery,
+    public <T> T namedQuery(Class<T> entityClass, String namedQuery,
                                            Pair<String, ? extends Object>... parameters) {
         try {
             return (T) query(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), parameters);
@@ -620,7 +620,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> T namedScaler(Class<T> returnClass, String namedQuery,
+    public <T> T namedScaler(Class<T> returnClass, String namedQuery,
                                             Pair<String, ? extends Object>... parameters) {
         try {
             return (T) query(em.createNamedQuery(namedQuery), parameters);
@@ -629,21 +629,21 @@ public class Controller {
         }
     }
 
-    public <T extends Object> List<T> list(String queryString, Pair<String, ? extends Object>... parameters) {
+    public <T> List<T> list(String queryString, Pair<String, ? extends Object>... parameters) {
         return (List<T>) list(queryString, 0, -1, parameters);
     }
 
-    public <T extends Object> List<T> list(String queryString, int start, int limit,
+    public <T> List<T> list(String queryString, int start, int limit,
                                            Pair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return (List<T>) list(query, start, limit, parameters);
     }
 
-    public <T extends Object> List<T> list(Query query, Pair<String, ? extends Object>... parameters) {
+    public <T> List<T> list(Query query, Pair<String, ? extends Object>... parameters) {
         return (List<T>) list(query, 0, -1, parameters);
     }
 
-    public <T extends Object> List<T> list(Query query, int start, int limit,
+    public <T> List<T> list(Query query, int start, int limit,
                                            Pair<String, ? extends Object>... parameters) {
         if (parameters != null) {
             for (Pair<String, ? extends Object> parameter : parameters) {
@@ -713,7 +713,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> List<T> nativeList(Class<T> entityClass, String queryString,
+    public <T> List<T> nativeList(Class<T> entityClass, String queryString,
                                                  Pair<String, ? extends Object>... parameters) {
 
         Session session = getSession();
@@ -733,7 +733,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> List<T> nativeScalerList(Class<T> scalarType, String queryString,
+    public <T> List<T> nativeScalerList(Class<T> scalarType, String queryString,
                                                        Pair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
         if (parameters != null) {
@@ -799,17 +799,17 @@ public class Controller {
         return count;
     }
 
-    public <T extends Object> List<T> list(Class<T> entityClass, String queryString,
+    public <T> List<T> list(Class<T> entityClass, String queryString,
                                            Pair<String, ? extends Object>... parameters) {
         return list(entityClass, queryString, -1, -1, parameters);
     }
 
-    public <T extends Object> List<T> namedList(Class<T> entityClass, String namedQuery,
+    public <T> List<T> namedList(Class<T> entityClass, String namedQuery,
                                                 Pair<String, ? extends Object>... parameters) {
         return namedList(entityClass, namedQuery, -1, -1, parameters);
     }
 
-    public <T extends Object> List<T> list(Class<T> entityClass, String queryString, int start, int limit,
+    public <T> List<T> list(Class<T> entityClass, String queryString, int start, int limit,
                                            Pair<String, ? extends Object>... parameters) {
         try {
             return (List<T>) list(em.createQuery(queryString), start, limit, parameters);
@@ -818,7 +818,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> List<T> namedList(Class<T> entityClass, String namedQuery, int start, int limit,
+    public <T> List<T> namedList(Class<T> entityClass, String namedQuery, int start, int limit,
                                                 Pair<String, ? extends Object>... parameters) {
         try {
             return (List<T>) list(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), start, limit,
@@ -832,7 +832,7 @@ public class Controller {
      * @deprecated
      * will cause memory problems when mapping large numbers of entities, use the alternate version with batch sizes
      **/
-    public <T extends Object> void hibernateSearchIndex(List<T> objects) {
+    public <T> void hibernateSearchIndex(List<T> objects) {
         this.getFullTextEntityManager();
         for (T o : objects) {
             fullTextEntityManager.index(o);
@@ -842,7 +842,7 @@ public class Controller {
     /**
      * It is critical that batchSize matches the hibernate.search.worker.batch_size you set
      **/
-    public <T extends Object> void hibernateSearchIndex(Class<T> entityClass, int batchSize) {
+    public <T> void hibernateSearchIndex(Class<T> entityClass, int batchSize) {
         FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.setFlushMode(FlushMode.MANUAL);
         fullTextSession.setCacheMode(CacheMode.IGNORE);
@@ -870,29 +870,29 @@ public class Controller {
     /**
      * It is critical that batchSize matches the hibernate.search.worker.batch_size you set
      **/
-    public <T extends Object> void hibernateSearchClearAndIndex(Class<T> entityClass, int batchSize) {
+    public <T> void hibernateSearchClearAndIndex(Class<T> entityClass, int batchSize) {
         FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.purgeAll(entityClass);
         hibernateSearchIndex(entityClass, batchSize);
         fullTextSession.getSearchFactory().optimize(entityClass);
     }
 
-    public <T extends Object> void hibernateSearchRemove(Class<T> entityClass, int entityId) {
+    public <T> void hibernateSearchRemove(Class<T> entityClass, int entityId) {
         FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.purge(entityClass, entityId);
         fullTextSession.flush(); //index are written at commit time
     }
 
-    public <T extends Object> List<T> hibernateSearchResults(Class<T> entityClass, String query, String[] fields) throws ParseException {
+    public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, String[] fields) throws ParseException {
         return hibernateSearchResults(entityClass, query, -1, -1, fields);
     }
 
-    public <T extends Object> List<T> hibernateSearchResults(Class<T> entityClass, String query, int limit,
+    public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, int limit,
                                                              String[] fields) throws ParseException {
         return hibernateSearchResults(entityClass, query, -1, limit, fields);
     }
 
-    public <T extends Object> List<T> hibernateSearchResults(Class<T> entityClass, String query, int start, int limit,
+    public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, int start, int limit,
                                                              String[] fields) throws ParseException {
         try {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
@@ -922,7 +922,7 @@ public class Controller {
         }
     }
 
-    public <T extends Object> int hibernateSearchCount(Class<T> entityClass, String query, String[] fields) throws ParseException {
+    public <T> int hibernateSearchCount(Class<T> entityClass, String query, String[] fields) throws ParseException {
         try {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
 
@@ -963,7 +963,7 @@ public class Controller {
         return query;
     }
 
-    public <T extends Object> Criteria createCriteria(Class<T> entityClass) {
+    public <T> Criteria createCriteria(Class<T> entityClass) {
         return getSession().createCriteria(entityClass);
     }
 
@@ -986,21 +986,21 @@ public class Controller {
         return query.executeUpdate();
     }
 
-    public <T extends Object> T filterSingle(Collection collection, String filterString) {
+    public <T> T filterSingle(Collection<T> collection, String filterString) {
         List<T> list = filter(collection, filterString, 0, 1);
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T extends Object> T filterSingle(Collection collection, String filterString, Pair<String, Object>... params) {
+    public <T> T filterSingle(Collection<T> collection, String filterString, Pair<String, Object>... params) {
         List<T> list = filter(collection, filterString, 0, 1, params);
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T extends Object> List<T> filter(Collection collection, String filterString) {
+    public <T> List<T> filter(Collection<T> collection, String filterString) {
         return filter(collection, filterString, 0, -1);
     }
 
-    public <T extends Object> List<T> filter(Collection collection, String filterString, int start, int limit) {
+    public <T> List<T> filter(Collection<T> collection, String filterString, int start, int limit) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
             query.setMaxResults(limit);
@@ -1009,11 +1009,11 @@ public class Controller {
         return (List<T>) query.list();
     }
 
-    public <T extends Object> List<T> filter(Collection collection, String filterString, Pair<String, Object>... params) {
+    public <T> List<T> filter(Collection<T> collection, String filterString, Pair<String, Object>... params) {
         return filter(collection, filterString, 0, -1, params);
     }
 
-    public <T extends Object> List<T> filter(Collection collection, String filterString, int start, int limit,
+    public <T> List<T> filter(Collection<T> collection, String filterString, int start, int limit,
                                              Pair<String, Object>... params) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
