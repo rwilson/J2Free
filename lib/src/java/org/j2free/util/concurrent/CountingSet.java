@@ -22,10 +22,10 @@ import net.jcip.annotations.ThreadSafe;
  * @author ryan
  */
 @ThreadSafe
-public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> {
+public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> {
 
-    private final class Asc<E> implements Comparator<E> {
-        public int compare(E one, E two) {
+    private final class Asc<T> implements Comparator<T> {
+        public int compare(T one, T two) {
             int oneC = set.get(one);
             int twoC = set.get(two);
 
@@ -37,8 +37,8 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
         }
     }
 
-    private final class Desc<E> implements Comparator<E> {
-        public int compare(E one, E two) {
+    private final class Desc<T> implements Comparator<T> {
+        public int compare(T one, T two) {
             int oneC = set.get(one);
             int twoC = set.get(two);
 
@@ -50,23 +50,23 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
         }
     }
 
-    private final HashMap<E,Integer> set;
+    private final HashMap<T,Integer> set;
 
     public CountingSet() {
-        set = new HashMap<E,Integer>();
+        set = new HashMap<T,Integer>();
     }
 
     public CountingSet(int initialCapacity) {
-        set = new HashMap<E,Integer>(initialCapacity);
+        set = new HashMap<T,Integer>(initialCapacity);
     }
 
     public CountingSet(int initialCapacity, float loadFactor) {
-        set = new HashMap<E,Integer>(initialCapacity,loadFactor);
+        set = new HashMap<T,Integer>(initialCapacity,loadFactor);
     }
 
-    public CountingSet(Collection<? extends E> c) {
-        set = new HashMap<E,Integer>();
-        for (E e : c) add(e);
+    public CountingSet(Collection<? extends T> c) {
+        set = new HashMap<T,Integer>();
+        for (T e : c) add(e);
     }
 
     public synchronized int getAddCount(Object o) {
@@ -78,7 +78,7 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
         set.clear();
     }
 
-    public synchronized boolean add(E o) {
+    public synchronized boolean add(T o) {
         if (set.containsKey(o)) {
             set.put(o,set.get(o) + 1);
             return false;
@@ -92,8 +92,8 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
      * @return true always, since every element will either be added to the
      *         set, or increment an element that was already in the set.
      */
-    public synchronized boolean addAll(Collection<? extends E> c) {
-        for (E e : c) add(e);
+    public synchronized boolean addAll(Collection<? extends T> c) {
+        for (T e : c) add(e);
         return true;
     }
 
@@ -111,7 +111,7 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
         return set.isEmpty();
     }
 
-    public synchronized Iterator<E> iterator() {
+    public synchronized Iterator<T> iterator() {
         return set.keySet().iterator();
     }
 
@@ -122,7 +122,7 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
         } else if (i == 1) {
             return (set.remove(o) != null);
         } else {
-            set.put((E)o, set.get(o) - 1);
+            set.put((T)o, set.get(o) - 1);
             return true;
         }
     }
@@ -137,8 +137,8 @@ public final class CountingSet<E> implements Iterable<E>, Collection<E>, Set<E> 
         
         boolean mod = false;
 
-        Iterator<E> itr = set.keySet().iterator();
-        E e;
+        Iterator<T> itr = set.keySet().iterator();
+        T e;
         
         while (itr.hasNext()) {
             e = itr.next();
