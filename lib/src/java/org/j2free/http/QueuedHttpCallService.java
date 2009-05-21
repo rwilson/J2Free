@@ -5,8 +5,8 @@
  */
 package org.j2free.http;
 
-import java.io.IOException;
 
+import java.io.IOException;
 import java.util.List;
 
 import java.util.concurrent.Callable;
@@ -24,7 +24,6 @@ import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.j2free.util.LaunderThrowable;
 
 /**
  * <tt>QueuedExecutorService</tt> a thread-safe service with static methods
@@ -44,8 +43,8 @@ public final class QueuedHttpCallService {
 
     private static final Log log = LogFactory.getLog(QueuedHttpCallService.class);
 
-    private static final int HTTP_CONNECT_TIMEOUT = 30000;
-    private static final int HTTP_SOCKET_TIMEOUT  = 30000;
+    private static final int HTTP_CONNECT_TIMEOUT = 60000;
+    private static final int HTTP_SOCKET_TIMEOUT  = 60000;
 
     private static final int MAX_POOL     = 20;
     private static final int CORE_POOL    = MAX_POOL / 4;
@@ -111,27 +110,26 @@ public final class QueuedHttpCallService {
             this.task = task;
         }
 
-        public HttpCallResult call() {
+        public HttpCallResult call() throws IOException {
 
             GetMethod method = new GetMethod(task.url);
             method.setFollowRedirects(task.followRedirects);
 
-            int statusCode;
             try {
 
-                log.debug("Making HTTP call [url=" + task.url + "]");
-
+                if (log.isDebugEnabled()) 
+                    log.debug("Making HTTP call [url=" + task.url + "]");
+                
                 httpClient.executeMethod(method);
-                log.debug("Call returned [status=" + method.getStatusCode() + "]");
+                
+                if (log.isDebugEnabled())
+                    log.debug("Call returned [status=" + method.getStatusCode() + "]");
 
                 return new HttpCallResult(method);
 
-            } catch (IOException e) {
-                throw LaunderThrowable.launderThrowable(e);
             } finally {
                 method.releaseConnection();
             }
         }
-
     }
 }
