@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  *
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public abstract class ResponseHandler<T> {
     

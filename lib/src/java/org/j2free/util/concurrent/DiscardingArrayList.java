@@ -8,6 +8,7 @@ package org.j2free.util.concurrent;
 import java.util.LinkedList;
 import java.util.List;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
@@ -24,7 +25,32 @@ import net.jcip.annotations.ThreadSafe;
  *
  *  Items returned by asList are stored in FIFO-order.
  *
- * @author ryan
+ * NOTE: Because <tt>DiscardingArrayList</tt> is fully-synchronized, you
+ *       can get better performance under contention by using a bounded
+ *       {@link LinkedBlockingQueue} in a manner like:
+ *
+ * <pre>
+ *    private final LinkedBlockingQueue&lt;T&gt; queue = new LinkedBlockingQueue&lt;T&gt;(maxItems)
+ *
+ *    public void addItem(T t) {
+ *        for (;;) {
+ *            if (queue.offer(t))
+ *                break;
+ *
+ *            queue.poll();
+ *        }
+ *    }
+ * </pre>
+ *
+ * Since <tt>queue</tt> is bounded, <tt>offer(t)</tt> will return false
+ * immediately if <tt>queue</tt> is full.  In that case, just poll the
+ * queue and try again.  Theoretically, there is a possibility of an
+ * infinite loop under extremely high contention; but practically, the
+ * offer is bound to succeed reasonably quickly, or immediately under
+ * low contention.
+ *
+ * @depcrecated
+ * @author Ryan Wilson
  */
 @ThreadSafe
 public class DiscardingArrayList<E> {

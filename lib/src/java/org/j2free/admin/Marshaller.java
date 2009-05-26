@@ -18,8 +18,9 @@
  * limitations under the License.
  */
 
-package org.j2free.util;
+package org.j2free.admin;
 
+import org.j2free.util.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,7 +53,7 @@ import org.j2free.jpa.Controller;
  *  Marshalls Objects of unknown Types in order to access their fields and
  *  methods;
  *
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class Marshaller {
     

@@ -23,7 +23,7 @@ package org.j2free.jpa;
 import javax.servlet.http.HttpServlet;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class ControllerServlet extends HttpServlet {
     

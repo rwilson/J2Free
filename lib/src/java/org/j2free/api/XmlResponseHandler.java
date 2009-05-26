@@ -39,7 +39,7 @@ import org.w3c.dom.NodeList;
 
 /**
  *
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class XmlResponseHandler extends ResponseHandler<Document> {
     

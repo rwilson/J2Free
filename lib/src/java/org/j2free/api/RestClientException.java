@@ -32,7 +32,7 @@ package org.j2free.api;
 
 /**
  *
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class RestClientException extends Exception {
     

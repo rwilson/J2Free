@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class ReflectionHelper {
     

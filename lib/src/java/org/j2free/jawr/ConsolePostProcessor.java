@@ -24,7 +24,7 @@ import net.jawr.web.resource.bundle.postprocess.BundleProcessingStatus;
 import net.jawr.web.resource.bundle.postprocess.ResourceBundlePostProcessor;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class ConsolePostProcessor implements ResourceBundlePostProcessor {
     

@@ -8,10 +8,12 @@
 package org.j2free.util;
 
 import java.util.*;
+import org.j2free.util.concurrent.ConcurrentCountingSet;
+import org.j2free.util.concurrent.CountingSet;
 
 /**
- * @deprecated not thread-safe, use <tt>org.j2free.util.concurrent.CountingSet</tt> instead.
- * @author ryan
+ * @deprecated not thread-safe, use {@link CountingSet} or {@link ConcurrentCountingSet} instead.
+ * @author Ryan Wilson
  */
 @Deprecated
 public class AddCountingSet<E> extends HashSet<E> {

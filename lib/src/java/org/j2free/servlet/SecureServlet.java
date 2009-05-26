@@ -23,7 +23,7 @@ import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class SecureServlet extends HttpServlet {
 

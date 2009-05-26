@@ -21,7 +21,7 @@
 package org.j2free.util;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class Constants {
 

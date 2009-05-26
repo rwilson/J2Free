@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.Entity;
-import org.j2free.util.Marshaller;
+import org.j2free.admin.Marshaller;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class Reflection {
     

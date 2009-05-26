@@ -18,10 +18,10 @@
  * limitations under the License.
  */
 
-package org.j2free.util;
+package org.j2free.admin;
 
 /**
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public class MarshallingException extends Exception {
 

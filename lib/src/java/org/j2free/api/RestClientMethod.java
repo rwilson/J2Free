@@ -27,7 +27,7 @@ import java.util.Map;
 
 /**
  *
- * @author Ryan Wilson (http://blog.augmentedfragments.com)
+ * @author Ryan Wilson 
  */
 public abstract class RestClientMethod {
 
