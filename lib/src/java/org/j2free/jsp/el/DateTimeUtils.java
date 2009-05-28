@@ -398,4 +398,8 @@ public class DateTimeUtils {
         
         return output;
     }
+
+    public static long currentTimeMillis() {
+        return System.currentTimeMillis();
+    }
 }
