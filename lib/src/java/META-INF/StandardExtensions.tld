@@ -128,6 +128,13 @@
         </function-signature>
     </function>
     <function>
+        <name>urlEncode</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String urlEncode(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
         <name>cleanXSS</name>
         <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
         <function-signature>
