@@ -7,9 +7,13 @@
 
 package org.j2free.jsp.el;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 
 import static org.j2free.util.ServletUtils.*;
@@ -129,6 +133,14 @@ public class StandardExtensions {
         return str.substring(0,1).toUpperCase() + str.substring(1);
     }
     
+    public static String urlEncode(String str) {
+        try {
+            return URLEncoder.encode(str, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            return "";
+        }
+    }
+    
     public static String cleanXSS(String str) {
         return str.replace("<","&lt;")
                   .replace(">","&gt;")
@@ -136,4 +148,5 @@ public class StandardExtensions {
                   .replace("'","&#39")
                   .replace("\"","&quot;");
     }
+    
 }
