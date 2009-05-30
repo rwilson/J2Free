@@ -8,6 +8,7 @@ package org.j2free.http;
 import java.util.Date;
 
 import net.jcip.annotations.Immutable;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.j2free.util.Priority;
 
 /**
@@ -19,29 +20,66 @@ import org.j2free.util.Priority;
 @Immutable
 public class HttpCallTask implements Comparable<HttpCallTask> {
 
+    public static enum Method {
+        GET,
+        POST
+    };
+
+    public final Method method;
+    public final HttpMethodParams params;
+
     public final String url;
     public final boolean followRedirects;
     public final Priority priority;
     public final Date created;
 
     /**
-     * Returns a new <tt>HttpCallTask</tt> to the provided url
-     * using <tt>HttpCallTask.Priority.DEFAULT</tt> that will
-     * not follow redirects.
+     * Equivalent to:
+     * <pre>
+     *  HttpCallTask(HttpCallTask.Method.GET, url);
+     * </pre>
      */
     public HttpCallTask(String url) {
-        this(url,false,Priority.DEFAULT);
+        this(Method.GET,url);
     }
 
-    public HttpCallTask(String url, boolean followRedirects) {
-        this(url,followRedirects,Priority.DEFAULT);
+    /**
+     * Equivalent to:
+     * <pre>
+     *  HttpCallTask(HttpCallTask.Method.GET, url, false);
+     * </pre>
+     */
+    public HttpCallTask(Method method, String url) {
+        this(method,url,false);
+    }
+
+    /**
+     * Equivalent to:
+     * <pre>
+     *  HttpCallTask(HttpCallTask.Method.GET, url, false, Priority.DEFAULT);
+     * </pre>
+     */
+    public HttpCallTask(String url, Priority priority) {
+        this(Method.GET, url, false, priority);
+    }
+
+    /**
+     * Equivalent to:
+     * <pre>
+     *  HttpCallTask(HttpCallTask.Method.GET, url, false, Priority.DEFAULT);
+     * </pre>
+     */
+    public HttpCallTask(Method method, String url, boolean followRedirects) {
+        this(method,url,followRedirects,Priority.DEFAULT);
     }
     
-    public HttpCallTask(String url, boolean followRedirects, Priority priority) {
-        this.url = url;
+    public HttpCallTask(Method method, String url, boolean followRedirects, Priority priority) {
+        this.method          = method;
+        this.params          = new HttpMethodParams();
+        this.url             = url;
         this.followRedirects = followRedirects;
-        this.priority = priority;
-        this.created = new Date();
+        this.priority        = priority;
+        this.created         = new Date();
     }
 
     /**

@@ -17,10 +17,13 @@ import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -111,8 +114,17 @@ public final class QueuedHttpCallService {
         }
 
         public HttpCallResult call() throws IOException {
+            
+            HttpMethod method;
+            
+            if (task.method == HttpCallTask.Method.GET) {
+                method = new GetMethod(task.url);
+            } else {
+                method = new PostMethod(task.url);
+            }
 
-            GetMethod method = new GetMethod(task.url);
+            method.setParams(task.params);
+
             method.setFollowRedirects(task.followRedirects);
 
             try {
