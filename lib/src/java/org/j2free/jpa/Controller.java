@@ -267,6 +267,8 @@ public class Controller {
         try {
             o = query.getSingleResult();
             count = ((Long) o).intValue();
+        } catch (NoResultException nre) {
+            count = 0;
         } catch (ClassCastException cce) {
             count = ((java.math.BigInteger) o).intValue();
         }
