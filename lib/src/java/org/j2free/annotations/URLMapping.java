@@ -16,6 +16,6 @@ import java.lang.annotation.*;
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface URLMapping {
-    public String[] urls();
+    public String[] urls() default {};
     public String regex() default "";
 }
