@@ -6,22 +6,27 @@
 
 package org.j2free.security;
 
-import java.util.HashMap;
+
+import java.util.concurrent.ConcurrentHashMap;
+import net.jcip.annotations.ThreadSafe;
 
 import static org.j2free.security.SecurityUtils.*;
 
 /**
+ * Basically, a utility class for storing an allowed
+ * reference to some Object.  Granting access will
+ * return a unique key which can be used to retrieve
+ * access to that object later on.  Calling <tt>get</tt>
+ * or <tt>expire</tt> with a key will retrieve the object
+ * to which access was granted.
  *
- * @author ryan
+ * @author Ryan Wilson
  * @version
  */
+@ThreadSafe
 public class ProgrammaticAccess {
     
-    private static HashMap<String,Object> allowedUsers;
-    
-    static {
-        allowedUsers = new HashMap<String,Object>();
-    }
+    private static final ConcurrentHashMap<String,Object> allowedUsers = new ConcurrentHashMap<String,Object>();
     
     public static String allow(Object obj) {
         try {

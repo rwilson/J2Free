@@ -319,7 +319,7 @@ public class InvokerFilter implements Filter {
 
                         if (log.isDebugEnabled()) log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
 
-                        HttpServlet servlet = (HttpServlet) klass.newInstance();
+                        HttpServlet servlet = (HttpServlet)klass.newInstance();
                         servlet.init(servletConfig);
 
                         find = System.currentTimeMillis();
