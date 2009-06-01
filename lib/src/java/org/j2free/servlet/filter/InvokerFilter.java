@@ -147,7 +147,7 @@ public class InvokerFilter implements Filter {
         }
 
         // Get the mapping
-        Class klass = urlMap.get(currentPath);
+        Class<? extends HttpServlet> klass = urlMap.get(currentPath);
         
         /*
          * Certain extensions are known to be mapped in web.xml,
@@ -155,7 +155,7 @@ public class InvokerFilter implements Filter {
          * were discovered earlier to be static content, so let
          * those through.
          */
-        if (klass == Static.class) {
+        if (klass.equals(Static.class)) {
 
             if (log.isDebugEnabled()) log.debug("Processing known static path: " + currentPath);
 
