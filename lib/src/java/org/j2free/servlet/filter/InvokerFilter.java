@@ -49,7 +49,7 @@ public class InvokerFilter implements Filter {
 
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
 
-    private static class Static extends HttpServlet { }
+    private static final class Static extends HttpServlet { }
 
     /* Ignored User-Agents
     panscient.com
@@ -133,6 +133,7 @@ public class InvokerFilter implements Filter {
 
         // This will let all threads through if the Invoker isn't enabled
         if (!enabled.get()) {
+            log.debug("InvokerFilter disabled");
             chain.doFilter(req, resp);
             return;
         }
@@ -148,39 +149,32 @@ public class InvokerFilter implements Filter {
 
         // Get the mapping
         Class<? extends HttpServlet> klass = urlMap.get(currentPath);
-        
-        /*
-         * Certain extensions are known to be mapped in web.xml,
-         * known to never be dynamic resources (e.g. .swf), or
-         * were discovered earlier to be static content, so let
-         * those through.
-         */
-        if (klass.equals(Static.class)) {
 
-            if (log.isDebugEnabled()) log.debug("Processing known static path: " + currentPath);
+        // If we don't already have an exact match for this path,
+        // try to break it down
+        if (klass == null) {
 
-            find = System.currentTimeMillis();
-            chain.doFilter(req, resp);
-            run  = System.currentTimeMillis();
-            
-        } else if (currentPath.matches(bypassPath.get())) {
+            /*
+             * Certain extensions are known to be mapped in web.xml,
+             * known to never be dynamic resources (e.g. .swf), or
+             * were discovered earlier to be static content, so let
+             * those through.
+             */
+            if (currentPath.matches(bypassPath.get())) {
 
-            if (log.isDebugEnabled()) log.debug("Processing known static regex-path: " + currentPath);
+                if (log.isDebugEnabled())
+                    log.debug("Matched known static regex-path: " + currentPath);
 
-            // This is the same as the above, except a hash lookup is faster than a regex match, so
-            // we want to store a reference.
-            urlMap.putIfAbsent(currentPath, Static.class);
+                // This is the same as the above, except a hash lookup is faster than a regex match, so
+                // we want to store a reference.
+                urlMap.putIfAbsent(currentPath, Static.class);
 
-            find = System.currentTimeMillis();
-            chain.doFilter(req, resp);
-            run  = System.currentTimeMillis();
-            
-        } else {
+            } else {
 
-            if (log.isDebugEnabled()) log.debug("InvokerFilter for path: " + currentPath);
+                if (log.isDebugEnabled())
+                    log.debug("InvokerFilter for path: " + currentPath);
 
-            // if the exact match wasn't found, look for wildcard matches
-            if (klass == null) {
+                // (1) If the exact match wasn't found, look for wildcard matches
 
                 String partial;
 
@@ -190,7 +184,29 @@ public class InvokerFilter implements Filter {
                     klass = urlMap.get(partial);
                 }
 
-                // If the path includes a / then it's possible there is a mapping to a /* pattern
+                // (2) If we still haven't found it, check if any
+                // registered regex mappings against the path
+                if (klass == null) {
+
+                    String regex;
+                    Iterator<String> itr = regexMap.keySet().iterator();
+                    while (itr.hasNext()) {
+
+                        regex = itr.next();
+
+                        if (currentPath.matches(regex)) {
+                            klass = regexMap.get(regex);
+
+                            // gotta make sure the klass was still in there, since it could have been altered
+                            // since we got the iterator... (although, likely it wasn't)
+                            if (klass != null)
+                                break;
+                        }
+                    }
+                }
+
+                // (3) If we didn't find a .* pattern and if the path includes
+                // a / then it's possible there is a mapping to a /* pattern
                 if (klass == null && currentPath.lastIndexOf("/") > 0) {
 
                     partial = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
@@ -219,135 +235,129 @@ public class InvokerFilter implements Filter {
                     }
                 }
 
-                // If we still haven't found it, check if any registered regex mappings match the path
-                if (klass == null) {
-
-                    String regex;
-                    Iterator<String> itr = regexMap.keySet().iterator();
-                    while (itr.hasNext()) {
-                        
-                        regex = itr.next();
-
-                        if (currentPath.matches(regex)) {
-                            klass = regexMap.get(regex);
-
-                            // gotta make sure the klass was still in there, since it could have been altered
-                            // since we got the iterator... (although, likely it wasn't)
-                            if (klass != null)
-                                break;
-                        }
-                    }
-                }
-
-                // If we found a class in any way, register it with the currentPath for faster future lookups
+                // (4) If we found a class in any way, register it with the currentPath for faster future lookups
                 if (klass != null) {
-                    if (log.isDebugEnabled()) log.debug("Matched path " + currentPath + " to " + klass.getName());
+                    if (log.isDebugEnabled())
+                        log.debug("Matched path " + currentPath + " to " + klass.getName());
+                    
                     urlMap.putIfAbsent(currentPath, klass);
                 }
             }
+        }
 
-            // If we didn't find it, then just pass it on
-            if (klass == null) {
+        // If we didn't find it, then just pass it on
+        if (klass == null) {
 
-                if (log.isDebugEnabled()) log.debug("Dynamic resource not found for path: " + currentPath);
+            if (log.isDebugEnabled()) log.debug("Dynamic resource not found for path: " + currentPath);
 
-                // Save this path in the staticSet so we don't have to look it up next time
-                urlMap.putIfAbsent(currentPath,Static.class);
+            // Save this path in the staticSet so we don't have to look it up next time
+            urlMap.putIfAbsent(currentPath,Static.class);
 
-                find = System.currentTimeMillis();
-                chain.doFilter(req, resp);
-                run  = System.currentTimeMillis();
+            find = System.currentTimeMillis();
+            chain.doFilter(req, resp);
+            run  = System.currentTimeMillis();
 
-            } else {
+        } else if (klass == Static.class) {
 
-                Controller controller = null;
+            // If it's known to be static, then pass it on
+            if (log.isDebugEnabled())
+                log.debug("Processing known static path: " + currentPath);
 
-                try {
+            find = System.currentTimeMillis();
+            chain.doFilter(req, resp);
+            run  = System.currentTimeMillis();
 
-                    // This is a hack to create a servlet config to
-                    // properly initialize the servlet.
-                    final String className = klass.getSimpleName();
-                    ServletConfig servletConfig = new ServletConfig() {
+        } else {
 
-                        public String getServletName() {
-                            return className;
-                        }
+            Controller controller = null;
 
-                        public ServletContext getServletContext() {
-                            return filterConfig.getServletContext();
-                        }
+            try {
 
-                        public String getInitParameter(String arg0) {
-                            return null;
-                        }
+                // This is a hack to create a servlet config to
+                // properly initialize the servlet.
+                final String className = klass.getSimpleName();
+                ServletConfig servletConfig = new ServletConfig() {
 
-                        public Enumeration getInitParameterNames() {
-                            return null;
-                        }
-                    };
-
-                    if (klass.getSuperclass() == ControllerServlet.class) {
-
-                        if (controllerClassName.get().equals(EMPTY)) {
-                            controller = new Controller();
-                        } else {
-                            controller = (Controller) (Class.forName(controllerClassName.get()).newInstance());
-                        }
-                        
-                        if (log.isDebugEnabled()) log.debug("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
-
-                        ControllerServlet servlet = (ControllerServlet) klass.newInstance();
-                        servlet.init(servletConfig);
-
-                        find = System.currentTimeMillis();
-
-                        controller.startTransaction();
-
-                        servlet.setController(controller);
-                        request.setAttribute("controller", controller);
-                        servlet.service(request, response);
-
-                        run  = System.currentTimeMillis();
-
-                        controller.endTransaction();
-
-                        if (request.getParameter("benchmark") != null) {
-                            log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
-                        }
-
-                    } else {
-
-                        if (log.isDebugEnabled()) log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
-
-                        HttpServlet servlet = (HttpServlet)klass.newInstance();
-                        servlet.init(servletConfig);
-
-                        find = System.currentTimeMillis();
-                        servlet.service(request, response);
-                        run  = System.currentTimeMillis();
-
+                    public String getServletName() {
+                        return className;
                     }
 
-                } catch (Exception e) {
+                    public ServletContext getServletContext() {
+                        return filterConfig.getServletContext();
+                    }
 
-                    run = System.currentTimeMillis();
+                    public String getInitParameter(String arg0) {
+                        return null;
+                    }
 
-                    if (RUN_MODE.compareTo(RunMode.PRODUCTION) < 1) {
-                        log.error("Error servicing " + currentPath, e);
+                    public Enumeration getInitParameterNames() {
+                        return null;
+                    }
+                };
+
+                if (klass.getSuperclass() == ControllerServlet.class) {
+
+                    if (controllerClassName.get().equals(EMPTY)) {
+                        controller = new Controller();
                     } else {
-                        String userAgent = request.getHeader("User-Agent");
-                        if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
-                            /*
-                            Emailer mailer = Emailer.getInstance();
-                            String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
-                            try {
-                            mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
-                            } catch (Exception e0) {
-                            log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
-                            }
-                             */
-                            log.error("Error servicing " + currentPath, e);
+                        controller = (Controller) (Class.forName(controllerClassName.get()).newInstance());
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
+
+                    ControllerServlet servlet = (ControllerServlet) klass.newInstance();
+                    servlet.init(servletConfig);
+
+                    find = System.currentTimeMillis();
+
+                    controller.startTransaction();
+
+                    servlet.setController(controller);
+                    request.setAttribute("controller", controller);
+                    servlet.service(request, response);
+
+                    run  = System.currentTimeMillis();
+
+                    controller.endTransaction();
+
+                    if (request.getParameter("benchmark") != null) {
+                        log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
+                    }
+
+                } else {
+
+                    if (log.isDebugEnabled())
+                        log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
+
+                    HttpServlet servlet = (HttpServlet)klass.newInstance();
+                    servlet.init(servletConfig);
+
+                    find = System.currentTimeMillis();
+                    servlet.service(request, response);
+                    run  = System.currentTimeMillis();
+
+                }
+
+            } catch (Exception e) {
+
+                run = System.currentTimeMillis();
+
+                if (RUN_MODE.compareTo(RunMode.PRODUCTION) < 1) {
+                    log.error("Error servicing " + currentPath, e);
+                } else {
+                    String userAgent = request.getHeader("User-Agent");
+                    if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
+                        /*
+                        Emailer mailer = Emailer.getInstance();
+                        String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
+                        try {
+                        mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
+                        } catch (Exception e0) {
+                        log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
                         }
+                         */
+                        log.error("Error servicing " + currentPath, e);
                     }
                 }
             }
@@ -355,7 +365,8 @@ public class InvokerFilter implements Filter {
 
         finish = System.currentTimeMillis();
 
-        if (benchmark.get()) log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
+        if (benchmark.get())
+            log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
     }
 
     /**
