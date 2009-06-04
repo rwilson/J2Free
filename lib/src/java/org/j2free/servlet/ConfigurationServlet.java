@@ -96,26 +96,29 @@ public class ConfigurationServlet extends HttpServlet {
         ServletContext context = getServletContext();
 
         // (1) Set the context init-params as context-attribute, camelCase too
+        /* DON'T DO THIS, NOT NEEDED
         Enumeration params = context.getInitParameterNames();
         String prop, camel, value;
         while (params.hasMoreElements()) {
 
             prop  = (String)params.nextElement();
             value = context.getInitParameter(prop);
-            //camel = ServletUtils.toCamelCase(prop);
+            camel = ServletUtils.toCamelCase(prop);
 
             log.debug("Setting application context attribute: [name=" + prop + ",value=" + value + "]");
             context.setAttribute(prop, value);
-            /*
+
             if (!prop.equals(camel)) {
                 log.debug("Setting application context attribute: [name=" + camel + ",value=" + value + "]");
                 context.setAttribute(camel, value);
             }
-             */
         }
+        */
 
         // Get the configuration file
         String configPath = (String)context.getAttribute(CONTEXT_ATTR_CONFIG_PATH);
+
+        String prop, value;
 
         if (configPath == null || configPath.equals(EMPTY))
             configPath = DEFAULT_CONFIG_PATH;
