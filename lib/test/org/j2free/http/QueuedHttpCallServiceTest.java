@@ -43,7 +43,7 @@ public class QueuedHttpCallServiceTest extends TestCase {
 
                         int rand = ((Double)Math.floor(Math.random() * urls.length)).intValue();
                         
-                        HttpCallTask task = new HttpCallTask(urls[rand],true);
+                        HttpCallTask task = new HttpCallTask(urls[rand]);
 
                         startGate.await();
 

@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
+import java.util.StringTokenizer;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -24,6 +25,7 @@ import javax.servlet.http.HttpSession;
 import org.j2free.jpa.Controller;
 import org.j2free.security.SecurityUtils;
 
+import org.apache.commons.codec.binary.Base64;
 import static org.j2free.util.Constants.*;
 
 /**
@@ -543,4 +545,51 @@ public class ServletUtils {
     public static Cookie createCookie(HttpServletResponse response, String name, String value) {
         return createCookie(response, name, value, 60 * 60 * 24 * 356, true);
     }
+
+	/**
+	 * Performes a basic auth authentication on the request comparing the username and password sent in the header
+	 * to the correct ones correctUsername and correctPassword
+	 * If no auth is sent or username and password doesn't match it returns false
+	 * @param request
+	 * @param correctUsername
+	 * @param correctPassword
+	 * @return
+	 */
+	public static boolean basicAuthAuthentication(HttpServletRequest request, String correctUsername, String correctPassword) {
+		boolean valid = false;
+		String userID = null;
+	    String password = null;
+
+		  // Get the Authorization header, if one was supplied
+
+		String authHeader = request.getHeader("Authorization");
+		if (authHeader != null) {
+			StringTokenizer st = new StringTokenizer(authHeader);
+			if (st.hasMoreTokens()) {
+				String basic = st.nextToken();
+
+				// We only handle HTTP Basic authentication
+
+				if (basic.equalsIgnoreCase("Basic")) {
+					String credentials = st.nextToken();
+
+					String userPass;
+					userPass = new String(Base64.decodeBase64(credentials.getBytes()));
+					int p = userPass.indexOf(":");
+					if (p != -1) {
+						userID = userPass.substring(0, p);
+						password = userPass.substring(p+1);
+						// Validate user ID and password
+						// and set valid true true if valid.
+						if ((userID.equals(correctUsername)) &&
+							(password.equals(correctPassword))) {
+							valid = true;
+						}
+					}	
+				}
+			}
+		}
+
+		return valid;
+	}
 }
