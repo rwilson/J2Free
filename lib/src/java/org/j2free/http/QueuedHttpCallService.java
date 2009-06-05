@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.jcip.annotations.ThreadSafe;
 
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -23,7 +24,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -122,6 +122,9 @@ public final class QueuedHttpCallService {
             } else {
                 method = new PostMethod(task.url);
             }
+
+            for (Header header : task.requestHeaders)
+                method.setRequestHeader(header);
 
             method.setParams(task.params);
 

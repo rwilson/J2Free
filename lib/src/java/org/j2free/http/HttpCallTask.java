@@ -5,9 +5,13 @@
  */
 package org.j2free.http;
 
+import java.util.Collections;
 import java.util.Date;
 
-import net.jcip.annotations.Immutable;
+import java.util.LinkedList;
+import java.util.List;
+import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.j2free.util.Priority;
 
@@ -17,7 +21,7 @@ import org.j2free.util.Priority;
  *
  * @author ryan
  */
-@Immutable
+@ThreadSafe
 public class HttpCallTask implements Comparable<HttpCallTask> {
 
     public static enum Method {
@@ -26,7 +30,9 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
     };
 
     public final Method method;
+
     public final HttpMethodParams params;
+    public final List<Header>     requestHeaders;
 
     public final String url;
     public final boolean followRedirects;
@@ -75,11 +81,13 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
     
     public HttpCallTask(Method method, String url, boolean followRedirects, Priority priority) {
         this.method          = method;
-        this.params          = new HttpMethodParams();
         this.url             = url;
         this.followRedirects = followRedirects;
         this.priority        = priority;
         this.created         = new Date();
+
+        this.params          = new HttpMethodParams();
+        this.requestHeaders         = Collections.synchronizedList(new LinkedList<Header>());
     }
 
     /**

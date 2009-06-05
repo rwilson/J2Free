@@ -116,7 +116,8 @@ public class ConfigurationServlet extends HttpServlet {
         */
 
         // Get the configuration file
-        String configPath = (String)context.getAttribute(CONTEXT_ATTR_CONFIG_PATH);
+        String configPath = (String)context.getInitParameter(INIT_PARAM_CONFIG_PATH);
+        context.setAttribute(CONTEXT_ATTR_CONFIG_PATH,configPath);
 
         String prop, value;
 

@@ -40,6 +40,7 @@ public class Constants {
     public static volatile RunMode RUN_MODE = RunMode.PRODUCTION;
 
     // Context init-params
+    public static final String INIT_PARAM_CONFIG_PATH    = "config-file";
     public static final String CONTEXT_ATTR_CONFIG_PATH  = "config-file";
 
     // Context attributes
