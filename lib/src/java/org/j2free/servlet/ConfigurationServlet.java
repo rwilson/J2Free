@@ -145,7 +145,7 @@ public class ConfigurationServlet extends HttpServlet {
                 value = (value.equals("localhost") ? localhost : value);
                 //camel = ServletUtils.toCamelCase(prop);
 
-                log.debug("Setting application context attribute: [name=" + prop + ",value=" + value + "]");
+                log.info("Setting application context attribute: [name=" + prop + ",value=" + value + "]");
                 context.setAttribute(prop,value);
                 
                 /* Don't set camel-case versions...
@@ -205,7 +205,7 @@ public class ConfigurationServlet extends HttpServlet {
                 addServletMapping(config, PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH, SecureServlet.class);
                 String path = config.getString(PROP_SERVLET_SECURE_PATH, DEFAULT_SECURE_PATH);
                 path = path.substring(0,path.lastIndexOf("/"));
-                log.debug("Setting SecureServlet to redirect to URI - [path=" + path + "]");
+                log.info("Setting SecureServlet to redirect to URI - [path=" + path + "]");
                 SecureServlet.path.set(path);
             }
 
@@ -216,7 +216,7 @@ public class ConfigurationServlet extends HttpServlet {
             // (10) Fragment Cache Configuration
             boolean cacheEnabled = config.getBoolean(PROP_FRAGMENT_CACHE_ON);
             if (cacheEnabled) {
-                log.debug("Enabling fragment cache...");
+                log.info("Enabling fragment cache...");
                 FragmentCache.enabled.set(cacheEnabled);
             }
 
