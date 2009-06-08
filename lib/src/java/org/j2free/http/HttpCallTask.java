@@ -7,19 +7,20 @@ package org.j2free.http;
 
 import java.util.Collections;
 import java.util.Date;
-
 import java.util.LinkedList;
 import java.util.List;
+
 import net.jcip.annotations.ThreadSafe;
+
 import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.params.HttpMethodParams;
+
 import org.j2free.util.Priority;
 
 /**
- * Immutable representation of a HTTP call that can be sorted
+ * Thread-safe representation of a HTTP call that can be sorted
  * by priority.
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 @ThreadSafe
 public class HttpCallTask implements Comparable<HttpCallTask> {
@@ -31,8 +32,8 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
 
     public final Method method;
 
-    public final HttpMethodParams params;
-    public final List<Header>     requestHeaders;
+    private final List<HttpQueryParam> queryParams;
+    private final List<Header> requestHeaders;
 
     public final String url;
     public final boolean followRedirects;
@@ -86,8 +87,24 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         this.priority        = priority;
         this.created         = new Date();
 
-        this.params          = new HttpMethodParams();
-        this.requestHeaders         = Collections.synchronizedList(new LinkedList<Header>());
+        this.queryParams     = new LinkedList<HttpQueryParam>();
+        this.requestHeaders  = new LinkedList<Header>();
+    }
+
+    public synchronized void addRequestHeader(Header header) {
+        requestHeaders.add(header);
+    }
+
+    public synchronized void addQueryParam(HttpQueryParam param) {
+        queryParams.add(param);
+    }
+
+    public synchronized List<HttpQueryParam> getQueryParams() {
+        return Collections.unmodifiableList(queryParams);
+    }
+
+    public synchronized List<Header> getRequestHeaders() {
+        return Collections.unmodifiableList(requestHeaders);
     }
 
     /**

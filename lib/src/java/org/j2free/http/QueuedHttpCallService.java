@@ -20,6 +20,7 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
@@ -116,17 +117,42 @@ public final class QueuedHttpCallService {
         public HttpCallResult call() throws IOException {
             
             HttpMethod method;
-            
+
+            List<HttpQueryParam> params = task.getQueryParams();
+
             if (task.method == HttpCallTask.Method.GET) {
                 method = new GetMethod(task.url);
+                
+                StringBuilder query = new StringBuilder();
+                
+                boolean first = true;
+                for (HttpQueryParam param : params) {
+                    if (first) {
+                        query.append("?");
+                        first = false;
+                    } else {
+                        query.append("&");
+                    }
+
+                    query.append(param.name + "=" + param.value);
+                }
+
             } else {
+                
                 method = new PostMethod(task.url);
+
+                NameValuePair[] data = new NameValuePair[params.size()];
+                int i = 0;
+                for (HttpQueryParam param : params) {
+                    data[i] = new NameValuePair(param.name, param.value);
+                    i++;
+                }
+                
+                ((PostMethod)method).setRequestBody(data);
             }
 
-            for (Header header : task.requestHeaders)
+            for (Header header : task.getRequestHeaders())
                 method.setRequestHeader(header);
-
-            method.setParams(task.params);
 
             method.setFollowRedirects(task.followRedirects);
 

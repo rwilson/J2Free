@@ -21,7 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * @author ryan
+ * @author Ryan Wilson
  */
 @Immutable
 public class HttpCallResult {

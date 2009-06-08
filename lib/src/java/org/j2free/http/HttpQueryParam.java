@@ -10,25 +10,17 @@ import net.jcip.annotations.Immutable;
 /**
  * Thread safe because it is immutable.
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 @Immutable
 public class HttpQueryParam {
 
-    private final String name;
-    private final String value;
+    public final String name;
+    public final String value;
 
     public HttpQueryParam(String name, String value) {
-        this.name = name;
+        this.name  = name;
         this.value = value;
     }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
+    
 }
