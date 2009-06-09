@@ -99,6 +99,10 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         queryParams.add(param);
     }
 
+	public synchronized void addQueryParams(List<HttpQueryParam> params) {
+        queryParams.addAll(params);
+    }
+
     public synchronized List<HttpQueryParam> getQueryParams() {
         return Collections.unmodifiableList(queryParams);
     }
