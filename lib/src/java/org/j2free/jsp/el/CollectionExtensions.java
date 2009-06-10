@@ -15,18 +15,32 @@ import org.j2free.jpa.Controller;
 
 /**
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 public class CollectionExtensions {
-    
+
+    /**
+     * @deprecated use <tt>size(Collection c)</tt> instead
+     */
     public static int getCollectionSize(Collection c) {
         return c == null ? 0 : c.size();
     }
+
+    public static int size(Collection c) {
+        return c == null ? 0 : c.size();
+    }
     
+    /**
+     * @deprecated use <tt>contains(Collection c)</tt> instead
+     */
     public static boolean collectionContains(Collection c, Object o) {
         return c == null ? false : c.contains(o);
     }
-    
+
+    public static boolean contains(Collection c, Object o) {
+        return c == null ? false : c.contains(o);
+    }
+
     public static <T> List<T> shuffle(List<T> list) {
         if (list != null && !list.isEmpty()) 
             Collections.shuffle(list);
