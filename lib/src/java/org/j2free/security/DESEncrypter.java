@@ -99,6 +99,14 @@ public class DESEncrypter {
         }
     }
 
+    public Cipher getDecoder() {
+        return decoder;
+    }
+
+    public Cipher getEncoder() {
+        return encoder;
+    }
+
     /*
     public static void main(String[] args) throws Exception {
 
