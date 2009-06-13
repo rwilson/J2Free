@@ -8,28 +8,39 @@
         <tag-class>org.j2free.jsp.tags.cache.FragmentCache</tag-class>
         <body-content>JSP</body-content>
         <attribute>
+            <description>The unique key for the cache</description>
             <name>key</name>
             <required>true</required>
             <rtexprvalue>true</rtexprvalue>
             <type>java.lang.String</type>
         </attribute>
         <attribute>
+            <description>A condition on which the cache will be refreshed before it expired</description>
             <name>condition</name>
             <required>false</required>
             <rtexprvalue>true</rtexprvalue>
             <type>java.lang.String</type>
         </attribute>
         <attribute>
+            <description>The timeout of the cache.  Unless unit is specified, timeout is assumed to be in milliseconds.</description>
             <name>timeout</name>
             <required>true</required>
             <rtexprvalue>true</rtexprvalue>
             <type>long</type>
         </attribute>
         <attribute>
+            <description>Overrides the condition and timeout and executes the cached body; the result of the body will NOT be cached.</description>
             <name>disable</name>
             <required>false</required>
             <rtexprvalue>true</rtexprvalue>
             <type>boolean</type>
+        </attribute>
+        <attribute>
+            <description>Optional parameter to refine "timeout" by specifying a time unit.  Can be: SECONDS, MILLISECONDS, MICROSECONDS, or NANOSECONDS.</description>
+            <name>unit</name>
+            <required>false</required>
+            <rtexprvalue>false</rtexprvalue>
+            <type>java.lang.String</type>
         </attribute>
     </tag>
 </taglib>

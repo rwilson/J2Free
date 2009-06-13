@@ -35,6 +35,7 @@ import javax.servlet.jsp.tagext.BodyTagSupport;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.j2free.util.ServletUtils;
 
 /**
  *  Implementation of a fragment cache as a custom tag.  This fragment cache
@@ -82,6 +83,9 @@ public class FragmentCache extends BodyTagSupport {
 
     // If true, the cache will be ignored for this request
     private boolean disable;
+
+    // The time unit of the expiration
+    private String unit;
     
     public FragmentCache() {
         super();
@@ -102,6 +106,10 @@ public class FragmentCache extends BodyTagSupport {
 
     public void setDisable(boolean disable) {
         this.disable = disable;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
     }
 
     private long start;
@@ -145,6 +153,20 @@ public class FragmentCache extends BodyTagSupport {
         if (disable) {
             if (log.isTraceEnabled()) log.trace("Cache disabled for " + key);
             return EVAL_BODY_BUFFERED;
+        }
+
+        // timeout is assumed to be on milliseconds, but there
+        // is the additional parameter
+        if (!ServletUtils.empty(unit)) {
+            try {
+                TimeUnit timeUnit = TimeUnit.valueOf(unit);
+                if (timeUnit != TimeUnit.MILLISECONDS) {
+                    log.debug("Converting " + timeout + " " + timeUnit.name() + " to ms");
+                    timeout = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+                }
+            } catch (Exception e) {
+                log.warn("Unable to interpret timeout unit");
+            }
         }
 
         // See if there is a cached Fragment already
