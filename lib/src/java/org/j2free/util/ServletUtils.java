@@ -178,7 +178,7 @@ public class ServletUtils {
      * @param   separator, the separator to put between words
      * @return  String of words concatonated with the separator
      */
-    public static String join(String[] words, String separator) {
+    public static String join(Object[] words, String separator) {
 
         if (words == null || words.length == 0)
             return "";
@@ -189,7 +189,7 @@ public class ServletUtils {
             if (i > 0) {
                 ret += separator;
             }
-            ret += words[i];
+            ret += words[i].toString();
         }
         return ret;
     }
