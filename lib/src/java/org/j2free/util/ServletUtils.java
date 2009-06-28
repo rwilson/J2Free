@@ -195,6 +195,69 @@ public class ServletUtils {
     }
 
     /**
+     * @param   ints to join
+     * @param   separator, the separator to put between words
+     * @return  String of words concatonated with the separator
+     */
+    public static String join(int[] words, String separator) {
+
+        if (words == null || words.length == 0)
+            return "";
+
+
+        String ret = "";
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) {
+                ret += separator;
+            }
+            ret += words[i];
+        }
+        return ret;
+    }
+
+    /**
+     * @param   ints to join
+     * @param   separator, the separator to put between words
+     * @return  String of words concatonated with the separator
+     */
+    public static String join(float[] words, String separator) {
+
+        if (words == null || words.length == 0)
+            return "";
+
+
+        String ret = "";
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) {
+                ret += separator;
+            }
+            ret += words[i];
+        }
+        return ret;
+    }
+
+    /**
+     * @param   ints to join
+     * @param   separator, the separator to put between words
+     * @return  String of words concatonated with the separator
+     */
+    public static String join(double[] words, String separator) {
+
+        if (words == null || words.length == 0)
+            return "";
+
+
+        String ret = "";
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) {
+                ret += separator;
+            }
+            ret += words[i];
+        }
+        return ret;
+    }
+
+    /**
      * @param   joined = string to split
      * @param   separator = delimiter to split by
      * @return  Array of Strings

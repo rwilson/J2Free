@@ -57,7 +57,7 @@ public class FragmentCache extends BodyTagSupport {
     // will print a message to refresh the page.
     public static final AtomicLong REQUEST_TIMEOUT = new AtomicLong(20);
 
-    private static final String ATTRIBUTE_DISABLE_ONCE = "nocache";
+    private static final String ATTRIBUTE_FORCE_REFRESH = "nocache";
 
     // The backing ConcurrentMap
     private static final ConcurrentMap<String,Fragment> cache =
@@ -140,15 +140,6 @@ public class FragmentCache extends BodyTagSupport {
         // If the cache isn't enabled, make sure disable is set
         disable |= !enabled.get();
 
-        // If the tag isn't set to disable, check for other things that might disable this ...
-        if (!disable) {
-
-            // Check for the request attribute
-            if (pageContext.getAttribute(ATTRIBUTE_DISABLE_ONCE) != null)
-                disable = true;
-            
-        }
-
         // If disable is set, either by the tag, the request attribute, or the global flag, then ignore the cache
         if (disable) {
             if (log.isTraceEnabled()) log.trace("Cache disabled for " + key);
@@ -211,7 +202,20 @@ public class FragmentCache extends BodyTagSupport {
             return EVAL_BODY_BUFFERED;
         }
 
-        if (log.isTraceEnabled()) log.trace("denied lock-for-update [key: " + key + "]");
+        boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
+
+        // If the force-refresh attribute is set, then try to acquire
+        // the lock regardless of condition of expiration.  Doing so
+        // only return false if another thread is already refreshing it
+        // which is fine.
+        if (forceRefresh) {
+            if (cached.tryAcquireForUpdate()) {
+                if (log.isTraceEnabled()) log.trace("successfully acquired lock-for-update [key: " + key + "]");
+                return EVAL_BODY_BUFFERED;
+            }
+        }
+
+        if (log.isTraceEnabled()) log.trace("denied lock-for-update [key: " + key + ", force-refresh: " + forceRefresh + "]");
 
         // Try to get the content, cached.get() will block if
         // the content of the fragment is not yet set, so catch an
