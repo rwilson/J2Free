@@ -144,7 +144,7 @@ public class Controller {
     public FullTextEntityManager getFullTextEntityManager() {
 
         if (fullTextEntityManager == null || !fullTextEntityManager.isOpen()) {
-            fullTextEntityManager = Search.createFullTextEntityManager(getEntityManager());
+            fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
         }
         return fullTextEntityManager;
     }
