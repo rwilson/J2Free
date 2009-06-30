@@ -176,6 +176,10 @@ public class Controller {
         } catch (InvalidStateException ise) {
             problem = ise;
             this.errors = ise.getInvalidValues();
+        } catch (RollbackException re) {
+            if (!markedForRollback) {
+                throw re;
+            }
         }
     }
 
