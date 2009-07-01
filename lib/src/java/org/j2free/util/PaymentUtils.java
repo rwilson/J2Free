@@ -28,7 +28,7 @@ public class PaymentUtils {
     //-------------------
     public static boolean isValidCreditCard(String cardNumber) {
         
-        if (cardNumber == null) {
+        if (cardNumber == null || cardNumber.length() <= 0) {
             return false;
         }
         
