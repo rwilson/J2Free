@@ -8,6 +8,21 @@
         <tag-class>org.j2free.jsp.tags.RequireController</tag-class>
         <body-content>JSP</body-content>
     </tag>
+    <tag>
+        <name>replace</name>
+        <tag-class>org.j2free.jsp.tags.PatternReplace</tag-class>
+        <body-content>JSP</body-content>
+        <attribute>
+            <name>pattern</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>replace</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+    </tag>
     <function>
         <name>instanceOf</name>
         <function-class>org.j2free.jsp.el.StandardExtensions</function-class>

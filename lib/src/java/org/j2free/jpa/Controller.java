@@ -144,7 +144,7 @@ public class Controller {
     public FullTextEntityManager getFullTextEntityManager() {
 
         if (fullTextEntityManager == null || !fullTextEntityManager.isOpen()) {
-            fullTextEntityManager = Search.createFullTextEntityManager(getEntityManager());
+            fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
         }
         return fullTextEntityManager;
     }
@@ -176,6 +176,10 @@ public class Controller {
         } catch (InvalidStateException ise) {
             problem = ise;
             this.errors = ise.getInvalidValues();
+        } catch (RollbackException re) {
+            if (!markedForRollback) {
+                throw re;
+            }
         }
     }
 
@@ -338,16 +342,16 @@ public class Controller {
             }
 
             markForRollback(true);
-            LOG.error("InvalidStateException in Controller.persist", ise);
+            //LOG.error("InvalidStateException in Controller.persist", ise);
 
         } catch (ConstraintViolationException cve) {
             this.problem = cve;
             markForRollback(true);
-            LOG.error("ConstraintViolationException in Controller.persist", cve);
+            //LOG.error("ConstraintViolationException in Controller.persist", cve);
         } catch (PropertyValueException pve) {
             this.problem = pve;
             markForRollback(true);
-            LOG.error("PropertyValueException in Controller.persist", pve);
+            //LOG.error("PropertyValueException in Controller.persist", pve);
 
         }
         return entity;

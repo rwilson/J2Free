@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * A sequences returning a String consisting of a-z, A-Z, 0-9
+ * A sequencer returning a String consisting of a-z, A-Z, 0-9
  *
  *
  * @author ryan

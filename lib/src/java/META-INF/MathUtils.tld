@@ -31,4 +31,18 @@
             double min(double,double)
         </function-signature>
     </function>
+    <function>
+        <name>minIn</name>
+        <function-class>org.j2free.jsp.el.MathUtils</function-class>
+        <function-signature>
+            double min(double[])
+        </function-signature>
+    </function>
+    <function>
+        <name>maxIn</name>
+        <function-class>org.j2free.jsp.el.MathUtils</function-class>
+        <function-signature>
+            double min(double[])
+        </function-signature>
+    </function>
 </taglib>

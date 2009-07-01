@@ -192,6 +192,43 @@ public class Fragment {
     }
 
     /**
+     * This try will attempt to force-lock the fragment for update
+     * regardless of condition or expiration status.  It is meant to
+     * be used to refresh the cache due to a manual request.
+     *
+     * @return true if this fragment has been locked for update by the
+     *         calling thread, otherwise false
+     */
+    public boolean tryAcquireForUpdate() {
+
+        // If the caller Thread is already the owner, just return true
+        if (updateLock.isHeldByCurrentThread()) {
+            if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: current thread already has the lock, short-circuiting...");
+            return true;
+        }
+
+        // If this Fragment is currently locked for update by a different Thread
+        // and the lock has not expired, return false.
+        if (updateLock.isLocked()) {
+            if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: Fragment currently locked by another thread, returning false...");
+            return false;
+        }
+
+        boolean success = false;
+
+        synchronized (this) {
+
+            // If the content is null, the condition has changed, or the Fragment is expired, try to acquire the lock
+            success = updateLock.tryLock();
+
+            if (success)
+                locked = System.currentTimeMillis();
+        }
+
+        return success;
+    }
+
+    /**
      *  Checks that the caller Thread owns the update lock; if so
      *  updates the content and notifies other threads that may be
      *  waiting to get the content, otherwise returns false.
