@@ -50,6 +50,7 @@ public class Constants {
 
     // Useful constants
     public static final byte NULL_BYTE   = 0x0;
+    public static final String UTF_8     = "UTF-8";
     public static final String UTF_16    = "UTF-16";
     public static final String EMPTY     = "";
 
