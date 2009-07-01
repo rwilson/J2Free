@@ -33,7 +33,7 @@ public class AESCipherFactory {
             cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 
             // Create the ciphers
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+            cipher.init(cipherMode, keySpec);
 
         } catch (Exception e) {
             throw LaunderThrowable.launderThrowable(e);
@@ -44,7 +44,7 @@ public class AESCipherFactory {
     
     public static Cipher getCipherFromHexString(String key, int cipherMode) {
         try {
-            return getCipher(Hex.decodeHex(key.toCharArray()), Cipher.ENCRYPT_MODE);
+            return getCipher(Hex.decodeHex(key.toCharArray()), cipherMode);
         } catch (DecoderException ex) {
             throw LaunderThrowable.launderThrowable(ex);
         }
