@@ -54,6 +54,9 @@ public class Constants {
     public static final String UTF_16    = "UTF-16";
     public static final String EMPTY     = "";
 
+    // For validating e-mails
+    public static final String EMAIL_REGEX                 = "^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:[A-Za-z]{2}|edu|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)$";
+
     // SMTP Properties
     public static final String PROP_SMTP_HOST              = "mail.smtp.host";
     public static final String PROP_SMTP_PORT              = "mail.smtp.port";
