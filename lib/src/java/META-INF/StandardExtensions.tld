@@ -156,4 +156,11 @@
             java.lang.String cleanXSS(java.lang.String)
         </function-signature>
     </function>
+    <function>
+        <name>matches</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            boolean matches(java.lang.String, java.lang.String)
+        </function-signature>
+    </function>
 </taglib>

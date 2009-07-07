@@ -2,25 +2,26 @@
  * StandardExtensions.java
  *
  * Created on March 21, 2008, 9:43 AM
- *
  */
 
 package org.j2free.jsp.el;
 
 import java.io.UnsupportedEncodingException;
+
 import java.net.URLEncoder;
+
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import javax.servlet.http.HttpServletRequest;
 
 import static org.j2free.util.ServletUtils.*;
 
 /**
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 public class StandardExtensions {
     
@@ -148,5 +149,15 @@ public class StandardExtensions {
                   .replace("'","&#39")
                   .replace("\"","&quot;");
     }
-    
+ 
+    /**
+     * Proxy for {@link String} <tt>matches</tt>.
+     * 
+     * @param toMatch The string to test.
+     * @param regex The regex to look for.
+     * @return <pre>toMatch.matches(regex)</pre>
+     */
+    public static boolean matches(String toMatch, String regex) {
+        return toMatch.matches(regex);
+    }
 }
