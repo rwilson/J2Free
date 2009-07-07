@@ -28,6 +28,7 @@ public class HttpCallResult {
 
     protected final HttpMethod method;
     protected final String response;
+    protected final byte[] bytes;
 
     protected final StatusLine status;
 
@@ -37,6 +38,7 @@ public class HttpCallResult {
     public HttpCallResult(HttpMethod method) throws IOException {
         this.method     = method;
         this.response   = method.getResponseBodyAsString();
+        this.bytes      = method.getResponseBody();
 
         requestHeaders  = new ConcurrentHashMap<String,Header>();
         responseHeaders = new ConcurrentHashMap<String, Header>();
@@ -58,6 +60,10 @@ public class HttpCallResult {
 
     public String getResponse() {
         return response;
+    }
+
+    public byte[] getResponseBytes() {
+        return bytes;
     }
 
     public Header getRequestHeader(String header) {
