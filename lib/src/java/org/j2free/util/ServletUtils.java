@@ -180,8 +180,9 @@ public class ServletUtils {
      */
     public static String join(Object[] words, String separator) {
 
-        if (words == null || words.length == 0)
+        if (words == null || words.length == 0) {
             return "";
+        }
 
 
         String ret = "";
@@ -201,8 +202,9 @@ public class ServletUtils {
      */
     public static String join(int[] words, String separator) {
 
-        if (words == null || words.length == 0)
+        if (words == null || words.length == 0) {
             return "";
+        }
 
 
         String ret = "";
@@ -222,8 +224,9 @@ public class ServletUtils {
      */
     public static String join(float[] words, String separator) {
 
-        if (words == null || words.length == 0)
+        if (words == null || words.length == 0) {
             return "";
+        }
 
 
         String ret = "";
@@ -243,8 +246,9 @@ public class ServletUtils {
      */
     public static String join(double[] words, String separator) {
 
-        if (words == null || words.length == 0)
+        if (words == null || words.length == 0) {
             return "";
+        }
 
 
         String ret = "";
@@ -285,8 +289,9 @@ public class ServletUtils {
      */
     public static <T extends Object> String join(Collection<T> words, String separator) {
 
-        if (words == null || words.isEmpty())
+        if (words == null || words.isEmpty()) {
             return "";
+        }
 
         String ret = "";
         Iterator<T> itr = words.iterator();
@@ -378,8 +383,9 @@ public class ServletUtils {
 
             String responseString = responseWrapper.toString();
 
-            if (compress)
+            if (compress) {
                 responseString = compress(responseString);
+            }
 
             response.setContentLength(responseString.length());
             response.setContentType(contentType);
@@ -401,8 +407,9 @@ public class ServletUtils {
      * @return the compressed String, or an empty string if <code>content</code> is null.
      */
     public static String compress(String content) {
-        if (content == null)
+        if (content == null) {
             return "";
+        }
 
         return content.replaceAll("\n", " ").replaceAll("\\s{2,}", " ").replaceAll(" />", "/>");
     }
@@ -464,6 +471,17 @@ public class ServletUtils {
      */
     public static boolean empty(String str) {
         return str == null || str.equals(EMPTY);
+    }
+
+    /**
+     * Replaces &lt; &gt; &amp; &#39; &quot;
+     */
+    public static String cleanXSS(String str) {
+        return str.replace("<","&lt;")
+                  .replace(">","&gt;")
+                  .replace("&","&amp;")
+                  .replace("'","&#39")
+                  .replace("\"","&quot;");
     }
 
     public static String toCamelCase(String source) {
@@ -609,50 +627,51 @@ public class ServletUtils {
         return createCookie(response, name, value, 60 * 60 * 24 * 356, true);
     }
 
-	/**
-	 * Performes a basic auth authentication on the request comparing the username and password sent in the header
-	 * to the correct ones correctUsername and correctPassword
-	 * If no auth is sent or username and password doesn't match it returns false
-	 * @param request
-	 * @param correctUsername
-	 * @param correctPassword
-	 * @return
-	 */
-	public static boolean basicAuthAuthentication(HttpServletRequest request, String correctUsername, String correctPassword) {
-		boolean valid = false;
-		String userID = null;
-	    String password = null;
+    /**
+     * Performes a basic auth authentication on the request comparing the username and password sent in the header
+     * to the correct ones correctUsername and correctPassword
+     * If no auth is sent or username and password doesn't match it returns false
+     * @param request
+     * @param correctUsername
+     * @param correctPassword
+     * @return
+     */
+    public static boolean basicAuthAuthentication(HttpServletRequest request, String correctUsername,
+                                                  String correctPassword) {
+        boolean valid = false;
+        String userID = null;
+        String password = null;
 
-		  // Get the Authorization header, if one was supplied
+        // Get the Authorization header, if one was supplied
 
-		String authHeader = request.getHeader("Authorization");
-		if (authHeader != null) {
-			StringTokenizer st = new StringTokenizer(authHeader);
-			if (st.hasMoreTokens()) {
-				String basic = st.nextToken();
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null) {
+            StringTokenizer st = new StringTokenizer(authHeader);
+            if (st.hasMoreTokens()) {
+                String basic = st.nextToken();
 
-				// We only handle HTTP Basic authentication
+                // We only handle HTTP Basic authentication
 
-				if (basic.equalsIgnoreCase("Basic")) {
-					String credentials = st.nextToken();
+                if (basic.equalsIgnoreCase("Basic")) {
+                    String credentials = st.nextToken();
 
-					String userPass;
-					userPass = new String(Base64.decodeBase64(credentials.getBytes()));
-					int p = userPass.indexOf(":");
-					if (p != -1) {
-						userID = userPass.substring(0, p);
-						password = userPass.substring(p+1);
-						// Validate user ID and password
-						// and set valid true true if valid.
-						if ((userID.equals(correctUsername)) &&
-							(password.equals(correctPassword))) {
-							valid = true;
-						}
-					}	
-				}
-			}
-		}
+                    String userPass;
+                    userPass = new String(Base64.decodeBase64(credentials.getBytes()));
+                    int p = userPass.indexOf(":");
+                    if (p != -1) {
+                        userID = userPass.substring(0, p);
+                        password = userPass.substring(p + 1);
+                        // Validate user ID and password
+                        // and set valid true true if valid.
+                        if ((userID.equals(correctUsername)) &&
+                            (password.equals(correctPassword))) {
+                            valid = true;
+                        }
+                    }
+                }
+            }
+        }
 
-		return valid;
-	}
+        return valid;
+    }
 }

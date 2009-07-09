@@ -17,6 +17,7 @@ import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.j2free.util.ServletUtils;
 import static org.j2free.util.ServletUtils.*;
 
 /**
@@ -143,11 +144,7 @@ public class StandardExtensions {
     }
     
     public static String cleanXSS(String str) {
-        return str.replace("<","&lt;")
-                  .replace(">","&gt;")
-                  .replace("&","&amp;")
-                  .replace("'","&#39")
-                  .replace("\"","&quot;");
+        return ServletUtils.cleanXSS(str);
     }
  
     /**
