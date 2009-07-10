@@ -21,9 +21,10 @@ import static org.j2free.security.SecurityUtils.*;
  * to which access was granted.
  *
  * @author Ryan Wilson
- * @version
+ * @deprecated Use memcached instead.
  */
 @ThreadSafe
+@Deprecated
 public class ProgrammaticAccess {
     
     private static final ConcurrentHashMap<String,Object> allowedUsers = new ConcurrentHashMap<String,Object>();
