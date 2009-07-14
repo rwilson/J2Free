@@ -48,7 +48,7 @@ public class Global {
         return map.replace(key, val);
     }
 
-    public static boolean replate(String key, Object old, Object val) {
+    public static boolean replace(String key, Object old, Object val) {
         return map.replace(key, old, val);
     }
 }
