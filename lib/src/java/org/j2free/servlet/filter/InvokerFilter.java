@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.*;
@@ -35,6 +36,7 @@ import org.j2free.jpa.Controller;
 import org.j2free.jpa.ControllerServlet;
 
 
+import org.j2free.util.concurrent.ConcurrentHashSet;
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
@@ -79,8 +81,11 @@ public class InvokerFilter implements Filter {
                                 "attributor|" +
                                 ").*?";
 
+
     private static final AtomicBoolean benchmark                     = new AtomicBoolean(false);
-    
+    private static final AtomicInteger sslRedirectPort               = new AtomicInteger(-1);
+    private static final AtomicInteger nonSslRedirectPort            = new AtomicInteger(-1);
+
     private static final AtomicReference<String> controllerClassName = new AtomicReference(EMPTY);
     private static final AtomicReference<String> bypassPath          = new AtomicReference(EMPTY);
 
@@ -88,9 +93,13 @@ public class InvokerFilter implements Filter {
     private static final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap = 
             new ConcurrentHashMap<String, Class<? extends HttpServlet>>(30000,0.8f,50);
 
-    // A list of regex's to test urls against
+    // A map of regex's to test urls against
     private static final ConcurrentMap<String,Class<? extends HttpServlet>> regexMap =
             new ConcurrentHashMap<String,Class<? extends HttpServlet>>();
+
+    // A set of klass's that require an SSL connection
+    private static final ConcurrentHashSet<Class<? extends HttpServlet>> sslSet =
+            new ConcurrentHashSet<Class<? extends HttpServlet>>(100);
 
     private static final CountDownLatch latch   = new CountDownLatch(1);
     private static final AtomicBoolean  enabled = new AtomicBoolean(false);
@@ -269,6 +278,17 @@ public class InvokerFilter implements Filter {
 
         } else {
 
+            // If the klass requires SSL, make sure we're on an SSL connection
+            boolean requireSsl = sslSet.contains(klass);
+            boolean isSsl      = request.isSecure();
+            if (requireSsl && !isSsl) {
+                redirectOverSSL(request, response, sslRedirectPort.get());
+                return;
+            } else if (isSsl && !requireSsl) {
+                redirectOverNonSSL(request, response, nonSslRedirectPort.get());
+                return;
+            }
+
             Controller controller = null;
 
             try {
@@ -369,6 +389,9 @@ public class InvokerFilter implements Filter {
             log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
     }
 
+    public InvokerFilter() {
+    }
+
     /**
      * Return the filter configuration object for this filter.
      */
@@ -401,7 +424,7 @@ public class InvokerFilter implements Filter {
         this.filterConfig = filterConfig;
     }
 
-    public static void enable(String bypass, String controllerClass, boolean doBenchmark) {
+    public static void enable(String bypass, String controllerClass, boolean doBenchmark, Integer sslPort, Integer nonSslPort) {
 
         if (enabled.get())
             return;
@@ -416,6 +439,14 @@ public class InvokerFilter implements Filter {
 
         // Can enable benchmarking globally
         benchmark.set(doBenchmark);
+
+        // Set the SSL redirect port
+        if (sslPort != null && sslPort > 0)
+            sslRedirectPort.set(sslPort);
+
+        // Set the SSL redirect port
+        if (nonSslPort != null && nonSslPort > 0)
+            nonSslRedirectPort.set(nonSslPort);
 
         // (1) Look for any classes annotated with @URLMapping
         try {
@@ -463,7 +494,13 @@ public class InvokerFilter implements Filter {
                                     regexMap.putIfAbsent(anno.regex(), klass);
                                     log.debug("Mapping servlet " + klass.getName() + " to regex path " + anno.regex());
                                 }
+
+                                if (anno.ssl()) {
+                                    log.warn("Servlet " + klass.getName() + " will only accept SSL connections.");
+                                    sslSet.add(klass);
+                                }
                             }
+                            
                         } catch (ClassNotFoundException e) {
                             log.error("Error processing URLMapping",e);
                         }

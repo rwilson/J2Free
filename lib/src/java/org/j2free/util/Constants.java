@@ -89,6 +89,8 @@ public class Constants {
     public static final String PROP_INVOKER_CONTROLLER     = "filter.invoker.controller.className";
     public static final String PROP_INVOKER_BENCHMARK      = "filter.invoker.benchmark.enabled";
     public static final String PROP_INVOKER_BYPASSPATH     = "filter.invoker.bypass.path";
+    public static final String PROP_INVOKER_SSL_PORT       = "filter.invoker.ssl.port";
+    public static final String PROP_INVOKER_NON_SSL_PORT   = "filter.invoker.non-ssl.port";
 
     // Task Execution config
     public static final String PROP_TASK_EXECUTOR_ON       = "task.executor.enabled";

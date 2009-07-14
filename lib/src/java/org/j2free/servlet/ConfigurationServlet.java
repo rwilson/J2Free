@@ -136,6 +136,8 @@ public class ConfigurationServlet extends HttpServlet {
                 localhost = InetAddress.getLocalHost().getHostAddress();
             } catch (Exception e) { }
 
+            context.setAttribute("localhost", localhost);
+
             // (2) Set application context attributes for all config properties
             Iterator itr = config.getKeys();
             while (itr.hasNext()) {
@@ -171,7 +173,9 @@ public class ConfigurationServlet extends HttpServlet {
                 InvokerFilter.enable(
                         config.getString(PROP_INVOKER_BYPASSPATH,EMPTY),
                         config.getString(PROP_INVOKER_CONTROLLER,EMPTY),
-                        config.getBoolean(PROP_INVOKER_BENCHMARK, false)
+                        config.getBoolean(PROP_INVOKER_BENCHMARK, false),
+                        config.getInteger(PROP_INVOKER_SSL_PORT, null),
+                        config.getInteger(PROP_INVOKER_NON_SSL_PORT, null)
                     );
             }
 

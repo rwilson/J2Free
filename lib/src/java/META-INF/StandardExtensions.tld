@@ -3,11 +3,13 @@
     <tlib-version>2.0</tlib-version>
     <short-name>stdx</short-name>
     <uri>http://tags.j2free.org/StandardExt</uri>
+
     <tag>
         <name>requireController</name>
         <tag-class>org.j2free.jsp.tags.RequireController</tag-class>
         <body-content>JSP</body-content>
     </tag>
+
     <tag>
         <name>replace</name>
         <tag-class>org.j2free.jsp.tags.PatternReplace</tag-class>
@@ -23,6 +25,84 @@
             <rtexprvalue>true</rtexprvalue>
         </attribute>
     </tag>
+    
+    <tag>
+        <name>cset</name>
+        <description>
+            Simple condition + set tag, which sets the result of the
+            expression evaluation ifTrue in a 'scope' if the supplied
+            condition is true, otherwise sets the result of the expression
+            evaluation ifFalse in a 'scope'
+        </description>
+        <tag-class>org.j2free.jsp.tags.ConditionalSetTag</tag-class>
+        <body-content>JSP</body-content>
+        <attribute>
+            <description>
+                The test condition that determines the result of which
+                expression evaluation, ifTrue or ifFalse, will be stored
+                in the scoped variable var.
+            </description>
+            <name>test</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>boolean</type>
+        </attribute>
+        <attribute>
+            <description>
+                Name of the exported scoped variable to hold the value
+                specified in the action. The type of the scoped variable is
+                whatever type the value expression evaluates to.
+            </description>
+            <name>var</name>
+            <required>false</required>
+            <rtexprvalue>false</rtexprvalue>
+        </attribute>
+        <attribute>
+            <description>
+                Expression to be evaluated if the condition evaluates to true.
+            </description>
+            <name>ifTrue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>java.lang.String</type>
+        </attribute>
+        <attribute>
+            <description>
+                Expression to be evaluated if the condition evaluates to false.
+            </description>
+            <name>ifFalse</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <type>java.lang.String</type>
+        </attribute>
+        <attribute>
+            <description>
+                Target object whose property will be set. Must evaluate to
+                a JavaBeans object with setter property property, or to a
+                java.util.Map object.
+            </description>
+            <name>target</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <description>
+                Name of the property to be set in the target object.
+            </description>
+            <name>property</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <description>
+                Scope for var.
+            </description>
+            <name>scope</name>
+            <required>false</required>
+            <rtexprvalue>false</rtexprvalue>
+        </attribute>
+    </tag>
+
     <function>
         <name>instanceOf</name>
         <function-class>org.j2free.jsp.el.StandardExtensions</function-class>

@@ -18,4 +18,5 @@ import java.lang.annotation.*;
 public @interface URLMapping {
     public String[] urls() default {};
     public String regex() default "";
+    public boolean ssl() default false;
 }
