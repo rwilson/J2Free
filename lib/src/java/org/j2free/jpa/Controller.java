@@ -11,6 +11,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -188,8 +190,12 @@ public class Controller {
         }
     }
 
-    public boolean isTransactionOpen() throws SystemException {
-        return (tx.getStatus() == Status.STATUS_ACTIVE);
+    public boolean isTransactionOpen() {
+        try {
+            return tx.getStatus() == Status.STATUS_ACTIVE;
+        } catch (SystemException ex) {
+            return false;
+        }
     }
 
     public Session getSession() {
