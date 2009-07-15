@@ -335,11 +335,14 @@ public class InvokerFilter implements Filter {
 
                     servlet.setController(controller);
                     request.setAttribute("controller", controller);
-                    servlet.service(request, response);
+
+                    try {
+                        servlet.service(request, response);
+                    } finally {
+                        controller.endTransaction();
+                    }
 
                     run  = System.currentTimeMillis();
-
-                    controller.endTransaction();
 
                     if (request.getParameter("benchmark") != null) {
                         log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));

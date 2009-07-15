@@ -54,6 +54,7 @@ import org.hibernate.search.jpa.Search;
 import org.hibernate.validator.InvalidStateException;
 import org.hibernate.validator.InvalidValue;
 
+import org.j2free.util.LaunderThrowable;
 import org.j2free.util.Pair;
 
 /**
@@ -70,13 +71,10 @@ public class Controller {
     protected EntityManager em;
     protected FullTextEntityManager fullTextEntityManager;
 
-    private boolean markedForRollback;
-
     protected Throwable problem;
     protected InvalidValue[] errors;
 
     public Controller() throws NamingException {
-        markedForRollback = false;
 
         InitialContext ctx = new InitialContext();
         tx = (UserTransaction) ctx.lookup("UserTransaction");
@@ -129,16 +127,20 @@ public class Controller {
         }
     }
 
-    public void markForRollback(boolean markForRollback) {
-        this.markedForRollback = markForRollback;
-    }
-
-    public void setMarkedForRollback(boolean markedForRollback) {
-        this.markedForRollback = markedForRollback;
+    public void markForRollback() {
+        try {
+            tx.setRollbackOnly();
+        } catch (Exception e) {
+            throw LaunderThrowable.launderThrowable(e);
+        }
     }
 
     public boolean isMarkedForRollback() {
-        return markedForRollback;
+        try {
+            return tx.getStatus() == Status.STATUS_MARKED_ROLLBACK;
+        } catch (Exception e) {
+            throw LaunderThrowable.launderThrowable(e);
+        }
     }
 
     public FullTextEntityManager getFullTextEntityManager() {
@@ -151,35 +153,38 @@ public class Controller {
 
     public void startTransaction() throws NotSupportedException, SystemException {
         
+        // Make sure a transaction isn't already in progress
+        if (tx.getStatus() == Status.STATUS_ACTIVE)
+            return;
+
+        // Start the transaction
         tx.begin();
 
         // make sure the entity manager knows the transaction has begun
         em.joinTransaction();
 
         // make sure that a transaction always starts clean
-        markedForRollback = false; 
-        problem           = null;
-        errors            = null;
+        problem = null;
+        errors  = null;
     }
 
     public void endTransaction() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
         try {
 
-            if (markedForRollback) {
+            // If the user called markForRollback
+            if (tx.getStatus() == Status.STATUS_MARKED_ROLLBACK)
                 tx.rollback();
-            } else {
+            else if (tx.getStatus() == Status.STATUS_ACTIVE)
                 tx.commit();
-            }
+            else
+                throw new IllegalStateException("Unknown status in endTransaction: " + getTransactionStatus());
 
             problem = null;
-            errors = null;
+            errors  = null;
+            
         } catch (InvalidStateException ise) {
             problem = ise;
             this.errors = ise.getInvalidValues();
-        } catch (RollbackException re) {
-            if (!markedForRollback) {
-                throw re;
-            }
         }
     }
 
@@ -341,18 +346,14 @@ public class Controller {
                         getValue() + " | " + error.getMessage());
             }
 
-            markForRollback(true);
-            //LOG.error("InvalidStateException in Controller.persist", ise);
+            markForRollback();
 
         } catch (ConstraintViolationException cve) {
             this.problem = cve;
-            markForRollback(true);
-            //LOG.error("ConstraintViolationException in Controller.persist", cve);
+            markForRollback();
         } catch (PropertyValueException pve) {
             this.problem = pve;
-            markForRollback(true);
-            //LOG.error("PropertyValueException in Controller.persist", pve);
-
+            markForRollback();
         }
         return entity;
     }
@@ -1031,5 +1032,34 @@ public class Controller {
         }
 
         return (List<T>) query.list();
+    }
+
+    public String getTransactionStatus() throws SystemException {
+        if (tx == null) {
+            return "Null transaction";
+        }
+        
+        switch (tx.getStatus()) {
+            case Status.STATUS_ACTIVE:
+                return "Active";
+            case Status.STATUS_COMMITTED:
+                return "Committed";
+            case Status.STATUS_COMMITTING:
+                return "Committing";
+            case Status.STATUS_MARKED_ROLLBACK:
+                return "Marked for rollback";
+            case Status.STATUS_NO_TRANSACTION:
+                return "No Transaction";
+            case Status.STATUS_PREPARED:
+                return "Prepared";
+            case Status.STATUS_ROLLEDBACK:
+                return "Rolledback";
+            case Status.STATUS_ROLLING_BACK:
+                return "Rolling back";
+            case Status.STATUS_UNKNOWN:
+                return "Declared Unknown";
+            default:
+                return "Undeclared Unknown Status";
+        }
     }
 }
