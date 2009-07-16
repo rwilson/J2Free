@@ -57,6 +57,11 @@ public class Constants {
     // For validating e-mails
     public static final String EMAIL_REGEX                 = "^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:[A-Za-z]{2}|edu|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)$";
 
+    // For setting the application context value of "localhost"
+    public static final String PROP_LOCALHOST              = "local.host";
+    public static final String PROP_LOCALPORT              = "local.port";
+    public static final String PROP_LOCALPORT_SSL          = "local.port.ssl";
+
     // SMTP Properties
     public static final String PROP_SMTP_HOST              = "mail.smtp.host";
     public static final String PROP_SMTP_PORT              = "mail.smtp.port";
@@ -89,8 +94,6 @@ public class Constants {
     public static final String PROP_INVOKER_CONTROLLER     = "filter.invoker.controller.className";
     public static final String PROP_INVOKER_BENCHMARK      = "filter.invoker.benchmark.enabled";
     public static final String PROP_INVOKER_BYPASSPATH     = "filter.invoker.bypass.path";
-    public static final String PROP_INVOKER_SSL_PORT       = "filter.invoker.ssl.port";
-    public static final String PROP_INVOKER_NON_SSL_PORT   = "filter.invoker.non-ssl.port";
 
     // Task Execution config
     public static final String PROP_TASK_EXECUTOR_ON       = "task.executor.enabled";

@@ -412,6 +412,7 @@ public class ServletUtils {
         
         StringBuffer url = request.getRequestURL();
 
+        // Make sure we're on https
         if (url.charAt(4) != 's')
             url.insert(4, 's');
 
@@ -449,6 +450,7 @@ public class ServletUtils {
 
         StringBuffer url = request.getRequestURL();
 
+        // Make sure we're on http
         if (url.charAt(4) == 's')
             url.deleteCharAt(4);
 

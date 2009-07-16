@@ -7,7 +7,6 @@ package org.j2free.servlet;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Enumeration;
 import java.util.Iterator;
 
 import java.util.List;
@@ -15,12 +14,14 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
 import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -31,9 +32,9 @@ import org.apache.commons.logging.LogFactory;
 import org.j2free.email.EmailService;
 import org.j2free.jsp.tags.cache.FragmentCache;
 import org.j2free.servlet.filter.InvokerFilter;
-
 import org.j2free.util.Global;
 import org.j2free.util.Priority;
+
 import static org.j2free.util.Constants.*;
 
 
@@ -131,10 +132,15 @@ public class ConfigurationServlet extends HttpServlet {
             Global.put(CONTEXT_ATTR_CONFIG, config);
 
             // Anything with the value "localhost" will be set to the IP if possible
-            String localhost = "localhost";
-            try {
-                localhost = InetAddress.getLocalHost().getHostAddress();
-            } catch (Exception e) { }
+            String localhost = config.getString(PROP_LOCALHOST, "localhost");
+            if (localhost.equalsIgnoreCase("ip")) {
+                try {
+                    localhost = InetAddress.getLocalHost().getHostAddress();
+                } catch (Exception e) {
+                    log.warn("Error determining localhost", e);
+                    localhost = "localhost";
+                }
+            }
 
             context.setAttribute("localhost", localhost);
 
@@ -174,8 +180,8 @@ public class ConfigurationServlet extends HttpServlet {
                         config.getString(PROP_INVOKER_BYPASSPATH,EMPTY),
                         config.getString(PROP_INVOKER_CONTROLLER,EMPTY),
                         config.getBoolean(PROP_INVOKER_BENCHMARK, false),
-                        config.getInteger(PROP_INVOKER_SSL_PORT, null),
-                        config.getInteger(PROP_INVOKER_NON_SSL_PORT, null)
+                        config.getInteger(PROP_LOCALPORT, null),
+                        config.getInteger(PROP_LOCALPORT_SSL, null)
                     );
             }
 

@@ -427,7 +427,7 @@ public class InvokerFilter implements Filter {
         this.filterConfig = filterConfig;
     }
 
-    public static void enable(String bypass, String controllerClass, boolean doBenchmark, Integer sslPort, Integer nonSslPort) {
+    public static void enable(String bypass, String controllerClass, boolean doBenchmark, Integer nonSslPort, Integer sslPort) {
 
         if (enabled.get())
             return;
