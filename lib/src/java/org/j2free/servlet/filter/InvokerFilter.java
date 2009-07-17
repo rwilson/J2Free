@@ -333,6 +333,17 @@ public class InvokerFilter implements Filter {
 
                     controller.startTransaction();
 
+                    if (!controller.isTransactionOpen()) {
+                        log.error("Cannot service reuest, tx not open [" +
+                                    "url=" + currentPath + ", " +
+                                    "servlet=" + klass.getSimpleName() + ", " +
+                                    "tx.status=" + controller.getTransactionStatus() +
+                                  "]");
+
+                        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        return;
+                    }
+
                     servlet.setController(controller);
                     request.setAttribute("controller", controller);
 
