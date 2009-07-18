@@ -400,6 +400,12 @@ public class ServletUtils {
         }
     }
 
+    public static void sendPermanentRedirect(HttpServletResponse response, String url) {
+        response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY);
+        response.setHeader("Location", url);
+        response.setHeader("Connection","close");
+    }
+
     /**
      * Redirects the user to the current url, following the
      *
@@ -435,7 +441,7 @@ public class ServletUtils {
             url.insert(portStart, sslPort);   // Insert the right port where it should be
         }
 
-        response.sendRedirect(url.toString());
+        sendPermanentRedirect(response, url.toString());
     }
 
     /**
@@ -473,7 +479,7 @@ public class ServletUtils {
             url.insert(portStart, nonSslPort);   // Insert the right port where it should be
         }
 
-        response.sendRedirect(url.toString());
+        sendPermanentRedirect(response, url.toString());
     }
 
     /**
