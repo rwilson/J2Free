@@ -27,6 +27,10 @@ public class RequireController extends TagSupport {
     
     private boolean closeTx;
 
+    public RequireController() {
+        closeTx = false;
+    }
+
     @Override
     public int doStartTag() throws JspException {
 
@@ -50,7 +54,7 @@ public class RequireController extends TagSupport {
             } catch (Exception e) {
                 return SKIP_BODY;
             }
-            request.setAttribute("controller", controller);
+            request.setAttribute(ATTRIBUTE, controller);
         }
 
         return EVAL_BODY_INCLUDE;
@@ -70,4 +74,11 @@ public class RequireController extends TagSupport {
 
         return EVAL_PAGE;
     }
+
+    @Override
+    public void release() {
+        closeTx = false;
+        super.release();
+    }
+
 }
