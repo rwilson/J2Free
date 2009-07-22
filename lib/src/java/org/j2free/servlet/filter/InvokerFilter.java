@@ -32,11 +32,11 @@ import org.apache.commons.logging.LogFactory;
 
 import org.j2free.annotations.URLMapping;
 
+import org.j2free.annotations.URLMapping.SSLOption;
 import org.j2free.jpa.Controller;
 import org.j2free.jpa.ControllerServlet;
 
 
-import org.j2free.util.concurrent.ConcurrentHashSet;
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
@@ -98,8 +98,8 @@ public class InvokerFilter implements Filter {
             new ConcurrentHashMap<String,Class<? extends HttpServlet>>();
 
     // A set of klass's that require an SSL connection
-    private static final ConcurrentHashSet<Class<? extends HttpServlet>> sslSet =
-            new ConcurrentHashSet<Class<? extends HttpServlet>>(100);
+    private static final ConcurrentHashMap<Class<? extends HttpServlet>, SSLOption> sslMap =
+            new ConcurrentHashMap<Class<? extends HttpServlet>, SSLOption>(100);
 
     private static final CountDownLatch latch   = new CountDownLatch(1);
     private static final AtomicBoolean  enabled = new AtomicBoolean(false);
@@ -279,12 +279,12 @@ public class InvokerFilter implements Filter {
         } else {
 
             // If the klass requires SSL, make sure we're on an SSL connection
-            boolean requireSsl = sslSet.contains(klass);
-            boolean isSsl      = request.isSecure();
-            if (requireSsl && !isSsl) {
+            SSLOption sslOpt = sslMap.get(klass);
+            boolean isSsl    = request.isSecure();
+            if (sslOpt == SSLOption.REQUIRE && !isSsl) {
                 redirectOverSSL(request, response, sslRedirectPort.get());
                 return;
-            } else if (isSsl && !requireSsl) {
+            } else if (sslOpt == SSLOption.DENY && isSsl) {
                 redirectOverNonSSL(request, response, nonSslRedirectPort.get());
                 return;
             }
@@ -509,9 +509,9 @@ public class InvokerFilter implements Filter {
                                     log.debug("Mapping servlet " + klass.getName() + " to regex path " + anno.regex());
                                 }
 
-                                if (anno.ssl()) {
+                                if (anno.ssl() != SSLOption.OPTIONAL) {
                                     log.warn("Servlet " + klass.getName() + " will only accept SSL connections.");
-                                    sslSet.add(klass);
+                                    sslMap.put(klass, anno.ssl());
                                 }
                             }
                             
@@ -533,15 +533,19 @@ public class InvokerFilter implements Filter {
     /**
      * @param path The path to map a Servlet to
      * @param klass The Servlet to map
-     * @return true if the servlet was mapped to the path, false if another servlet was already mapped to that path
+     * @return null if the servlet was mapped to the path, or a class if another servlet was already mapped to that path
      */
-    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass) {
+    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass, SSLOption sslOpt) {
 
         log.debug("Mapping servlet " + klass.getName() + " to path " + path);
         
         if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
             path = path.replaceAll("\\*","");
         
-        return urlMap.putIfAbsent(path, klass);
+        Class<? extends HttpServlet> result = urlMap.putIfAbsent(path, klass);
+        if (result == null && sslOpt != SSLOption.OPTIONAL) {
+            sslMap.put(klass, sslOpt);
+        }
+        return result;
     }
 }

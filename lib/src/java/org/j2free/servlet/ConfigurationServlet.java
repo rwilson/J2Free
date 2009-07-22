@@ -20,7 +20,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
 import net.spy.memcached.AddrUtil;
-import net.spy.memcached.BinaryConnectionFactory;
 import net.spy.memcached.MemcachedClient;
 
 import org.apache.commons.configuration.Configuration;
@@ -30,6 +29,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.annotations.URLMapping.SSLOption;
 import org.j2free.email.EmailService;
 import org.j2free.http.QueuedHttpCallService;
 import org.j2free.jsp.tags.cache.FragmentCache;
@@ -199,7 +199,7 @@ public class ConfigurationServlet extends HttpServlet {
                 if (staticJsps != null && !staticJsps.isEmpty()) {
                     for (String jsp : staticJsps) {
                         jsp = staticJspPath + jsp.replace(staticJspDir, EMPTY).replaceAll("\\.jsp$", EMPTY);
-                        InvokerFilter.addServletMapping(jsp, StaticJspServlet.class);
+                        InvokerFilter.addServletMapping(jsp, StaticJspServlet.class, SSLOption.OPTIONAL);
                     }
                 }
             }
@@ -347,6 +347,10 @@ public class ConfigurationServlet extends HttpServlet {
     }
 
     private void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass) {
+        addServletMapping(config, pathProp, defaultPath, servletClass, SSLOption.OPTIONAL);
+    }
+
+    private void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass, SSLOption sslOpt) {
 
         String path;
         Class  oldKlass;
@@ -356,14 +360,14 @@ public class ConfigurationServlet extends HttpServlet {
         List paths = config.getList(pathProp);
 
         if (paths == null) {
-            oldKlass = InvokerFilter.addServletMapping(defaultPath, servletClass);
+            oldKlass = InvokerFilter.addServletMapping(defaultPath, servletClass, sslOpt);
             if (oldKlass != null)
                 log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + defaultPath);
         } else {
             itr = paths.iterator();
             while (itr.hasNext()) {
                 path = (String)itr.next();
-                oldKlass = InvokerFilter.addServletMapping(path, servletClass);
+                oldKlass = InvokerFilter.addServletMapping(path, servletClass, sslOpt);
                 if (oldKlass != null)
                     log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + path);
             }

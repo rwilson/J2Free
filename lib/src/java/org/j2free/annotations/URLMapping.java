@@ -16,7 +16,14 @@ import java.lang.annotation.*;
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface URLMapping {
+
+    public static enum SSLOption {
+        DENY,
+        OPTIONAL,
+        REQUIRE
+    };
+
     public String[] urls() default {};
     public String regex() default "";
-    public boolean ssl() default false;
+    public SSLOption ssl() default SSLOption.DENY;
 }
