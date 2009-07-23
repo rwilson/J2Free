@@ -57,7 +57,7 @@ public class PaymentUtils {
     }
     
     public static String getCreditCardType(String cardNumber) {
-        int firstDigit = Integer.valueOf(cardNumber.charAt(0));
+        int firstDigit = Character.getNumericValue(cardNumber.charAt(0));
         switch(firstDigit) {
             case 3: return "Amex";
             case 4: return "Visa";
