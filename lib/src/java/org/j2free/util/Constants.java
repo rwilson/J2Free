@@ -99,6 +99,12 @@ public class Constants {
     public static final String PROP_TASK_EXECUTOR_ON       = "task.executor.enabled";
     public static final String PROP_TASK_EXECUTOR_THREADS  = "task.executor.threads";
 
+    // Http Call Service
+    public static final String PROP_HTTP_SRVC_ON           = "http.service.enabled";
+    public static final String PROP_HTTP_SRVC_MAX_POOL     = "http.service.pool-size";
+    public static final String PROP_HTTP_SRVC_CONNECT_TOUT = "http.client.connect.timeout";
+    public static final String PROP_HTTP_SRVE_SOCKET_TOUT  = "http.client.socket.timeout";
+
     public static final String PROP_DECAY_EPOCH            = "decay.epoch";
 
     // Fragment Cache Config
@@ -139,6 +145,11 @@ public class Constants {
     public static final long DEFAULT_MAIL_SERVICE_KEEPALIVE   = 180;
 
     public static final long DEFAULT_MAIL_RQAP_INTERVAL       = 5 * 60;
+
+    // Http Service defaults
+    public static final long DEFAULT_HTTP_SRVC_THREAD_IDLE    = 60;
+    public static final int  DEFAULT_HTTP_SRVC_CONNECT_TOUT   = 30;
+    public static final int  DEFAULT_HTTP_SRVE_SOCKET_TOUT    = 30;
 
     // Servlet defaults
     // Can use , to separate multiple paths

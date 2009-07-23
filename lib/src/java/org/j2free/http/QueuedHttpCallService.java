@@ -31,63 +31,72 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * <tt>QueuedExecutorService</tt> a thread-safe service with static methods
- * to execute http calls in priority order.  Internally, uses a <tt>ThreadPoolExecutor</tt>
- * that is configured to use a <tt>PriorityBlockingQueue</tt> to order tasks
+ * to execute http calls in priority order.  Internally, uses a {@link ThreadPoolExecutor}
+ * that is configured to use a {@link PriorityBlockingQueue} to order tasks
  * by priority.
  *
- * The <tt>HttpCallTask</tt> objects are executed in instances of the internal
- * <tt>HttpCallable</tt>, which is intentionally not published.  <tt>QueuedHttpCallService</tt>
- * is final specifically to prevent subclassing from publishing <tt>HttpCallable</tt> to
+ * The {@link HttpCallTask} objects are executed in instances of the internal
+ * {@link HttpCallable}, which is intentionally not published.  <tt>QueuedHttpCallService</tt>
+ * is final specifically to prevent subclassing from publishing {@link HttpCallable} to
  * alien code.
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 @ThreadSafe
 public final class QueuedHttpCallService {
 
     private static final Log log = LogFactory.getLog(QueuedHttpCallService.class);
 
-    private static final int HTTP_CONNECT_TIMEOUT = 60000;
-    private static final int HTTP_SOCKET_TIMEOUT  = 60000;
-
-    private static final int MAX_POOL     = 20;
-    private static final int CORE_POOL    = MAX_POOL / 4;
-    private static final long THREAD_IDLE = 180;
-
-    private static final ThreadPoolExecutor executor;
-    private static final MultiThreadedHttpConnectionManager connectionManager;
-    private static final HttpClient httpClient;
-
-    static {
-
-        executor = new ThreadPoolExecutor(
-                CORE_POOL,
-                MAX_POOL,
-                THREAD_IDLE,
-                TimeUnit.SECONDS,
-                new PriorityBlockingQueue<Runnable>()
-            );
-
-        connectionManager = new MultiThreadedHttpConnectionManager();
-
-        // Configure the ConnectionManager
-        HttpConnectionManagerParams cmParams = connectionManager.getParams();
-        cmParams.setConnectionTimeout(HTTP_CONNECT_TIMEOUT);
-        cmParams.setSoTimeout(HTTP_SOCKET_TIMEOUT);
-        cmParams.setMaxTotalConnections(MAX_POOL);
-
-        httpClient = new HttpClient(connectionManager);
-    }
+    private static ThreadPoolExecutor                 executor;
+    private static MultiThreadedHttpConnectionManager connectionManager;
+    private static HttpClient                         httpClient;
 
     public static HttpCallFuture submit(final HttpCallTask task) {
 
         if (task == null)
             throw new IllegalArgumentException("HttpCallTask cannot be null");
 
+        if (executor == null)
+            throw new IllegalStateException("Invalid operation, QueuedHttpCallService has not been started");
+
         HttpCallFuture future = new HttpCallFuture(task, new HttpCallable(task));
         executor.execute(future);
 
         return future;
+    }
+
+    public static void enable(int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout) {
+
+        if (executor != null) {
+            if (executor.isShutdown() || executor.isTerminated())
+                throw new IllegalStateException("Invalid operation, QueuedHttpCallService is already shutdown");
+            if (executor.isTerminating())
+                throw new IllegalStateException("Invalid operation, QueuedHttpCallService is shutting down");
+
+            throw new IllegalStateException("Invalid operation, QueuedHttpCallService is already started");
+        }
+
+        if (maxPoolSize < 0)
+            maxPoolSize = Integer.MAX_VALUE;
+
+        executor = new ThreadPoolExecutor(
+                maxPoolSize,
+                maxPoolSize,
+                threadIdle,
+                TimeUnit.SECONDS,
+                new PriorityBlockingQueue<Runnable>()
+            );
+        //executor.allowCoreThreadTimeOut(true); // Only available in 1.6
+
+        connectionManager = new MultiThreadedHttpConnectionManager();
+
+        // Configure the ConnectionManager
+        HttpConnectionManagerParams cmParams = connectionManager.getParams();
+        cmParams.setConnectionTimeout(connectTimeout * 1000);
+        cmParams.setSoTimeout(socketTimeout * 1000);
+        cmParams.setMaxTotalConnections(maxPoolSize);
+
+        httpClient = new HttpClient(connectionManager);
     }
 
     public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
@@ -97,6 +106,21 @@ public final class QueuedHttpCallService {
 
     public static List<Runnable> shutdownNow() {
         return executor.shutdownNow();
+    }
+
+    public static Report reportStatus() {
+
+        if (executor == null)
+            throw new IllegalStateException("Invalid operation, QueuedHttpCallService has not been started");
+
+        return new Report(
+                executor.getPoolSize(),             // current Pool size
+                executor.getLargestPoolSize(),      // largest ever since startup
+                executor.getMaximumPoolSize(),      // max pool size
+                executor.getActiveCount(),          // threads actively executing tasks
+                executor.getTaskCount(),            // num tasks submitted
+                executor.getCompletedTaskCount()    // num tasks completed
+            );
     }
 
     /**
@@ -172,5 +196,82 @@ public final class QueuedHttpCallService {
                 method.releaseConnection();
             }
         }
+    }
+
+    /**
+     * Class for holding the reporting the current state of
+     * the QueueHttpCallService
+     */
+    public static class Report {
+
+        private final int currentPoolSize;
+        private final int largestPoolSize;
+        private final int maxPoolSize;
+
+        private final int activeThreadCount;
+
+        private final long totalTaskCount;
+        private final long completedTaskCount;
+
+        /**
+         * @param the corePoolSize
+         * @param the currentPoolSize
+         * @param the largestPoolSize since startup
+         * @param the maxPoolSize
+         * @param the activeThreadCount
+         * @param the totalTaskCount - total tasks submitted since start
+         * @param the completedTaskCount - total tasks completed since start
+         */
+        public Report(int curPS, int largestPS, int maxPS, int activeTC, long totalTC, long completedTC) {
+            this.currentPoolSize    = curPS;
+            this.largestPoolSize    = largestPS;
+            this.maxPoolSize        = maxPS;
+            this.activeThreadCount  = activeTC;
+            this.totalTaskCount     = totalTC;
+            this.completedTaskCount = completedTC;
+        }
+
+        /**
+         * @return the currentPoolSize
+         */
+        public int getCurrentPoolSize() {
+            return currentPoolSize;
+        }
+
+        /**
+         * @return the largestPoolSize
+         */
+        public int getLargestPoolSize() {
+            return largestPoolSize;
+        }
+
+        /**
+         * @return the maxPoolSize
+         */
+        public int getMaxPoolSize() {
+            return maxPoolSize;
+        }
+
+        /**
+         * @return the activeThreadCount
+         */
+        public int getActiveThreadCount() {
+            return activeThreadCount;
+        }
+
+        /**
+         * @return the totalTaskCount
+         */
+        public long getTotalTaskCount() {
+            return totalTaskCount;
+        }
+
+        /**
+         * @return the completedTaskCount
+         */
+        public long getCompletedTaskCount() {
+            return completedTaskCount;
+        }
+
     }
 }
