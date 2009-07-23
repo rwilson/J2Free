@@ -407,7 +407,7 @@ public class ServletUtils {
     }
 
     /**
-     * Redirects the user to the current url, following the
+     * Redirects the user to the current url over SSL
      *
      * @param request a HttpServletRequest
      * @param response a HttpServletResponse
@@ -445,7 +445,45 @@ public class ServletUtils {
     }
 
     /**
-     * Redirects the user to the current url, following the
+     * Redirects the user to the provided url over SSL
+     *
+     * @param request a HttpServletRequest
+     * @param response a HttpServletResponse
+     * @param sslPort the port SSL requests should be forwarded to
+     */
+    public static void redirectOverSSL(HttpServletRequest request, HttpServletResponse response, String urlStr, int sslPort)
+        throws ServletException, IOException {
+
+        StringBuffer url = new StringBuffer(urlStr);
+
+        // Make sure we're on https
+        if (url.charAt(4) != 's')
+            url.insert(4, 's');
+
+        // If there is a ssl port, make sure we're on it,
+        // otherwise assume we're already on the right port
+        if (sslPort > 0) {
+            int portStart = url.indexOf(":", 8) + 1;
+            int portEnd   = url.indexOf("/", 8);
+
+            if (portEnd == -1)                              // If their isn't a trailing slash, then the end is the last char
+                portEnd = url.length() - 1;
+
+            if (portStart > 0 && portStart < portEnd) {     // If we detected a : before the trailing slash or end of url, delete the port
+                url.delete(portStart, portEnd);
+            } else {
+                url.insert(portEnd, ':');                   // If the url didn't have a port, add in the :
+                portStart = portEnd;
+            }
+
+            url.insert(portStart, sslPort);   // Insert the right port where it should be
+        }
+
+        sendPermanentRedirect(response, url.toString());
+    }
+
+    /**
+     * Redirects the user to the current url over HTTP
      *
      * @param request a HttpServletRequest
      * @param response a HttpServletResponse
@@ -455,6 +493,44 @@ public class ServletUtils {
         throws ServletException, IOException {
 
         StringBuffer url = request.getRequestURL();
+
+        // Make sure we're on http
+        if (url.charAt(4) == 's')
+            url.deleteCharAt(4);
+
+        // If there is a non-ssl port, make sure we're on it,
+        // otherwise assume we're already on the right port
+        if (nonSslPort > 0) {
+            int portStart = url.indexOf(":", 8) + 1;
+            int portEnd   = url.indexOf("/", 8);
+
+            if (portEnd == -1)                              // If their isn't a trailing slash, then the end is the last char
+                portEnd = url.length() - 1;
+
+            if (portStart > 0 && portStart < portEnd) {     // If we detected a : before the trailing slash or end of url, delete the port
+                url.delete(portStart, portEnd);
+            } else {
+                url.insert(portEnd, ':');                   // If the url didn't have a port, add in the :
+                portStart = portEnd;
+            }
+
+            url.insert(portStart, nonSslPort);   // Insert the right port where it should be
+        }
+
+        sendPermanentRedirect(response, url.toString());
+    }
+
+    /**
+     * Redirects the user to the current url over HTTPS
+     *
+     * @param request a HttpServletRequest
+     * @param response a HttpServletResponse
+     * @param nonSslPort the port Non-SSL requests should be forwarded to
+     */
+    public static void redirectOverNonSSL(HttpServletRequest request, HttpServletResponse response, String urlStr, int nonSslPort)
+        throws ServletException, IOException {
+
+        StringBuffer url = new StringBuffer(urlStr);
 
         // Make sure we're on http
         if (url.charAt(4) == 's')

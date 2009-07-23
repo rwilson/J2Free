@@ -159,98 +159,87 @@ public class InvokerFilter implements Filter {
         // Get the mapping
         Class<? extends HttpServlet> klass = urlMap.get(currentPath);
 
-        // If we don't already have an exact match for this path,
-        // try to break it down
-        if (klass == null) {
+        /*
+         * If we don't already have an exact match for this path,
+         * try to break it down.
+         * 
+         * Certain extensions are known to be mapped in web.xml,
+         * known to never be dynamic resources (e.g. .swf), or
+         * were discovered earlier to be static content, so don't
+         * process those.
+         */
+        if (klass == null && !currentPath.matches(bypassPath.get())) {
 
-            /*
-             * Certain extensions are known to be mapped in web.xml,
-             * known to never be dynamic resources (e.g. .swf), or
-             * were discovered earlier to be static content, so let
-             * those through.
-             */
-            if (currentPath.matches(bypassPath.get())) {
+            if (log.isDebugEnabled())
+                log.debug("InvokerFilter for path: " + currentPath);
 
-                if (log.isDebugEnabled())
-                    log.debug("Matched known static regex-path: " + currentPath);
+            // (1) If the exact match wasn't found, look for wildcard matches
 
-                // This is the same as the above, except a hash lookup is faster than a regex match, so
-                // we want to store a reference.
-                urlMap.putIfAbsent(currentPath, Static.class);
+            String partial;
 
-            } else {
+            // If the path contains a "." then check for the *.ext patterns
+            if (currentPath.indexOf(".") != -1) {
+                partial = currentPath.substring(currentPath.lastIndexOf("."));
+                klass = urlMap.get(partial);
+            }
 
-                if (log.isDebugEnabled())
-                    log.debug("InvokerFilter for path: " + currentPath);
+            // (2) If we still haven't found it, check if any
+            // registered regex mappings against the path
+            if (klass == null) {
 
-                // (1) If the exact match wasn't found, look for wildcard matches
+                String regex;
+                Iterator<String> itr = regexMap.keySet().iterator();
+                while (itr.hasNext()) {
 
-                String partial;
+                    regex = itr.next();
 
-                // If the path contains a "." then check for the *.ext patterns
-                if (currentPath.indexOf(".") != -1) {
-                    partial = currentPath.substring(currentPath.lastIndexOf("."));
-                    klass = urlMap.get(partial);
-                }
+                    if (currentPath.matches(regex)) {
+                        klass = regexMap.get(regex);
 
-                // (2) If we still haven't found it, check if any
-                // registered regex mappings against the path
-                if (klass == null) {
-
-                    String regex;
-                    Iterator<String> itr = regexMap.keySet().iterator();
-                    while (itr.hasNext()) {
-
-                        regex = itr.next();
-
-                        if (currentPath.matches(regex)) {
-                            klass = regexMap.get(regex);
-
-                            // gotta make sure the klass was still in there, since it could have been altered
-                            // since we got the iterator... (although, likely it wasn't)
-                            if (klass != null)
-                                break;
-                        }
-                    }
-                }
-
-                // (3) If we didn't find a .* pattern and if the path includes
-                // a / then it's possible there is a mapping to a /* pattern
-                if (klass == null && currentPath.lastIndexOf("/") > 0) {
-
-                    partial = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
-
-                    // check for possible /*, /something/* patterns starting with most specific
-                    // and moving down to /*
-                    while (partial.lastIndexOf("/") > 0) {
-
-                        if (log.isDebugEnabled()) log.debug("trying to find wildcard resource " + partial);
-
-                        klass = urlMap.get(partial);
-
-                        // if we found a match, get out of this loop asap
+                        // gotta make sure the klass was still in there, since it could have been altered
+                        // since we got the iterator... (although, likely it wasn't)
                         if (klass != null)
                             break;
-
-                        // if it's only a slash and it wasn't found, get out asap
-                        if (partial.equals("/"))
-                            break;
-
-                        // chop the ending '/' off
-                        partial = partial.substring(0, partial.length() - 2);
-
-                        // then set the string to be the remnants
-                        partial = partial.substring(0, partial.lastIndexOf("/") + 1);
                     }
                 }
+            }
 
-                // (4) If we found a class in any way, register it with the currentPath for faster future lookups
-                if (klass != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Matched path " + currentPath + " to " + klass.getName());
-                    
-                    urlMap.putIfAbsent(currentPath, klass);
+            // (3) If we didn't find a .* pattern and if the path includes
+            // a / then it's possible there is a mapping to a /* pattern
+            if (klass == null && currentPath.lastIndexOf("/") > 0) {
+
+                partial = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
+
+                // check for possible /*, /something/* patterns starting with most specific
+                // and moving down to /*
+                while (partial.lastIndexOf("/") > 0) {
+
+                    if (log.isDebugEnabled()) log.debug("trying to find wildcard resource " + partial);
+
+                    klass = urlMap.get(partial);
+
+                    // if we found a match, get out of this loop asap
+                    if (klass != null)
+                        break;
+
+                    // if it's only a slash and it wasn't found, get out asap
+                    if (partial.equals("/"))
+                        break;
+
+                    // chop the ending '/' off
+                    partial = partial.substring(0, partial.length() - 2);
+
+                    // then set the string to be the remnants
+                    partial = partial.substring(0, partial.lastIndexOf("/") + 1);
                 }
+            }
+
+            // (4) If we found a class in any way, register it with the currentPath for faster future lookups
+            if (klass != null) {
+                if (log.isDebugEnabled())
+                    log.debug("Matched path " + currentPath + " to " + klass.getName());
+
+                urlMap.putIfAbsent(currentPath, klass);
             }
         }
 
