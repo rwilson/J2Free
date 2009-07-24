@@ -499,7 +499,9 @@ public class InvokerFilter implements Filter {
                                 }
 
                                 if (anno.ssl() != SSLOption.OPTIONAL) {
-                                    log.warn("Servlet " + klass.getName() + " will only accept SSL connections.");
+                                    if (anno.ssl() == SSLOption.REQUIRE) {
+                                        log.warn("Servlet " + klass.getName() + " will only accept SSL connections.");
+                                    }
                                     sslMap.put(klass, anno.ssl());
                                 }
                             }
