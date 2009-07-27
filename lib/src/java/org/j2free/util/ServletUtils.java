@@ -26,6 +26,8 @@ import org.j2free.jpa.Controller;
 import org.j2free.security.SecurityUtils;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import static org.j2free.util.Constants.*;
 
 /**
@@ -33,6 +35,8 @@ import static org.j2free.util.Constants.*;
  * @author Ryan Wilson
  */
 public class ServletUtils {
+
+    private static final Log log = LogFactory.getLog(ServletUtils.class);
 
     public static int getIntParameter(HttpServletRequest req, String paramName) {
         return getIntParameter(req, paramName, -1);
@@ -441,6 +445,7 @@ public class ServletUtils {
             url.insert(portStart, sslPort);   // Insert the right port where it should be
         }
 
+        log.debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 
@@ -479,6 +484,7 @@ public class ServletUtils {
             url.insert(portStart, sslPort);   // Insert the right port where it should be
         }
 
+        log.debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 
@@ -517,6 +523,7 @@ public class ServletUtils {
             url.insert(portStart, nonSslPort);   // Insert the right port where it should be
         }
 
+        log.debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 
@@ -555,6 +562,7 @@ public class ServletUtils {
             url.insert(portStart, nonSslPort);   // Insert the right port where it should be
         }
 
+        log.debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 

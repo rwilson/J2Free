@@ -25,6 +25,17 @@
             <rtexprvalue>true</rtexprvalue>
         </attribute>
     </tag>
+
+    <tag>
+        <name>isUserInRole</name>
+        <tag-class>org.j2free.jsp.tags.IsUserInRole</tag-class>
+        <body-content>JSP</body-content>
+        <attribute>
+            <name>role</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+    </tag>
     
     <tag>
         <name>cset</name>

@@ -142,7 +142,7 @@ public class InvokerFilter implements Filter {
 
         // This will let all threads through if the Invoker isn't enabled
         if (!enabled.get()) {
-            log.debug("InvokerFilter disabled");
+            log.trace("InvokerFilter disabled");
             chain.doFilter(req, resp);
             return;
         }
@@ -170,8 +170,8 @@ public class InvokerFilter implements Filter {
          */
         if (klass == null && !currentPath.matches(bypassPath.get())) {
 
-            if (log.isDebugEnabled())
-                log.debug("InvokerFilter for path: " + currentPath);
+            if (log.isTraceEnabled())
+                log.trace("InvokerFilter for path: " + currentPath);
 
             // (1) If the exact match wasn't found, look for wildcard matches
 
@@ -214,7 +214,7 @@ public class InvokerFilter implements Filter {
                 // and moving down to /*
                 while (partial.lastIndexOf("/") > 0) {
 
-                    if (log.isDebugEnabled()) log.debug("trying to find wildcard resource " + partial);
+                    if (log.isTraceEnabled()) log.trace("trying to find wildcard resource " + partial);
 
                     klass = urlMap.get(partial);
 
@@ -236,8 +236,8 @@ public class InvokerFilter implements Filter {
 
             // (4) If we found a class in any way, register it with the currentPath for faster future lookups
             if (klass != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Matched path " + currentPath + " to " + klass.getName());
+                if (log.isTraceEnabled())
+                    log.trace("Matched path " + currentPath + " to " + klass.getName());
 
                 urlMap.putIfAbsent(currentPath, klass);
             }
@@ -246,7 +246,7 @@ public class InvokerFilter implements Filter {
         // If we didn't find it, then just pass it on
         if (klass == null) {
 
-            if (log.isDebugEnabled()) log.debug("Dynamic resource not found for path: " + currentPath);
+            if (log.isTraceEnabled()) log.trace("Dynamic resource not found for path: " + currentPath);
 
             // Save this path in the staticSet so we don't have to look it up next time
             urlMap.putIfAbsent(currentPath,Static.class);
@@ -258,8 +258,8 @@ public class InvokerFilter implements Filter {
         } else if (klass == Static.class) {
 
             // If it's known to be static, then pass it on
-            if (log.isDebugEnabled())
-                log.debug("Processing known static path: " + currentPath);
+            if (log.isTraceEnabled())
+                log.trace("Processing known static path: " + currentPath);
 
             find = System.currentTimeMillis();
             chain.doFilter(req, resp);
@@ -271,9 +271,11 @@ public class InvokerFilter implements Filter {
             SSLOption sslOpt = sslMap.get(klass);
             boolean isSsl    = request.isSecure();
             if (sslOpt == SSLOption.REQUIRE && !isSsl) {
+                log.debug("Redirecting over SSL: " + currentPath);
                 redirectOverSSL(request, response, sslRedirectPort.get());
                 return;
             } else if (sslOpt == SSLOption.DENY && isSsl) {
+                log.debug("Redirecting off SSL: " + currentPath);
                 redirectOverNonSSL(request, response, nonSslRedirectPort.get());
                 return;
             }
@@ -312,8 +314,8 @@ public class InvokerFilter implements Filter {
                         controller = (Controller) (Class.forName(controllerClassName.get()).newInstance());
                     }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
+                    if (log.isTraceEnabled())
+                        log.trace("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
 
                     ControllerServlet servlet = (ControllerServlet) klass.newInstance();
                     servlet.init(servletConfig);
@@ -350,8 +352,8 @@ public class InvokerFilter implements Filter {
 
                 } else {
 
-                    if (log.isDebugEnabled())
-                        log.debug("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
+                    if (log.isTraceEnabled())
+                        log.trace("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
 
                     HttpServlet servlet = (HttpServlet)klass.newInstance();
                     servlet.init(servletConfig);
