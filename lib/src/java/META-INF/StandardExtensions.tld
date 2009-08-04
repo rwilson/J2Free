@@ -254,4 +254,11 @@
             boolean matches(java.lang.String, java.lang.String)
         </function-signature>
     </function>
+    <function>
+        <name>isSecureRequest</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            boolean isSecureRequest(javax.servlet.http.HttpServletRequest)
+        </function-signature>
+    </function>
 </taglib>

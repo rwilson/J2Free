@@ -157,4 +157,8 @@ public class StandardExtensions {
     public static boolean matches(String toMatch, String regex) {
         return toMatch.matches(regex);
     }
+
+    public static boolean isSecureRequest(HttpServletRequest request) {
+        return request.isSecure();
+    }
 }
