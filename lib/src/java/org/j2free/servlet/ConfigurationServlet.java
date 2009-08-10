@@ -20,6 +20,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
 import net.spy.memcached.AddrUtil;
+import net.spy.memcached.BinaryConnectionFactory;
 import net.spy.memcached.MemcachedClient;
 
 import org.apache.commons.configuration.Configuration;
@@ -329,8 +330,10 @@ public class ConfigurationServlet extends HttpServlet {
                     log.error("Error configuring spymemcached; enabled but no addresses!");
                 } else {
                     try {
-                        // Got odd OutOfMemoryError when using binary protocol....
-                        MemcachedClient client = new MemcachedClient(AddrUtil.getAddresses(addresses));
+                        MemcachedClient client = new MemcachedClient(
+                                                    new BinaryConnectionFactory(),
+                                                    AddrUtil.getAddresses(addresses)
+                                                );
                         context.setAttribute(CONTEXT_ATTR_SPYMEMCACHED, client);
                         Global.put(CONTEXT_ATTR_SPYMEMCACHED, client);
                         log.info("Spymemcached client created, connected to " + addresses);
