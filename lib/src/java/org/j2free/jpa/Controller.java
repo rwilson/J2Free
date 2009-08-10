@@ -959,15 +959,17 @@ public class Controller {
 
         String query = queryOrig;
 
-        query = query.trim().replaceAll("\\s+", "* ");
+        // Make words wildcard for partial matches
+        //query = query.trim().replaceAll("\\s+", "* ");
+        // Make last word wildcard for partial matches
+        //query += "*";
 
-        query += "*";
-
-        query = query.replaceAll(" [Aa][Nn][Dd]\\* ", " AND ").replaceAll(" [Oo][Rr]\\* ", " OR ").replaceAll("[-]\\*",
-                                                                                                              "-").
+        // Escape all the special chars that shouldnt be next to a *
+        /*
+        query = query.replaceAll(" [Aa][Nn][Dd]\\* ", " AND ").replaceAll(" [Oo][Rr]\\* ", " OR ").replaceAll("[-]\\*","-").
                 replaceAll("[)]\\*", ")").replaceAll("[(]\\*", "(").replaceAll("[!]\\*", "!").replaceAll("[?]\\*", "?").
                 replaceAll("[:]\\*", ":").replaceAll("[+]\\*", "+");
-
+        */
 
         query = query.replaceAll("[-]", "\\\\-").replaceAll("[)]", "\\\\)").replaceAll("[(]", "\\\\(").replaceAll("[!]",
                                                                                                                   "\\\\!").
