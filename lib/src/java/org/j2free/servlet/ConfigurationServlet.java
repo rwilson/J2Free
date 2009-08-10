@@ -331,7 +331,7 @@ public class ConfigurationServlet extends HttpServlet {
                 } else {
                     try {
                         MemcachedClient client = new MemcachedClient(
-                                                    new BinaryConnectionFactory(),
+                                                    //new BinaryConnectionFactory(),
                                                     AddrUtil.getAddresses(addresses)
                                                 );
                         context.setAttribute(CONTEXT_ATTR_SPYMEMCACHED, client);
