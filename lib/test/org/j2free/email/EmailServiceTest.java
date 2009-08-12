@@ -13,7 +13,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.PatternLayout;
 
-import org.j2free.util.Pair;
+import org.j2free.util.KeyValuePair;
 import org.j2free.util.Priority;
 
 import static java.lang.System.out;
@@ -26,7 +26,7 @@ public class EmailServiceTest extends TestCase {
     
     private static final int N_THREADS = 20;
     private static final String KEY = "test-emailservice-key";
-    private static final Pair<String,String> FROM = new Pair<String,String>("Test","from@test.com");
+    private static final KeyValuePair<String,String> FROM = new KeyValuePair<String,String>("Test","from@test.com");
 
     @Override
     protected void setUp() throws Exception {

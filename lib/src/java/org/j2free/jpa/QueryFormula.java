@@ -10,7 +10,7 @@ package org.j2free.jpa;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.j2free.util.Pair;
+import org.j2free.util.KeyValuePair;
 
 /**
  *
@@ -31,12 +31,12 @@ public class QueryFormula {
         this.parameters = params;
     }
     
-    public QueryFormula(String query, Pair<String,Object>... params) {
+    public QueryFormula(String query, KeyValuePair<String,Object>... params) {
         this.query = query;
         this.parameters = new HashMap<String, Object>();
         
-        for (Pair<String,Object> pair : params)
-            this.parameters.put(pair.getFirst(),pair.getSecond());
+        for (KeyValuePair<String,Object> pair : params)
+            this.parameters.put(pair.key,pair.value);
     }
     
     public String getQuery() { 
@@ -47,15 +47,15 @@ public class QueryFormula {
         return parameters;
     }
 
-    public Pair[] getParametersAsPairArray() {
-        Pair[] pairs = new Pair[parameters.size()];
+    public KeyValuePair[] getParametersAsPairArray() {
+        KeyValuePair[] pairs = new KeyValuePair[parameters.size()];
         
         Iterator<Map.Entry<String,Object>> itr = parameters.entrySet().iterator();
         Map.Entry<String,Object> entry;
         int i = 0;
         while (itr.hasNext()) {
             entry = itr.next();
-            pairs[i] = new Pair<String,Object>(entry.getKey(),entry.getValue());
+            pairs[i] = new KeyValuePair<String,Object>(entry.getKey(),entry.getValue());
             i++;
         }
         

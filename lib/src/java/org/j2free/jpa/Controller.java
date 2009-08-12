@@ -57,7 +57,7 @@ import org.hibernate.validator.InvalidStateException;
 import org.hibernate.validator.InvalidValue;
 
 import org.j2free.util.LaunderThrowable;
-import org.j2free.util.Pair;
+import org.j2free.util.KeyValuePair;
 
 /**
  *
@@ -271,12 +271,12 @@ public class Controller {
         }
     }
 
-    public <T> int count(Query query, Pair<String, ? extends Object>... parameters) {
+    public <T> int count(Query query, KeyValuePair<String, ? extends Object>... parameters) {
         int count = -1;
         Object o = null;
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         try {
@@ -290,12 +290,12 @@ public class Controller {
         return count;
     }
 
-    public int count(String queryString, Pair<String, ? extends Object>... parameters) {
+    public int count(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         return count(em.createQuery(queryString), parameters);
     }
 
     public <T> int namedCount(Class<T> entityClass, String namedQuery,
-                                             Pair<String, ? extends Object>... parameters) {
+                                             KeyValuePair<String, ? extends Object>... parameters) {
         return count(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), parameters);
     }
 
@@ -597,15 +597,15 @@ public class Controller {
         return (T) query(em.createQuery(formula.getQuery()), formula.getParametersAsPairArray());
     }
 
-    public <T> T query(String queryString, Pair<String, ? extends Object>... parameters) {
+    public <T> T query(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return (T) query(query, parameters);
     }
 
-    public <T> T query(Query query, Pair<String, ? extends Object>... parameters) {
+    public <T> T query(Query query, KeyValuePair<String, ? extends Object>... parameters) {
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         try {
@@ -616,7 +616,7 @@ public class Controller {
     }
 
     public <T> T query(Class<T> entityClass, String queryString,
-                                      Pair<String, ? extends Object>... parameters) {
+                                      KeyValuePair<String, ? extends Object>... parameters) {
         try {
             return (T) query(em.createQuery(queryString), parameters);
         } catch (NoResultException e) {
@@ -625,7 +625,7 @@ public class Controller {
     }
 
     public <T> T namedQuery(Class<T> entityClass, String namedQuery,
-                                           Pair<String, ? extends Object>... parameters) {
+                                           KeyValuePair<String, ? extends Object>... parameters) {
         try {
             return (T) query(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), parameters);
         } catch (NoResultException e) {
@@ -634,7 +634,7 @@ public class Controller {
     }
 
     public <T> T namedScaler(Class<T> returnClass, String namedQuery,
-                                            Pair<String, ? extends Object>... parameters) {
+                                            KeyValuePair<String, ? extends Object>... parameters) {
         try {
             return (T) query(em.createNamedQuery(namedQuery), parameters);
         } catch (NoResultException e) {
@@ -642,25 +642,25 @@ public class Controller {
         }
     }
 
-    public <T> List<T> list(String queryString, Pair<String, ? extends Object>... parameters) {
+    public <T> List<T> list(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         return (List<T>) list(queryString, 0, -1, parameters);
     }
 
     public <T> List<T> list(String queryString, int start, int limit,
-                                           Pair<String, ? extends Object>... parameters) {
+                                           KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return (List<T>) list(query, start, limit, parameters);
     }
 
-    public <T> List<T> list(Query query, Pair<String, ? extends Object>... parameters) {
+    public <T> List<T> list(Query query, KeyValuePair<String, ? extends Object>... parameters) {
         return (List<T>) list(query, 0, -1, parameters);
     }
 
     public <T> List<T> list(Query query, int start, int limit,
-                                           Pair<String, ? extends Object>... parameters) {
+                                           KeyValuePair<String, ? extends Object>... parameters) {
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         if (start > 0) {
@@ -676,16 +676,16 @@ public class Controller {
         }
     }
 
-    public List<Object[]> namedList(String namedQuery, Pair<String, ? extends Object>... parameters) {
+    public List<Object[]> namedList(String namedQuery, KeyValuePair<String, ? extends Object>... parameters) {
         return namedList(namedQuery, -1, -1, parameters);
     }
 
     public List<Object[]> namedList(String namedQuery, int start, int limit,
-                                    Pair<String, ? extends Object>... parameters) {
+                                    KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNamedQuery(namedQuery);
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         if (start > 0) {
@@ -701,16 +701,16 @@ public class Controller {
         }
     }
 
-    public List<Object[]> namedNativeList(String namedQuery, Pair<String, ? extends Object>... parameters) {
+    public List<Object[]> namedNativeList(String namedQuery, KeyValuePair<String, ? extends Object>... parameters) {
         return namedNativeList(namedQuery, -1, -1, parameters);
     }
 
     public List<Object[]> namedNativeList(String namedQuery, int start, int limit,
-                                          Pair<String, ? extends Object>... parameters) {
+                                          KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(namedQuery);
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         if (start > 0) {
@@ -727,15 +727,15 @@ public class Controller {
     }
 
     public <T> List<T> nativeList(Class<T> entityClass, String queryString,
-                                                 Pair<String, ? extends Object>... parameters) {
+                                                 KeyValuePair<String, ? extends Object>... parameters) {
 
         Session session = getSession();
 
         SQLQuery query = session.createSQLQuery(queryString).addEntity(entityClass);
 
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
 
@@ -747,11 +747,11 @@ public class Controller {
     }
 
     public <T> List<T> nativeScalerList(Class<T> scalarType, String queryString,
-                                                       Pair<String, ? extends Object>... parameters) {
+                                                       KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         try {
@@ -761,11 +761,11 @@ public class Controller {
         }
     }
 
-    public List<Object[]> nativeList(String queryString, Pair<String, ? extends Object>... parameters) {
+    public List<Object[]> nativeList(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         try {
@@ -775,11 +775,11 @@ public class Controller {
         }
     }
 
-    public Object nativeScalar(String queryString, Pair<String, ? extends Object>... parameters) {
+    public Object nativeScalar(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         try {
@@ -789,14 +789,14 @@ public class Controller {
         }
     }
 
-    public int nativeCount(String queryString, Pair<String, ? extends Object>... parameters) {
+    public int nativeCount(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
 
         int count = 0;
         Object o = null;
         if (parameters != null) {
-            for (Pair<String, ? extends Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         
@@ -813,17 +813,17 @@ public class Controller {
     }
 
     public <T> List<T> list(Class<T> entityClass, String queryString,
-                                           Pair<String, ? extends Object>... parameters) {
+                                           KeyValuePair<String, ? extends Object>... parameters) {
         return list(entityClass, queryString, -1, -1, parameters);
     }
 
     public <T> List<T> namedList(Class<T> entityClass, String namedQuery,
-                                                Pair<String, ? extends Object>... parameters) {
+                                                KeyValuePair<String, ? extends Object>... parameters) {
         return namedList(entityClass, namedQuery, -1, -1, parameters);
     }
 
     public <T> List<T> list(Class<T> entityClass, String queryString, int start, int limit,
-                                           Pair<String, ? extends Object>... parameters) {
+                                           KeyValuePair<String, ? extends Object>... parameters) {
         try {
             return (List<T>) list(em.createQuery(queryString), start, limit, parameters);
         } catch (NoResultException e) {
@@ -832,7 +832,7 @@ public class Controller {
     }
 
     public <T> List<T> namedList(Class<T> entityClass, String namedQuery, int start, int limit,
-                                                Pair<String, ? extends Object>... parameters) {
+                                                KeyValuePair<String, ? extends Object>... parameters) {
         try {
             return (List<T>) list(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), start, limit,
                                   parameters);
@@ -982,20 +982,20 @@ public class Controller {
         return getSession().createCriteria(entityClass);
     }
 
-    public int update(String queryString, Pair<String, Object>... parameters) {
+    public int update(String queryString, KeyValuePair<String, Object>... parameters) {
         Query query = em.createQuery(queryString);
         return update(query, parameters);
     }
 
-    public int nativeUpdate(String queryString, Pair<String, Object>... parameters) {
+    public int nativeUpdate(String queryString, KeyValuePair<String, Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
         return update(query, parameters);
     }
 
-    public int update(Query query, Pair<String, Object>... parameters) {
+    public int update(Query query, KeyValuePair<String, Object>... parameters) {
         if (parameters != null) {
-            for (Pair<String, Object> parameter : parameters) {
-                query.setParameter(parameter.getFirst(), parameter.getSecond());
+            for (KeyValuePair<String, Object> parameter : parameters) {
+                query.setParameter(parameter.key, parameter.value);
             }
         }
         return query.executeUpdate();
@@ -1006,7 +1006,7 @@ public class Controller {
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T> T filterSingle(Collection<T> collection, String filterString, Pair<String, Object>... params) {
+    public <T> T filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, Object>... params) {
         List<T> list = filter(collection, filterString, 0, 1, params);
         return list.size() > 0 ? list.get(0) : null;
     }
@@ -1024,19 +1024,19 @@ public class Controller {
         return (List<T>) query.list();
     }
 
-    public <T> List<T> filter(Collection<T> collection, String filterString, Pair<String, Object>... params) {
+    public <T> List<T> filter(Collection<T> collection, String filterString, KeyValuePair<String, Object>... params) {
         return filter(collection, filterString, 0, -1, params);
     }
 
     public <T> List<T> filter(Collection<T> collection, String filterString, int start, int limit,
-                                             Pair<String, Object>... params) {
+                                             KeyValuePair<String, Object>... params) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
             query.setMaxResults(limit);
         }
 
-        for (Pair<String, Object> param : params) {
-            query.setParameter(param.getFirst(), param.getSecond());
+        for (KeyValuePair<String, Object> param : params) {
+            query.setParameter(param.key, param.value);
         }
 
         return (List<T>) query.list();
