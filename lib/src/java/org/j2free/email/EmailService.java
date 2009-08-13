@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.List;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -36,6 +37,10 @@ import javax.mail.internet.MimeMultipart;
 
 import net.jcip.annotations.ThreadSafe;
 
+import net.spy.memcached.CASMutation;
+import net.spy.memcached.CASMutator;
+import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.transcoders.SerializingTranscoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -59,14 +64,17 @@ public final class EmailService {
     
     private static Log log = LogFactory.getLog(EmailService.class);
     
-    private static final String CONTENT_TYPE_PLAIN = "text/plain";
-    private static final String CONTENT_TYPE_HTML  = "text/html";
-    
     private static final boolean NO_CC = false;
 
     public static enum ContentType {
-        PLAIN,
-        HTML;
+        PLAIN("text/plain"),
+        HTML("text/html");
+
+        public final String value;
+
+        ContentType(String value) {
+            this.value = value;
+        }
 
         public static ContentType valueOfExt(String ext) {
             if (ext.equals("txt")) {
@@ -211,7 +219,7 @@ public final class EmailService {
         return executor.shutdownNow();
     }
 
-    private static final class EmailSendTask implements Runnable {
+    private static class EmailSendTask implements Runnable {
 
         private final PriorityReference<MimeMessage> message;
 
@@ -375,16 +383,32 @@ public final class EmailService {
     private final ConcurrentMap<String, Template> templates;
     private final AtomicReference<String> defaultTemplate;
 
+    private final MemcachedClient memcached;
+
     private final Session session;
 
     /**
-     * Creates a new <code>EmailService</code> using the provided session.
+     * Creates a new <code>EmailService</code> using the provided session
+     * that stores messages in memory.
      *
      * @param session The session to use
      */
     public EmailService(Session session) {
+        this(session, null);
+    }
+
+    /**
+     * Creates a new <code>EmailService</code> using the provided session
+     * that stores messages in memcached.
+     *
+     * @param session The session to use
+     * @param memcached a live {@link MemcachedClient}
+     */
+    public EmailService(Session session, MemcachedClient memcached) {
 
         this.session    = session;
+        this.memcached  = memcached;
+        
         templates       = new ConcurrentHashMap<String,Template>();
         defaultTemplate = new AtomicReference<String>(Constants.EMPTY);
         
@@ -649,7 +673,8 @@ public final class EmailService {
     private void send(InternetAddress from, String recipients, String subject, String body, ContentType contentType, Priority priority, boolean ccSender)
             throws AddressException, MessagingException, RejectedExecutionException {
 
-        MimeMessage message = new MimeMessage(session);
+        final MimeMessage message = new MimeMessage(session);
+        
         message.setFrom(from);
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients, false));
 
@@ -682,7 +707,7 @@ public final class EmailService {
 
             // Create the HTML portion
             MimeBodyPart  html = new MimeBodyPart();
-            html.setContent(body,CONTENT_TYPE_HTML);
+            html.setContent(body,contentType.value);
 
             // Add the HTML portion
             multipart.addBodyPart(html);
@@ -690,6 +715,20 @@ public final class EmailService {
             // set the message content
             message.setContent(multipart);
 
+        }
+
+        if (memcached != null) {
+
+            final SerializableMessage sm = new SerializableMessage(from, recipients, subject, body, contentType.name(), ccSender);
+
+            CASMutator<Map<String,SerializableMessage>> mutator = new CASMutator<Map<String,SerializableMessage>>(memcached, new SerializingTranscoder());
+
+            CASMutation<Map<String,SerializableMessage>> mutation = new CASMutation<Map<String,SerializableMessage>>() {
+                public Map<String,SerializableMessage> getNewValue(Map<String,SerializableMessage> current) {
+                    current.put(message.getMessageID(), sm);
+                    return current;
+                }
+            };
         }
 
         EmailSendTask task    = new EmailSendTask(new PriorityReference<MimeMessage>(message, priority));
