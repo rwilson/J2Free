@@ -65,7 +65,7 @@ import org.j2free.util.KeyValuePair;
  */
 public class Controller {
 
-    protected Log LOG = LogFactory.getLog(Controller.class);
+    protected Log log = LogFactory.getLog(Controller.class);
 
     public static final String ATTRIBUTE_KEY = "controller";
 
@@ -153,7 +153,7 @@ public class Controller {
         return fullTextEntityManager;
     }
 
-    public void startTransaction() throws NotSupportedException, SystemException {
+    public void begin() throws NotSupportedException, SystemException {
         
         // Make sure a transaction isn't already in progress
         if (tx.getStatus() == Status.STATUS_ACTIVE)
@@ -170,16 +170,31 @@ public class Controller {
         errors  = null;
     }
 
-    public void endTransaction() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
+    public void end() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
         try {
 
-            // If the user called markForRollback
-            if (tx.getStatus() == Status.STATUS_MARKED_ROLLBACK)
-                tx.rollback();
-            else if (tx.getStatus() == Status.STATUS_ACTIVE)
-                tx.commit();
-            else
-                throw new IllegalStateException("Unknown status in endTransaction: " + getTransactionStatus());
+            switch (tx.getStatus()) {
+                case Status.STATUS_MARKED_ROLLBACK:
+                    tx.rollback();
+                    break;
+                case Status.STATUS_ACTIVE:
+                    tx.commit();
+                    break;
+                case Status.STATUS_COMMITTED:
+                    // somebody called end() twice
+                    break;
+                case Status.STATUS_COMMITTING:
+                    log.warn("uh oh, concurrency problem! end() called when transaction already committing");
+                    break;
+                case Status.STATUS_ROLLEDBACK:
+                    // somebody called end() twice
+                    break;
+                case Status.STATUS_ROLLING_BACK:
+                    log.warn("uh oh, concurrency problem! end() called when transaction already rolling back");
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown status in endTransaction: " + getTransactionStatus());
+            }
 
             problem = null;
             errors  = null;
@@ -348,7 +363,7 @@ public class Controller {
             this.errors  = ise.getInvalidValues();
 
             for (InvalidValue error : ise.getInvalidValues()) {
-                LOG.warn("Invalid Value: " + error.getBeanClass() + "." + error.getPropertyName() + " = " + error.
+                log.warn("Invalid Value: " + error.getBeanClass() + "." + error.getPropertyName() + " = " + error.
                         getValue() + " | " + error.getMessage());
             }
 

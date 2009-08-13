@@ -50,7 +50,7 @@ public class RequireController extends TagSupport {
             closeTx = true;
 
             try {
-                controller.startTransaction();
+                controller.begin();
             } catch (Exception e) {
                 return SKIP_BODY;
             }
@@ -65,7 +65,7 @@ public class RequireController extends TagSupport {
 
         try {
             if (closeTx) {
-                controller.endTransaction();
+                controller.end();
                 request.removeAttribute(ATTRIBUTE);
             }
         } catch (Exception se) {

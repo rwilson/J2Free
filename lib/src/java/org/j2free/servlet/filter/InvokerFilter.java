@@ -322,7 +322,7 @@ public class InvokerFilter implements Filter {
 
                     find = System.currentTimeMillis();
 
-                    controller.startTransaction();
+                    controller.begin();
 
                     if (!controller.isTransactionOpen()) {
                         log.error("Cannot service reuest, tx not open [" +
@@ -341,7 +341,7 @@ public class InvokerFilter implements Filter {
                     try {
                         servlet.service(request, response);
                     } finally {
-                        controller.endTransaction();
+                        controller.end();
                     }
 
                     run  = System.currentTimeMillis();
@@ -361,6 +361,10 @@ public class InvokerFilter implements Filter {
                     find = System.currentTimeMillis();
                     servlet.service(request, response);
                     run  = System.currentTimeMillis();
+
+                    if (request.getParameter("benchmark") != null) {
+                        log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
+                    }
 
                 }
 
@@ -518,7 +522,7 @@ public class InvokerFilter implements Filter {
             log.error("Error initializing urlMappings",e);
         }
 
-        // Mark that we've run this and open the gate
+        // Mark that we've run this and begin the gate
         enabled.set(true);
         latch.countDown();
     }
