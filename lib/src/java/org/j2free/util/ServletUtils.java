@@ -28,6 +28,7 @@ import org.j2free.security.SecurityUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import static org.j2free.util.Constants.*;
 
 /**
@@ -567,6 +568,21 @@ public class ServletUtils {
     }
 
     /**
+     * Sets the response status code and includes an XML file
+     * as the response body with a single root node corresponding
+     * to the status code.
+     * 
+     * @param response
+     * @param statusCode
+     */
+    public static void doXmlStatusCodeError(HttpServletResponse response, int statusCode) 
+            throws ServletException, IOException {
+        
+        response.setStatus(statusCode);
+        response.getWriter().println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<" + statusCode + "/>");
+    }
+    
+    /**
      * Expects to compress HTML by replacing line breaks with spaces, and reducing whitespace to single spaces.
      *
      * @param content The string to compress.
@@ -637,6 +653,20 @@ public class ServletUtils {
      */
     public static boolean empty(String str) {
         return str == null || str.equals(EMPTY);
+    }
+
+    /**
+     * @return true if the collection argument is null or isEmpty(), otherwise false
+     */
+    public static boolean empty(Collection c) {
+        return c == null || c.isEmpty();
+    }
+
+    /**
+     * @return true if the array argument is null or length == 0, otherwise false
+     */
+    public static boolean empty(Object[] array) {
+        return array == null || array.length == 0;
     }
 
     /**
