@@ -167,7 +167,7 @@ public class DateTimeUtils {
         
         long diff = now.getTime() - date.getTime();
         
-        if (diff < (1000*60*60*12)) {    // IF LESS THAN 12 HOURS AGO
+        if (diff < (1000*60*60*12) && diff > 0) {    // IF LESS THAN 12 HOURS AGO
             long seconds = diff / 1000;
             
             long hours = (seconds/(60*60));
@@ -210,11 +210,11 @@ public class DateTimeUtils {
         
         long diff = now.getTime() - date.getTime();
         
-        if (diff < (1000*60*60*24)) {    // IF LESS THAN 12 HOURS AGO
+        if (diff < (1000*60*60*24)  && diff > 0) {    // IF LESS THAN 12 HOURS AGO
             
             return "Today";
             
-        } else if (diff < (1000*60*60*48)) {
+        } else if (diff < (1000*60*60*48)  && diff > 0) {
             
             return "Yesterday";
             
