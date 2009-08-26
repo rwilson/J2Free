@@ -804,23 +804,30 @@ public class ServletUtils {
         return (null);
     }
 
-    public static Cookie createCookie(HttpServletResponse response, String name, String value, int maxAge,
-                                      boolean useRootPath) {
+    public static Cookie createCookie(HttpServletResponse response, String name, String value, int expiry, boolean useRootPath) {
+
         Cookie c = new Cookie(name, value);
-        c.setMaxAge(maxAge);
+        c.setMaxAge(expiry);
         if (useRootPath) {
             c.setPath("/");
         }
 
         response.addCookie(c);
-
         return c;
     }
 
-    /* Cookie will last a year
+    /**
+     * Cookie will last a year
      */
     public static Cookie createCookie(HttpServletResponse response, String name, String value) {
         return createCookie(response, name, value, 60 * 60 * 24 * 356, true);
+    }
+
+    /**
+     * Removes a cookie
+     */
+    public static void removeCookie(HttpServletResponse response, String name, boolean useRootPath) {
+        createCookie(response, name, "", 0, true);
     }
 
     /**
