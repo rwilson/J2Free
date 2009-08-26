@@ -67,6 +67,10 @@ public class BitInt {
             value ^= pos;
     }
 
+    public synchronized void toggle(int pos) {
+        value ^= pos;
+    }
+
     public synchronized int intValue() {
         return value;
     }
