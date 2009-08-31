@@ -115,8 +115,14 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      * This implementation of <tt>compareTo</tt> compares <tt>HttpCallTask</tt>
      * instances first on priority of the task, then using the creation time of
      * so that tasks of equal priority will run in FIFO order.
+     *
+     * This method does not need to be synchronized because <tt>priority</tt>
+     * is final.
      */
     public int compareTo(HttpCallTask other) {
+
+        if (other == null)
+            return 1;
 
         int c = this.priority.compareTo(other.priority);
 
