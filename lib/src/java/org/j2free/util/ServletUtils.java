@@ -773,9 +773,7 @@ public class ServletUtils {
      *  the given name. If no cookie matches the name,
      *  the default value is returned.
      */
-    public static String getCookieValue(HttpServletRequest request,
-                                        String cookieName,
-                                        String defaultValue) {
+    public static String getCookieValue(HttpServletRequest request, String cookieName, String defaultValue) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
@@ -791,8 +789,7 @@ public class ServletUtils {
      *  to find and return the cookie that has the given name.
      *  If no cookie matches the name, null is returned.
      */
-    public static Cookie getCookie(HttpServletRequest request,
-                                   String cookieName) {
+    public static Cookie getCookie(HttpServletRequest request, String cookieName) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
@@ -827,7 +824,7 @@ public class ServletUtils {
      * Removes a cookie
      */
     public static void removeCookie(HttpServletResponse response, String name, boolean useRootPath) {
-        createCookie(response, name, "", 0, true);
+        createCookie(response, name, "", -1, useRootPath);
     }
 
     /**

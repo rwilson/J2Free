@@ -133,11 +133,11 @@ public class InvokerFilter implements Filter {
 
         // Set cache-control based on content
         if (currentPath.matches(".*?\\.(jpg|gif|png|jpeg)") && !currentPath.contains("captcha.jpg")) {
-            response.setHeader("Cache-Control", "max-age=3600");
             response.setHeader("Pragma", "cache");
+            response.setHeader("Cache-Control", "max-age=21600");
         } else if (currentPath.matches(".*?\\.(swf|js|css|flv)")) {
-            response.setHeader("Cache-Control", "max-age=31449600");
             response.setHeader("Pragma", "cache");
+            response.setHeader("Cache-Control", "max-age=31449600");
         }
 
         // This will let all threads through if the Invoker isn't enabled
