@@ -673,9 +673,9 @@ public class ServletUtils {
      * Replaces &lt; &gt; &amp; &#39; &quot;
      */
     public static String cleanXSS(String str) {
-        return str.replace("<","&lt;")
+        return str.replace("&","&amp;")
+                  .replace("<","&lt;")
                   .replace(">","&gt;")
-                  .replace("&","&amp;")
                   .replace("'","&#39")
                   .replace("\"","&quot;");
     }
