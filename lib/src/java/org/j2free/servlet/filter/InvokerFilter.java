@@ -137,7 +137,7 @@ public class InvokerFilter implements Filter {
             response.setHeader("Cache-Control", "max-age=21600");
         } else if (currentPath.matches(".*?\\.(swf|js|css|flv)")) {
             response.setHeader("Pragma", "cache");
-            response.setHeader("Cache-Control", "max-age=31449600");
+            response.setHeader("Cache-Control", "max-age=31536000");
         }
 
         // This will let all threads through if the Invoker isn't enabled

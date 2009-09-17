@@ -139,6 +139,7 @@ public class ConfigurationServlet extends HttpServlet {
             if (localhost.equalsIgnoreCase("ip")) {
                 try {
                     localhost = InetAddress.getLocalHost().getHostAddress();
+                    log.info("localhost = " + localhost);
                 } catch (Exception e) {
                     log.warn("Error determining localhost", e);
                     localhost = "localhost";

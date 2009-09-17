@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.List;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -372,6 +373,7 @@ public final class EmailService {
      *
      */
 
+    private final ConcurrentMap<String, String> headers;
     private final ConcurrentMap<String, Template> templates;
     private final AtomicReference<String> defaultTemplate;
 
@@ -383,11 +385,28 @@ public final class EmailService {
      * @param session The session to use
      */
     public EmailService(Session session) {
+        this(session, null);
+    }
+    
+    /**
+     * Creates a new <code>EmailService</code> using the provided session
+     * and default message headers.
+     *
+     * @param session The session to use
+     * @param headers Message headers to be applied to each e-mail
+     */
+    public EmailService(Session session, KeyValuePair<String,String>[] headers) {
 
         this.session    = session;
-        templates       = new ConcurrentHashMap<String,Template>();
+        this.templates  = new ConcurrentHashMap<String,Template>();
+        this.headers    = new ConcurrentHashMap<String, String>();
+
+        if (headers != null && headers.length > 0) {
+            for (KeyValuePair<String,String> header : headers)
+                this.headers.put(header.key, header.value);
+        }
+
         defaultTemplate = new AtomicReference<String>(Constants.EMPTY);
-        
     }
 
     /**
@@ -653,6 +672,9 @@ public final class EmailService {
         message.setFrom(from);
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients, false));
 
+        for(Map.Entry<String,String> header : headers.entrySet())
+            message.setHeader(header.getKey(), header.getValue());
+
         // CC the sender if they want, never CC the default from address
         if (ccSender)
             message.addRecipient(Message.RecipientType.CC,from);
@@ -666,7 +688,6 @@ public final class EmailService {
 
             // Just set the body as plain text
             message.setText(body, "UTF-8");
-            message.setHeader("Content-Transfer-Encoding", "quoted-printable");
 
         } else {
 
@@ -675,7 +696,6 @@ public final class EmailService {
             // Create the text part
             MimeBodyPart  text = new MimeBodyPart();
             text.setText(new HtmlFilter().filterForEmail(body), "UTF-8");
-            text.setHeader("Content-Transfer-Encoding", "quoted-printable");
 
             // Add the text part
             multipart.addBodyPart(text);
