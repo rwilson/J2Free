@@ -648,6 +648,10 @@ public class ServletUtils {
         return true;
     }
 
+    public static <T extends Object> T or(T a, T b) {
+        return a != null ? a : b;
+    }
+
     /**
      *  @return true if the String argument is null or an empty String, otherwise false
      */

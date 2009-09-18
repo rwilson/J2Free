@@ -85,7 +85,7 @@
         <name>asEllapsedTimeAgo</name>
         <function-class>org.j2free.jsp.el.DateTimeUtils</function-class>
         <function-signature>
-            java.lang.String asEllapsedTime(java.lang.Double)
+            java.lang.String asEllapsedTimeAgo(java.lang.Double)
         </function-signature>
     </function>
     <function>
