@@ -62,8 +62,8 @@ public class BitInt {
             value ^= pos;
     }
 
-    public synchronized void set(int pos, int on) {
-        if ((value & pos) != on)
+    public synchronized void set(int pos, int desired) {
+        if ((value & pos) != desired)
             value ^= pos;
     }
 

@@ -674,6 +674,22 @@ public class ServletUtils {
     }
 
     /**
+     * Returns the argument String surrounded in the argument quore with any pf
+     * the argument quotes that were in the string escaped.
+     */
+    public static String quote(String toQuote, char quote) {
+        toQuote = toQuote.replace("" + quote, "\\" + quote);
+        return quote + toQuote + quote;
+    }
+
+    /**
+     * Appends a newline char to the end of the string and returns it.
+     */
+    public static String line(String str) {
+        return str + "\n";
+    }
+
+    /**
      * Replaces &lt; &gt; &amp; &#39; &quot;
      */
     public static String cleanXSS(String str) {

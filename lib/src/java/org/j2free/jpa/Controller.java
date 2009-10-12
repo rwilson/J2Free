@@ -11,8 +11,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -997,19 +995,19 @@ public class Controller {
         return getSession().createCriteria(entityClass);
     }
 
-    public int update(String queryString, KeyValuePair<String, Object>... parameters) {
+    public int update(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return update(query, parameters);
     }
 
-    public int nativeUpdate(String queryString, KeyValuePair<String, Object>... parameters) {
+    public int nativeUpdate(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
         return update(query, parameters);
     }
 
-    public int update(Query query, KeyValuePair<String, Object>... parameters) {
+    public int update(Query query, KeyValuePair<String, ? extends Object>... parameters) {
         if (parameters != null) {
-            for (KeyValuePair<String, Object> parameter : parameters) {
+            for (KeyValuePair<String, ? extends Object> parameter : parameters) {
                 query.setParameter(parameter.key, parameter.value);
             }
         }
@@ -1021,7 +1019,7 @@ public class Controller {
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T> T filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, Object>... params) {
+    public <T> T filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
         List<T> list = filter(collection, filterString, 0, 1, params);
         return list.size() > 0 ? list.get(0) : null;
     }
@@ -1039,18 +1037,18 @@ public class Controller {
         return (List<T>) query.list();
     }
 
-    public <T> List<T> filter(Collection<T> collection, String filterString, KeyValuePair<String, Object>... params) {
+    public <T> List<T> filter(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
         return filter(collection, filterString, 0, -1, params);
     }
 
     public <T> List<T> filter(Collection<T> collection, String filterString, int start, int limit,
-                                             KeyValuePair<String, Object>... params) {
+                                             KeyValuePair<String, ? extends Object>... params) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
             query.setMaxResults(limit);
         }
 
-        for (KeyValuePair<String, Object> param : params) {
+        for (KeyValuePair<String, ? extends Object> param : params) {
             query.setParameter(param.key, param.value);
         }
 

@@ -37,6 +37,7 @@ import org.j2free.jpa.Controller;
 import org.j2free.jpa.ControllerServlet;
 
 
+import org.j2free.util.UncaughtServletExceptionHandler;
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
@@ -53,41 +54,16 @@ public class InvokerFilter implements Filter {
 
     private static final class Static extends HttpServlet { }
 
-    /* Ignored User-Agents
-    panscient.com
-    Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
-    nutchsearch/Nutch-0.9 (Nutch Search 1.0; herceg_novi at yahoo dot com)
-    Yahoo! Slurp
-    Powerset
-    Ask Jeeves/Teoma
-    msnbot
-    Mozilla/5.0 (compatible; MJ12bot/v1.2.1; http://www.majestic12.co.uk/bot.php?+)
-    Mozilla/5.0 (Twiceler-0.9 http://www.cuill.com/twiceler/robot.html)
-    Gigabot/3.0 (http://www.gigablast.com/spider.html)
-    Mozilla/5.0 (compatible; attributor/1.13.2 +http://www.attributor.com)
-    lwp-request/2.07
-     */
-    private static final String IGNORED_AGENTS =
-                                ".*?(" +
-                                "(spider|robot|bot)\\.[a-z]*?|" +
-                                "panscient|" +
-                                "Googlebot|" +
-                                "nutchsearch|" +
-                                "Yahoo! Slurp|" +
-                                "powerset|" +
-                                "Ask Jeeves/Teoma|" +
-                                "msnbot|" +
-                                "Twiceler|" +
-                                "attributor|" +
-                                ").*?";
-
-
     private static final AtomicBoolean benchmark                     = new AtomicBoolean(false);
     private static final AtomicInteger sslRedirectPort               = new AtomicInteger(-1);
     private static final AtomicInteger nonSslRedirectPort            = new AtomicInteger(-1);
 
     private static final AtomicReference<String> controllerClassName = new AtomicReference(EMPTY);
     private static final AtomicReference<String> bypassPath          = new AtomicReference(EMPTY);
+
+    // For error handling, a handler and redirect location
+    private static final AtomicReference<UncaughtServletExceptionHandler> exceptionHandler =
+            new AtomicReference<UncaughtServletExceptionHandler>(null);
 
     // ConcurrentMap holds mappings from urls to classes (specifically)
     private static final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap = 
@@ -369,33 +345,20 @@ public class InvokerFilter implements Filter {
                 }
 
             } catch (Exception e) {
-
                 run = System.currentTimeMillis();
-
-                if (RUN_MODE.compareTo(RunMode.PRODUCTION) < 1) {
-                    log.error("Error servicing " + currentPath, e);
+                if (exceptionHandler.get() != null) {
+                    exceptionHandler.get().handleException(req, resp, e);
                 } else {
-                    String userAgent = request.getHeader("User-Agent");
-                    if (userAgent != null && !userAgent.matches(IGNORED_AGENTS)) {
-                        /*
-                        Emailer mailer = Emailer.getInstance();
-                        String exceptionReport = describeRequest(request) + "\n\nStack Trace:\n" + ServletUtils.throwableToString(e);
-                        try {
-                        mailer.sendPlain("ryan@foobrew.com,arjun@foobrew.com","Exception in FilterChain " + new Date().toString(),exceptionReport);
-                        } catch (Exception e0) {
-                        log.fatal("Error sending Exception report email. Content follows:\n\n" + exceptionReport);
-                        }
-                         */
-                        log.error("Error servicing " + currentPath, e);
-                    }
+                    throw new ServletException(e);
                 }
             }
         }
 
         finish = System.currentTimeMillis();
 
-        if (benchmark.get())
+        if (benchmark.get()) {
             log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
+        }
     }
 
     public InvokerFilter() {
@@ -525,6 +488,11 @@ public class InvokerFilter implements Filter {
         // Mark that we've run this and begin the gate
         enabled.set(true);
         latch.countDown();
+    }
+
+    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler useh) {
+        log.info("UncaughtExceptionHandler registered.");
+        exceptionHandler.set(useh);
     }
 
     /**
