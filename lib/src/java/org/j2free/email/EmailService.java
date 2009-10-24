@@ -47,6 +47,7 @@ import org.j2free.util.PausableThreadPoolExecutor;
 import org.j2free.util.Priority;
 import org.j2free.util.PriorityFuture;
 import org.j2free.util.PriorityReference;
+import org.j2free.util.ServletUtils;
 
 /**
  * A service for sending e-mails that provides support for "instances"
@@ -227,7 +228,7 @@ public final class EmailService {
 
                 if (dummy.get()) {
                     try {
-                        log.info("Skipping send [dummy=true, priority=" + message.getPriority() + ", subject=" + mime.getSubject() + "]");
+                        log.info("Skipping send [dummy=true, priority=" + message.getPriority() + ", recipient=" + ServletUtils.join(mime.getAllRecipients(), ", ") + ", subject=" + mime.getSubject() + "]");
                         return;
                     } catch(Exception e) { }
                 }
