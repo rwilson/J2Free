@@ -16,16 +16,22 @@ import javax.servlet.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.annotations.ServletConfig;
+import org.j2free.annotations.ServletConfig.SSLOption;
+import org.j2free.annotations.ServletConfig.ControllerOption;
+
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
-
-import org.j2free.jpa.ControllerServlet;
 
 /**
  * @author Ryan
  * @version
  */
-public class StaticJspServlet extends ControllerServlet {
+@ServletConfig(
+    ssl        = SSLOption.OPTIONAL,
+    controller = ControllerOption.REQUIRE_OPEN
+)
+public class StaticJspServlet extends HttpServlet {
 
     private static final Log log = LogFactory.getLog(StaticJspServlet.class);
 

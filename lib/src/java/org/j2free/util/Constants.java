@@ -90,8 +90,6 @@ public class Constants {
     public static final String PROP_RUNMODE                = "run-mode";
 
     // Invoker Servlet config
-    public static final String PROP_INVOKER_ON             = "filter.invoker.enabled";
-    public static final String PROP_INVOKER_CONTROLLER     = "filter.invoker.controller.className";
     public static final String PROP_INVOKER_BENCHMARK      = "filter.invoker.benchmark.enabled";
     public static final String PROP_INVOKER_BYPASSPATH     = "filter.invoker.bypass.path";
 

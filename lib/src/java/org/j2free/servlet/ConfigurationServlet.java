@@ -2,6 +2,18 @@
  * ConfigurationServlet.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.j2free.servlet;
 
@@ -20,7 +32,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
 import net.spy.memcached.AddrUtil;
-import net.spy.memcached.BinaryConnectionFactory;
 import net.spy.memcached.MemcachedClient;
 
 import org.apache.commons.configuration.Configuration;
@@ -30,7 +41,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.j2free.annotations.URLMapping.SSLOption;
 import org.j2free.email.EmailService;
 import org.j2free.http.QueuedHttpCallService;
 import org.j2free.jsp.tags.cache.FragmentCache;
@@ -179,15 +189,12 @@ public class ConfigurationServlet extends HttpServlet {
             context.setAttribute("devMode",RUN_MODE != RunMode.PRODUCTION);
 
             // (4) InvokerFilter
-            if (config.getBoolean(PROP_INVOKER_ON,false)) {
-                InvokerFilter.enable(
-                        config.getString(PROP_INVOKER_BYPASSPATH,EMPTY),
-                        config.getString(PROP_INVOKER_CONTROLLER,EMPTY),
-                        config.getBoolean(PROP_INVOKER_BENCHMARK, false),
-                        config.getInteger(PROP_LOCALPORT, null),
-                        config.getInteger(PROP_LOCALPORT_SSL, null)
-                    );
-            }
+            InvokerFilter.configure(
+                    config.getString(PROP_INVOKER_BYPASSPATH,EMPTY),
+                    config.getBoolean(PROP_INVOKER_BENCHMARK, false),
+                    config.getInteger(PROP_LOCALPORT, null),
+                    config.getInteger(PROP_LOCALPORT_SSL, null)
+                );
 
             // (5) StaticJspServlet
             if (config.getBoolean(PROP_STATICJSP_ON, false)) {
@@ -201,7 +208,7 @@ public class ConfigurationServlet extends HttpServlet {
                 if (staticJsps != null && !staticJsps.isEmpty()) {
                     for (String jsp : staticJsps) {
                         jsp = staticJspPath + jsp.replace(staticJspDir, EMPTY).replaceAll("\\.jsp$", EMPTY);
-                        InvokerFilter.addServletMapping(jsp, StaticJspServlet.class, SSLOption.OPTIONAL);
+                        InvokerFilter.addServletMapping(jsp, StaticJspServlet.class);
                     }
                 }
             }
@@ -351,10 +358,6 @@ public class ConfigurationServlet extends HttpServlet {
     }
 
     private void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass) {
-        addServletMapping(config, pathProp, defaultPath, servletClass, SSLOption.OPTIONAL);
-    }
-
-    private void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass, SSLOption sslOpt) {
 
         String path;
         Class  oldKlass;
@@ -364,14 +367,14 @@ public class ConfigurationServlet extends HttpServlet {
         List paths = config.getList(pathProp);
 
         if (paths == null) {
-            oldKlass = InvokerFilter.addServletMapping(defaultPath, servletClass, sslOpt);
+            oldKlass = InvokerFilter.addServletMapping(defaultPath, servletClass);
             if (oldKlass != null)
                 log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + defaultPath);
         } else {
             itr = paths.iterator();
             while (itr.hasNext()) {
                 path = (String)itr.next();
-                oldKlass = InvokerFilter.addServletMapping(path, servletClass, sslOpt);
+                oldKlass = InvokerFilter.addServletMapping(path, servletClass);
                 if (oldKlass != null)
                     log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + path);
             }

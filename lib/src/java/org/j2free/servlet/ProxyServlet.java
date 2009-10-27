@@ -13,6 +13,9 @@ import javax.servlet.http.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import org.j2free.annotations.ServletConfig;
+
 import org.j2free.http.HttpCallFuture;
 import org.j2free.http.HttpCallResult;
 import org.j2free.http.HttpCallTask;
@@ -22,6 +25,9 @@ import org.j2free.http.QueuedHttpCallService;
  * @author Ryan Wilson
  * @version 1.0
  */
+@ServletConfig(
+    controller = ServletConfig.ControllerOption.NONE
+)
 public class ProxyServlet extends HttpServlet {
 
     private static Log log = LogFactory.getLog(ProxyServlet.class);

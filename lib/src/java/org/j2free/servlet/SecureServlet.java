@@ -19,12 +19,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.annotations.ServletConfig;
+import org.j2free.annotations.ServletConfig.ControllerOption;
+
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
 /**
  * @author Ryan Wilson 
  */
+@ServletConfig(
+    controller = ControllerOption.NONE
+)
 public class SecureServlet extends HttpServlet {
 
     private static final Log log = LogFactory.getLog(SecureServlet.class);
@@ -40,7 +46,7 @@ public class SecureServlet extends HttpServlet {
         if (empty(uri)) {
             response.sendRedirect("/");
         } else {
-            response.sendRedirect(uri.replaceFirst(path.get(),EMPTY));
+            response.sendRedirect(uri.replaceFirst(path.get(), EMPTY));
         }
         
     }

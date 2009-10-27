@@ -5,8 +5,6 @@
  */
 package org.j2free.jsp.tags;
 
-import javax.naming.NamingException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.TagSupport;
@@ -14,9 +12,8 @@ import javax.servlet.jsp.tagext.TagSupport;
 import org.j2free.jpa.Controller;
 
 /**
- * Generated tag handler class.
- * @author  ryan
- * @version
+
+ * @author  Ryan Wilson
  */
 public class RequireController extends TagSupport {
 
@@ -41,12 +38,8 @@ public class RequireController extends TagSupport {
         controller = (Controller) request.getAttribute(ATTRIBUTE);
 
         if (controller == null) {
-            try {
-                controller = new Controller();
-            } catch (NamingException ne) {
-                return SKIP_BODY;
-            }
-
+            
+            controller = Controller.get();
             closeTx = true;
 
             try {
@@ -65,7 +58,7 @@ public class RequireController extends TagSupport {
 
         try {
             if (closeTx) {
-                controller.end();
+                Controller.release(controller);
                 request.removeAttribute(ATTRIBUTE);
             }
         } catch (Exception se) {

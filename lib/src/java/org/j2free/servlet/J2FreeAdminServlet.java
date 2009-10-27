@@ -35,18 +35,20 @@ import org.apache.commons.logging.LogFactory;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 
-import org.j2free.util.CharArrayWrapper;
+import org.j2free.annotations.ServletConfig;
 import org.j2free.admin.Marshaller;
 import org.j2free.admin.MarshallingException;
+import org.j2free.jpa.Controller;
+import org.j2free.util.CharArrayWrapper;
 import org.j2free.util.ServletUtils;
-import org.j2free.jpa.ControllerServlet;
 
 /**
  *
- * @author ryan
+ * @author Ryan Wilson
  * @version
  */
-public class J2FreeAdminServlet extends ControllerServlet {
+@ServletConfig
+public class J2FreeAdminServlet extends HttpServlet {
     
     private static Log log = LogFactory.getLog(J2FreeAdminServlet.class);
     
@@ -122,7 +124,9 @@ public class J2FreeAdminServlet extends ControllerServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+        throws ServletException, IOException {
+
+        Controller controller = Controller.get(); // Get the controller associated with the current thread;
         
         String uri = request.getRequestURI();
         uri = uri.replaceAll("/j2free/","");
@@ -471,8 +475,11 @@ public class J2FreeAdminServlet extends ControllerServlet {
             log.error(e);
         }
          */
-        
-        Map metadata = controller.getSession().getSessionFactory().getAllClassMetadata();
+
+        Map metadata = Controller.get()
+                                 .getSession()
+                                 .getSessionFactory()
+                                 .getAllClassMetadata();
         
         for (Iterator itr = metadata.entrySet().iterator(); itr.hasNext();) {
             try {

@@ -1,8 +1,17 @@
 /*
  * Controller.java
  *
- * Created on March 28, 2008, 2:00 PM
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.j2free.jpa;
 
@@ -59,14 +68,91 @@ import org.j2free.util.KeyValuePair;
 
 /**
  *
- * @author ryan
+ * @author Ryan Wilson
  */
-public class Controller {
+public final class Controller {
 
-    protected Log log = LogFactory.getLog(Controller.class);
+    protected static final Log log = LogFactory.getLog(Controller.class);
 
     public static final String ATTRIBUTE_KEY = "controller";
 
+    /*****************************************************
+     * ThreadLocal for associating a Controller with each 
+     * thread.
+     ****************************************************/
+    private static final ThreadLocal<Controller> threadLocal = new ThreadLocal<Controller>();
+
+    public static Controller get() throws IllegalStateException {
+        return get(true);
+    }
+
+    /**
+     * @param begin if true, the Controller transaction is open
+     * @return The <tt>Controller</tt> associated with the current <tt>Thread</tt>,
+     *         or if there wasn't one, a new <tt>Controller</tt> that will
+     *         be associated with the current <tt>Thread</tt>.
+     */
+    public static Controller get(boolean begin) {
+
+        // Get the controller associated with this Thread
+        Controller controller = threadLocal.get();
+
+        // If there wasn't one...
+        if (controller == null) {
+
+            // Try to create one...
+            try {
+                controller = new Controller();
+            } catch (NamingException ne) {
+                throw new IllegalStateException("Error creating Controller", ne);
+            }
+
+            // If the user wanted the transaction to be open
+            if (begin) {
+                try {
+                    controller.begin();
+                } catch (Exception e) {
+                    throw LaunderThrowable.launderThrowable(e);
+                }
+            }
+
+            threadLocal.set(controller);
+        }
+
+        return controller;
+    }
+
+    /**
+     * Code using Controller.get() MUST make sure to call
+     * release() when finished with the controller to avoid
+     * a memory leak.
+     */
+    public static void release() {
+        threadLocal.remove();
+    }
+
+    /**
+     * Code using Controller.get() MUST make sure to call
+     * release() when finished with the controller to avoid
+     * a memory leak.
+     *
+     * This version of release calls controller.end() and
+     * removes the ThreadLocal controller
+     */
+    public static void release(Controller controller) throws SystemException,
+                                                             RollbackException,
+                                                             HeuristicMixedException,
+                                                             HeuristicRollbackException {
+        try {
+            controller.end();
+        } finally {
+            release();
+        }
+    }
+
+    /*****************************************************
+     * Instance implementation
+     ****************************************************/
     protected UserTransaction tx;
     protected EntityManager em;
     protected FullTextEntityManager fullTextEntityManager;
@@ -74,18 +160,14 @@ public class Controller {
     protected Throwable problem;
     protected InvalidValue[] errors;
 
-    public Controller() throws NamingException {
+    private Controller() throws NamingException {
 
         InitialContext ctx = new InitialContext();
+        
         tx = (UserTransaction) ctx.lookup("UserTransaction");
-        em = (EntityManager) ctx.lookup("java:comp/env/" + getJndiName());
+        em = (EntityManager) ctx.lookup("java:comp/env/persistence/EntityManager");
 
         problem = null;
-
-    }
-
-    protected String getJndiName() {
-        return "persistence/EntityManager";
     }
 
     public UserTransaction getUserTransaction() {
@@ -94,14 +176,6 @@ public class Controller {
 
     public EntityManager getEntityManager() {
         return em;
-    }
-
-    public void setEntityManager(EntityManager em) {
-        this.em = em;
-    }
-
-    public void setUserTransaction(UserTransaction tx) {
-        this.tx = tx;
     }
 
     public void clear() {

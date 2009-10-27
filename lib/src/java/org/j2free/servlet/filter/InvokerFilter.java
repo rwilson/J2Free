@@ -1,8 +1,17 @@
 /*
  * InvokerFilter.java
  *
- * Created on June 13th, 2008, 12:54 PM
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.j2free.servlet.filter;
 
@@ -15,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,60 +40,138 @@ import javax.servlet.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.j2free.annotations.URLMapping;
+import org.j2free.annotations.InitParam;
+import org.j2free.annotations.ServletConfig;
+import org.j2free.annotations.ServletConfig.SSLOption;
 
-import org.j2free.annotations.URLMapping.SSLOption;
 import org.j2free.jpa.Controller;
-import org.j2free.jpa.ControllerServlet;
-
-
+import org.j2free.util.ServletUtils;
 import org.j2free.util.UncaughtServletExceptionHandler;
+
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
 
 import org.scannotation.AnnotationDB;
 import org.scannotation.ClasspathUrlFinder;
+import org.scannotation.WarUrlFinder;
 
 /**
  *
- * @author  Ryan
+ * @author  Ryan Wilson
  */
 public class InvokerFilter implements Filter {
 
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
 
+    // Convenience class for grouping info about a servlet mapping, avoids multiple maps
+    private static class ServletMapping {
+
+        private final HttpServlet   servlet;
+        private final ServletConfig config;
+
+        public ServletMapping(HttpServlet servlet, ServletConfig config) {
+            this.servlet = servlet;
+            this.config  = config;
+        }
+    }
+
+    // Convenience class for setting javax.servlet.ServletConfig
+    private static class ServletConfigImpl implements javax.servlet.ServletConfig {
+
+        private final String name;
+        private final ServletContext context;
+
+        private final HashMap<String, String> initParams;
+
+        public ServletConfigImpl(String name, ServletContext context, InitParam[] initParams) {
+            this.name       = name;
+            this.context    = context;
+
+            this.initParams = new HashMap<String, String>();
+            for (InitParam param : initParams) {
+                this.initParams.put(param.name(), param.value());
+            }
+        }
+
+        public String getServletName() {
+            return name;
+        }
+
+        public ServletContext getServletContext() {
+            return context;
+        }
+
+        public String getInitParameter(String key) {
+            return initParams.get(key);
+        }
+
+        // UGLY HACK: ServletConfig requires getInitParameterNames return an Enumeration, which
+        //            is only implemented by StringTokenizer.  Anticipating that we won't ever
+        //            actually call this function, this is probably okay, but it's nasty.
+        public Enumeration getInitParameterNames() {
+            return new StringTokenizer(ServletUtils.join(initParams.keySet(), ","), ",");
+        }
+
+    }
+
+    // Convenience class for referencing static resources
     private static final class Static extends HttpServlet { }
 
     private static final AtomicBoolean benchmark                     = new AtomicBoolean(false);
     private static final AtomicInteger sslRedirectPort               = new AtomicInteger(-1);
     private static final AtomicInteger nonSslRedirectPort            = new AtomicInteger(-1);
 
-    private static final AtomicReference<String> controllerClassName = new AtomicReference(EMPTY);
     private static final AtomicReference<String> bypassPath          = new AtomicReference(EMPTY);
 
     // For error handling, a handler and redirect location
     private static final AtomicReference<UncaughtServletExceptionHandler> exceptionHandler =
             new AtomicReference<UncaughtServletExceptionHandler>(null);
 
-    // ConcurrentMap holds mappings from urls to classes (specifically)
+    // ConcurrentMap holds mappings from mappings to classes (specifically)
     private static final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap = 
             new ConcurrentHashMap<String, Class<? extends HttpServlet>>(30000,0.8f,50);
 
-    // A map of regex's to test urls against
-    private static final ConcurrentMap<String,Class<? extends HttpServlet>> regexMap =
-            new ConcurrentHashMap<String,Class<? extends HttpServlet>>();
+    // A map of regex's to test mappings against
+    private static final ConcurrentMap<String, Class<? extends HttpServlet>> regexMap =
+            new ConcurrentHashMap<String, Class<? extends HttpServlet>>();
 
-    // A set of klass's that require an SSL connection
-    private static final ConcurrentHashMap<Class<? extends HttpServlet>, SSLOption> sslMap =
-            new ConcurrentHashMap<Class<? extends HttpServlet>, SSLOption>(100);
+    // A map of HttpServlet classes to instances of that class
+    private static final ConcurrentHashMap<Class<? extends HttpServlet>, ServletMapping> servletMap =
+            new ConcurrentHashMap<Class<? extends HttpServlet>, ServletMapping>(1000);
 
+    // Used to prevent access until fully initialized
     private static final CountDownLatch latch   = new CountDownLatch(1);
-    private static final AtomicBoolean  enabled = new AtomicBoolean(false);
 
     // The filter configuration object we are associated with.  If
     // this value is null, this filter instance is not currently
     // configured.
     private FilterConfig filterConfig = null;
+
+    public InvokerFilter() {
+    }
+
+    /**
+     * Return the filter configuration object for this filter.
+     */
+    public FilterConfig getFilterConfig() {
+        return (this.filterConfig);
+    }
+
+    /**
+     * Set the filter configuration object for this filter.
+     *
+     * @param filterConfig The filter configuration object
+     */
+    public void setFilterConfig(FilterConfig filterConfig) {
+        this.filterConfig = filterConfig;
+    }
+
+    /**
+     * Destroy method for this filter
+     *
+     */
+    public void destroy() {
+    }
 
     /**
      *
@@ -114,13 +202,6 @@ public class InvokerFilter implements Filter {
         } else if (currentPath.matches(".*?\\.(swf|js|css|flv)")) {
             response.setHeader("Pragma", "cache");
             response.setHeader("Cache-Control", "max-age=31536000");
-        }
-
-        // This will let all threads through if the Invoker isn't enabled
-        if (!enabled.get()) {
-            log.trace("InvokerFilter disabled");
-            chain.doFilter(req, resp);
-            return;
         }
 
         // This will block all threads until the gate opens
@@ -225,7 +306,7 @@ public class InvokerFilter implements Filter {
             if (log.isTraceEnabled()) log.trace("Dynamic resource not found for path: " + currentPath);
 
             // Save this path in the staticSet so we don't have to look it up next time
-            urlMap.putIfAbsent(currentPath,Static.class);
+            urlMap.putIfAbsent(currentPath, Static.class);
 
             find = System.currentTimeMillis();
             chain.doFilter(req, resp);
@@ -243,8 +324,11 @@ public class InvokerFilter implements Filter {
 
         } else {
 
+            ServletMapping mapping = servletMap.get(klass);
+            ServletConfig  config  = mapping.config;
+
             // If the klass requires SSL, make sure we're on an SSL connection
-            SSLOption sslOpt = sslMap.get(klass);
+            SSLOption sslOpt = config.ssl();
             boolean isSsl    = request.isSecure();
             if (sslOpt == SSLOption.REQUIRE && !isSsl) {
                 log.debug("Redirecting over SSL: " + currentPath);
@@ -256,92 +340,59 @@ public class InvokerFilter implements Filter {
                 return;
             }
 
-            Controller controller = null;
-
             try {
 
-                // This is a hack to create a servlet config to
-                // properly initialize the servlet.
-                final String className = klass.getSimpleName();
-                ServletConfig servletConfig = new ServletConfig() {
+                if (log.isTraceEnabled())
+                    log.trace("Dynamic resource found, servicing with " + klass.getName());
 
-                    public String getServletName() {
-                        return className;
-                    }
+                // Get the time after finding the resource
+                find = System.currentTimeMillis();
 
-                    public ServletContext getServletContext() {
-                        return filterConfig.getServletContext();
-                    }
+                Controller controller;
 
-                    public String getInitParameter(String arg0) {
-                        return null;
-                    }
+                // Check the controller requirements of the configuration
+                switch (config.controller()) {
 
-                    public Enumeration getInitParameterNames() {
-                        return null;
-                    }
-                };
+                    /*********************************************************/
+                    // NONE: The servlet will manage it's own Controller, if any
+                    case NONE:
+                        mapping.servlet.service(request, response);
+                        break;
 
-                if (klass.getSuperclass() == ControllerServlet.class) {
+                    /*********************************************************/
+                    // REQUIRE: The servlet wants a Controller associated with the thread and request,
+                    //          but does not want the transaction to be open
+                    case REQUIRE:
+                        controller = Controller.get(false);
+                        request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
 
-                    if (controllerClassName.get().equals(EMPTY)) {
-                        controller = new Controller();
-                    } else {
-                        controller = (Controller) (Class.forName(controllerClassName.get()).newInstance());
-                    }
+                        try {
+                            mapping.servlet.service(request, response);     // Service the request
+                        } finally {
+                            Controller.release(controller);                 // Since this filter opened it, make sure to release it
+                        }
+                        break;
 
-                    if (log.isTraceEnabled())
-                        log.trace("Dynamic resource found, instance of ControllerServlet: " + klass.getName());
+                    /*********************************************************/
+                    // REQUIRE_OPEN: The servlet wants a Controller associated with the thread and request,
+                    //               with an open trannsaction.
+                    case REQUIRE_OPEN:
+                        controller = Controller.get(true);
+                        request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
+                        
+                        try {
+                            mapping.servlet.service(request, response);     // Service the request
+                        } finally {
+                            Controller.release(controller);                 // Since this filter opened it, make sure to release it
+                        }
+                        break;
+                }
 
-                    ControllerServlet servlet = (ControllerServlet) klass.newInstance();
-                    servlet.init(servletConfig);
+                // Get the time after running
+                run  = System.currentTimeMillis();
 
-                    find = System.currentTimeMillis();
-
-                    controller.begin();
-
-                    if (!controller.isTransactionOpen()) {
-                        log.error("Cannot service reuest, tx not open [" +
-                                    "url=" + currentPath + ", " +
-                                    "servlet=" + klass.getSimpleName() + ", " +
-                                    "tx.status=" + controller.getTransactionStatus() +
-                                  "]");
-
-                        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        return;
-                    }
-
-                    servlet.setController(controller);
-                    request.setAttribute("controller", controller);
-
-                    try {
-                        servlet.service(request, response);
-                    } finally {
-                        controller.end();
-                    }
-
-                    run  = System.currentTimeMillis();
-
-                    if (request.getParameter("benchmark") != null) {
-                        log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
-                    }
-
-                } else {
-
-                    if (log.isTraceEnabled())
-                        log.trace("Dynamic resource found, instance of HttpServlet, servicing with " + klass.getName());
-
-                    HttpServlet servlet = (HttpServlet)klass.newInstance();
-                    servlet.init(servletConfig);
-
-                    find = System.currentTimeMillis();
-                    servlet.service(request, response);
-                    run  = System.currentTimeMillis();
-
-                    if (request.getParameter("benchmark") != null) {
-                        log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
-                    }
-
+                if (request.getParameter("benchmark") != null) {
+                    log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
                 }
 
             } catch (Exception e) {
@@ -361,69 +412,49 @@ public class InvokerFilter implements Filter {
         }
     }
 
-    public InvokerFilter() {
-    }
-
     /**
-     * Return the filter configuration object for this filter.
+     * This is a hack to create a servlet config to
+     * properly initialize the servlet.
      */
-    public FilterConfig getFilterConfig() {
-        return (this.filterConfig);
+    public javax.servlet.ServletConfig getServletConfig(Class<? extends HttpServlet> klass) {
+
+        final String className = klass.getSimpleName();
+        
+        return new javax.servlet.ServletConfig() {
+
+            public String getServletName() {
+                return className;
+            }
+
+            public ServletContext getServletContext() {
+                return filterConfig.getServletContext();
+            }
+
+            public String getInitParameter(String arg0) {
+                return null;
+            }
+
+            public Enumeration getInitParameterNames() {
+                return null;
+            }
+        };
     }
 
     /**
-     * Set the filter configuration object for this filter.
-     *
-     * @param filterConfig The filter configuration object
-     */
-    public void setFilterConfig(FilterConfig filterConfig) {
-        this.filterConfig = filterConfig;
-    }
-
-    /**
-     * Destroy method for this filter
-     *
-     */
-    public void destroy() {
-    }
-
-    /**
-     *  @description Finds all classes annotated with URLMapping and maps the class to
-     *               the url specified in the annotation.  Wildcard urls are allowed in
+     *  @description Finds all classes annotated with ServletConfig and maps the class to
+     *               the url specified in the annotation.  Wildcard mappings are allowed in
      *               the form of *.extension or /some/path/*
      */
     public void init(FilterConfig filterConfig) {
+        
         this.filterConfig = filterConfig;
-    }
-
-    public static void enable(String bypass, String controllerClass, boolean doBenchmark, Integer nonSslPort, Integer sslPort) {
-
-        if (enabled.get())
-            return;
-
         log.debug("Enabling InvokerFilter...");
 
-        // In case the user has let us know about paths that are guaranteed static
-        bypassPath.set(bypass);
-
-        // In case the application using J2Free has extended Controller...
-        controllerClassName.set(controllerClass);
-
-        // Can enable benchmarking globally
-        benchmark.set(doBenchmark);
-
-        // Set the SSL redirect port
-        if (sslPort != null && sslPort > 0)
-            sslRedirectPort.set(sslPort);
-
-        // Set the SSL redirect port
-        if (nonSslPort != null && nonSslPort > 0)
-            nonSslRedirectPort.set(nonSslPort);
-
-        // (1) Look for any classes annotated with @URLMapping
+        // (1) Look for any classes annotated with @ServletConfig
         try {
             LinkedList<URL> urlList = new LinkedList<URL>();
             urlList.addAll(Arrays.asList(ClasspathUrlFinder.findResourceBases("")));
+            urlList.addAll(Arrays.asList(WarUrlFinder.findWebInfLibClasspaths(filterConfig.getServletContext())));
             
             URL[] urls = new URL[urlList.size()];
             urls = urlList.toArray(urls);
@@ -437,19 +468,20 @@ public class InvokerFilter implements Filter {
 
             HashMap<String, Set<String>> annotationIndex = (HashMap<String, Set<String>>) aDB.getAnnotationIndex();
             if (annotationIndex != null && !annotationIndex.isEmpty()) {
-                Set<String> classNames = annotationIndex.get("org.j2free.annotations.URLMapping");
+                Set<String> classNames = annotationIndex.get(ServletConfig.class.getName());
                 if (classNames != null) {
                     for (String c : classNames) {
                         try {
                             
                             Class<? extends HttpServlet> klass = (Class<? extends HttpServlet>)Class.forName(c);
                             
-                            if (klass.isAnnotationPresent(URLMapping.class)) {
+                            if (klass.isAnnotationPresent(ServletConfig.class)) {
 
-                                URLMapping anno = (URLMapping) klass.getAnnotation(URLMapping.class);
+                                ServletConfig config = (ServletConfig)klass.getAnnotation(ServletConfig.class);
 
-                                if (anno.urls() != null) {
-                                    for (String url : anno.urls()) {
+                                // If the config specifies String mapppings...
+                                if (config.mappings() != null) {
+                                    for (String url : config.mappings()) {
 
                                         if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
                                             url = url.replaceAll("\\*", "");
@@ -462,21 +494,22 @@ public class InvokerFilter implements Filter {
                                     }
                                 }
 
-                                if (!empty(anno.regex())) {
-                                    regexMap.putIfAbsent(anno.regex(), klass);
-                                    log.debug("Mapping servlet " + klass.getName() + " to regex path " + anno.regex());
+                                // If the config specifies a regex mapping...
+                                if (!empty(config.regex())) {
+                                    regexMap.putIfAbsent(config.regex(), klass);
+                                    log.debug("Mapping servlet " + klass.getName() + " to regex path " + config.regex());
                                 }
 
-                                if (anno.ssl() != SSLOption.OPTIONAL) {
-                                    if (anno.ssl() == SSLOption.REQUIRE) {
-                                        log.warn("Servlet " + klass.getName() + " will only accept SSL connections.");
-                                    }
-                                    sslMap.put(klass, anno.ssl());
-                                }
+                                // Create an instance of the servlet and init it
+                                HttpServlet servlet = klass.newInstance();
+                                servlet.init( new ServletConfigImpl(klass.getName(), filterConfig.getServletContext(), config.initParams()) );
+
+                                // Store a reference
+                                servletMap.put(klass, new ServletMapping(servlet, config));
                             }
-                            
-                        } catch (ClassNotFoundException e) {
-                            log.error("Error processing URLMapping",e);
+
+                        } catch (Exception e) {
+                            log.error("Error registering servlet [name=" + c + "]", e);
                         }
                     }
                 }
@@ -486,13 +519,7 @@ public class InvokerFilter implements Filter {
         }
 
         // Mark that we've run this and begin the gate
-        enabled.set(true);
         latch.countDown();
-    }
-
-    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler useh) {
-        log.info("UncaughtExceptionHandler registered.");
-        exceptionHandler.set(useh);
     }
 
     /**
@@ -500,17 +527,48 @@ public class InvokerFilter implements Filter {
      * @param klass The Servlet to map
      * @return null if the servlet was mapped to the path, or a class if another servlet was already mapped to that path
      */
-    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass, SSLOption sslOpt) {
+    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass) {
+
+        // This will block all threads until the gate opens
+        try {
+            latch.await();
+        } catch (InterruptedException ie) {
+            log.warn("Interrupted while waiting for urlMap to be initialized...");
+            return null;
+        }
+
+        if (servletMap.get(klass) == null)
+            throw new IllegalStateException("Illegal attempt to create a mapping to an unregistered servlet!");
 
         log.debug("Mapping servlet " + klass.getName() + " to path " + path);
         
         if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
             path = path.replaceAll("\\*","");
         
-        Class<? extends HttpServlet> result = urlMap.putIfAbsent(path, klass);
-        if (result == null && sslOpt != SSLOption.OPTIONAL) {
-            sslMap.put(klass, sslOpt);
-        }
-        return result;
+        return urlMap.putIfAbsent(path, klass);
     }
+    
+    public static void configure(String bypass, boolean doBenchmark, Integer nonSslPort, Integer sslPort) {
+
+        // In case the user has let us know about paths that are guaranteed static
+        bypassPath.set(bypass);
+
+        // Can enable benchmarking globally
+        benchmark.set(doBenchmark);
+
+        // Set the SSL redirect port
+        if (sslPort != null && sslPort > 0)
+            sslRedirectPort.set(sslPort);
+
+        // Set the SSL redirect port
+        if (nonSslPort != null && nonSslPort > 0)
+            nonSslRedirectPort.set(nonSslPort);
+
+    }
+
+    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler useh) {
+        log.info("UncaughtExceptionHandler registered.");
+        exceptionHandler.set(useh);
+    }
+
 }
