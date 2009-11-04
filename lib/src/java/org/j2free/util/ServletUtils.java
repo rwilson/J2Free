@@ -621,6 +621,20 @@ public class ServletUtils {
     }
 
     /**
+     * @param objects A Collection of objects to check
+     * @return true if all elements in the array are non-null or non-empty Strings,
+     *         otherwise false
+     */
+    public static boolean all(Collection objects) {
+        for (Object o : objects) {
+            if (o == null || (o instanceof String && o.equals(EMPTY))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * @param objects An array of objects to check
      * @return true if any element in the array is non-null and a non-empty String,
      *         otherwise false
@@ -635,11 +649,39 @@ public class ServletUtils {
     }
 
     /**
+     * @param objects A Collection of objects to check
+     * @return true if any element in the array is non-null and a non-empty String,
+     *         otherwise false
+     */
+    public static boolean any(Collection objects) {
+        for (Object o : objects) {
+            if (o != null || (o instanceof String && !o.equals(EMPTY))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @param objects An array of objects to check
      * @return true if no element in the array is non-null and a non-empty String,
      *         otherwise false
      */
     public static boolean none(Object... objects) {
+        for (Object o : objects) {
+            if (o != null || (o instanceof String && !o.equals(EMPTY))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param objects A Collection of objects to check
+     * @return true if no element in the array is non-null and a non-empty String,
+     *         otherwise false
+     */
+    public static boolean none(Collection objects) {
         for (Object o : objects) {
             if (o != null || (o instanceof String && !o.equals(EMPTY))) {
                 return false;

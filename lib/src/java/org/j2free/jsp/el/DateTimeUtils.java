@@ -380,14 +380,19 @@ public class DateTimeUtils {
         String output = new String();
         
         long seconds = avgM / 1000;
+
+        long days = (seconds/(60*60*24));
+        seconds  -= (days*60*60*24);
         
         long hours = (seconds/(60*60));
         seconds   -= (hours*60*60);
         
         long minutes = (seconds/60);
         seconds     -= (minutes*60);
-        
-        if (hours > 0) {
+
+        if (days > 0) {
+            output = days + " days";
+        } else if (hours > 0) {
             String min = ((minutes > 0) ? ", " + minutes + " minutes " : "");
             output = hours + " hours " + min;
         } else if (minutes > 0) {

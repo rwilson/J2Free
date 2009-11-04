@@ -320,4 +320,14 @@ public class FragmentCache extends BodyTagSupport {
 
         cleanerFuture = executor.scheduleAtFixedRate(cleaner, interval, interval, unit);
     }
+
+    /**
+     * Evicts a fragment from the cache, if it exists
+     *
+     * @param key the fragment to evict
+     * @return true if a fragment was evicted, otherwise false
+     */
+    public static boolean evict(String key) {
+        return cache.remove(key) != null;
+    }
 }

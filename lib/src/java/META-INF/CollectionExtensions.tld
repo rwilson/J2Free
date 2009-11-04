@@ -49,14 +49,14 @@
         <name>filter</name>
         <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
         <function-signature>
-            java.util.List filter(org.j2free.jpa.Controller,java.util.Collection,java.lang.String)
+            java.util.List filter(java.util.Collection,java.lang.String)
         </function-signature>
     </function>
     <function>
         <name>filterLimited</name>
         <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
         <function-signature>
-            java.util.List filterLimited(org.j2free.jpa.Controller,java.util.Collection,java.lang.String,int,int)
+            java.util.List filterLimited(java.util.Collection,java.lang.String,int,int)
         </function-signature>
     </function>
     <function>
@@ -64,6 +64,14 @@
         <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
         <function-signature>
             java.lang.String join(java.util.Collection,java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>sort</name>
+        <description>Sorts a collection by its natural ordering</description>
+        <function-class>org.j2free.jsp.el.CollectionExtensions</function-class>
+        <function-signature>
+            java.util.List sort(java.util.Collection)
         </function-signature>
     </function>
 </taglib>

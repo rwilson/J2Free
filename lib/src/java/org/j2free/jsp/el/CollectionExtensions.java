@@ -7,6 +7,7 @@
 
 package org.j2free.jsp.el;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -52,15 +53,21 @@ public class CollectionExtensions {
         return c == null ? true : c.isEmpty();
     }
     
-    public static <T extends Object> List<T> filter(Controller controller, Collection c, String filter) {
-        return controller.filter(c,filter);
+    public static <T extends Object> List<T> filter(Collection c, String filter) {
+        return Controller.get().filter(c,filter);
     }
 
-    public static <T extends Object> List<T> filterLimited(Controller controller, Collection c, String filter, int start, int limit) {
-        return controller.filter(c,filter,start,limit);
+    public static <T extends Object> List<T> filterLimited(Collection c, String filter, int start, int limit) {
+        return Controller.get().filter(c,filter,start,limit);
     }
 
     public static String join(Collection c, String delimiter) {
         return ServletUtils.join(c, delimiter);
+    }
+
+    public static List sort(Collection c) {
+        List list = new ArrayList(c);
+        Collections.sort(list);
+        return list;
     }
 }
