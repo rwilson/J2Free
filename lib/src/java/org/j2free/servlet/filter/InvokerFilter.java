@@ -363,7 +363,7 @@ public class InvokerFilter implements Filter {
                     // REQUIRE: The servlet wants a Controller associated with the thread and request,
                     //          but does not want the transaction to be open
                     case REQUIRE:
-                        controller = Controller.get(false);
+                        controller = Controller.get(true, false);
                         request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
 
                         try {
@@ -377,7 +377,7 @@ public class InvokerFilter implements Filter {
                     // REQUIRE_OPEN: The servlet wants a Controller associated with the thread and request,
                     //               with an open trannsaction.
                     case REQUIRE_OPEN:
-                        controller = Controller.get(true);
+                        controller = Controller.get();
                         request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
                         
                         try {

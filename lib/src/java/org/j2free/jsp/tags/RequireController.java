@@ -17,11 +17,6 @@ import org.j2free.jpa.Controller;
  */
 public class RequireController extends TagSupport {
 
-    private static final String ATTRIBUTE = "controller";
-
-    private Controller controller;
-    private HttpServletRequest request;
-    
     private boolean closeTx;
 
     public RequireController() {
@@ -33,36 +28,55 @@ public class RequireController extends TagSupport {
 
         closeTx = false;
 
-        request = (HttpServletRequest) pageContext.getRequest();
+        HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
 
-        controller = (Controller) request.getAttribute(ATTRIBUTE);
+        Controller controller = null;
 
-        if (controller == null) {
+        try {
             
-            controller = Controller.get();
-            closeTx = true;
+            /**
+             * We need to know whether a controller already exists so we can
+             * set closeTx appropriately.  So, first try to get a controller
+             * with "create" false.
+             */
+            controller = Controller.get(false);
 
-            try {
-                controller.begin();
-            } catch (Exception e) {
-                return SKIP_BODY;
+            /**
+             * If the controller is null, then set closeTx to true and then
+             * get a controller using "create" and "begin" true.
+             */
+            if (controller == null) {
+                closeTx = true;
+                controller = Controller.get();
+                request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
             }
-            request.setAttribute(ATTRIBUTE, controller);
+            
+        } catch (Exception e) { 
+            // No need to do anything here, since controller will be null
+            // and SKIP_BODY will be returned below.
         }
 
-        return EVAL_BODY_INCLUDE;
+        if (controller != null) {
+            return EVAL_BODY_INCLUDE;
+        } else {
+            return SKIP_BODY;
+        }
     }
 
     @Override
     public int doEndTag() throws JspException {
 
-        try {
-            if (closeTx) {
+        HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
+
+        Controller controller = Controller.get(false);
+
+        if (closeTx && controller != null) {
+            try {
                 Controller.release(controller);
-                request.removeAttribute(ATTRIBUTE);
+                request.removeAttribute(Controller.ATTRIBUTE_KEY);
+            } catch (Exception se) {
+                throw new JspException(se);
             }
-        } catch (Exception se) {
-            throw new JspException(se);
         }
 
         return EVAL_PAGE;
@@ -73,5 +87,4 @@ public class RequireController extends TagSupport {
         closeTx = false;
         super.release();
     }
-
 }
