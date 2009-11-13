@@ -48,4 +48,12 @@ public class MemoryFragmentCacheStatistics implements FragmentCacheStatistics {
         return timestamp;
     }
 
+    public int getLastCleanCount() {
+        return lastCleanCount;
+    }
+
+    public long getLastCleanTimestamp() {
+        return lastCleanTimestamp;
+    }
+    
 }

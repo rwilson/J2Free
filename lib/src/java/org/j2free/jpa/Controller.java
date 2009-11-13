@@ -145,6 +145,20 @@ public final class Controller {
     }
 
     /**
+     * @return a new <tt>Controller</tt> instance that is not associated with
+     *         any Thread.  Callers MUST call end() on the controller, but need
+     *         not call release. This controller does not have a transaction
+     *         open; it's essentially up to the caller to manage the state.
+     */
+    public static Controller getIsolatedInstance() {
+        try {
+            return new Controller();
+        } catch (NamingException ne) {
+            throw new IllegalStateException("Error creating isolated Controller", ne);
+        }
+    }
+
+    /**
      * Code using Controller.get() MUST make sure to call
      * release() when finished with the controller to avoid
      * a memory leak.
