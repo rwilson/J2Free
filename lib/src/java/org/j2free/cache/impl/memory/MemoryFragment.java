@@ -1,5 +1,7 @@
 /*
- * Fragment.java
+ * MemoryFragment.java
+ *
+ * Copyright (c) 2009 FooBrew, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.j2free.jsp.tags.cache;
+package org.j2free.cache.impl.memory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,25 +27,26 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.cache.Fragment;
 import org.j2free.util.ServletUtils;
 
 /**
- * Fragment may be safely accessed by multiple threads because it's thread-safety
- * is encapsulated.  Fragment uses a one-time <code>CountDownLatch</code> to determine
+ * MemoryFragment may be safely accessed by multiple threads because it's thread-safety
+ * is encapsulated.  MemoryFragment uses a one-time <code>CountDownLatch</code> to determine
  * whether it has been initialized yet.  It also uses a <code>ReentrantLock</code> to
  * lock-for-update, so that only a single thread may acquire the right to update this
- * Fragment.  Access to the actual content of the frament is synchronized on the objects
+ * MemoryFragment.  Access to the actual content of the frament is synchronized on the objects
  * internal monitor, as is the condition, and the locked and updated timestamps.
  *
  * @author Ryan Wilson
  * @version 1.0
  */
 @ThreadSafe
-public class Fragment {
+public class MemoryFragment implements Fragment {
 
-    private static final Log log = LogFactory.getLog(Fragment.class);
+    private static final Log log = LogFactory.getLog(MemoryFragment.class);
 
-    // Max time in ms that a thread may hold the lock-for-update on this Fragment
+    // Max time in ms that a thread may hold the lock-for-update on this MemoryFragment
     private static final int MAX_LOCK_HOLD = 90000;
 
     @GuardedBy("this") private String content;
@@ -59,26 +62,26 @@ public class Fragment {
 
     /**
      *
-     * @param condition An optional condition upon creation of the Fragment;
+     * @param condition An optional condition upon creation of the MemoryFragment;
      *        if the condition supplied to tryAcquireLock does not match this
      *        condition, then the cache considers itself in need of update.
      *
-     * @param timeout The timeout for this cached Fragment
+     * @param timeout The timeout for this cached MemoryFragment
      */
-    public Fragment(String condition, long timeout) {
+    public MemoryFragment(String condition, long timeout) {
         this(null,condition,timeout);
     }
 
     /**
      *
-     * @param content An start value for the content of this Fragment
-     * @param condition An optional condition upon creation of the Fragment;
+     * @param content An start value for the content of this MemoryFragment
+     * @param condition An optional condition upon creation of the MemoryFragment;
      *        if the condition supplied to tryAcquireLock does not match this
      *        condition, then the cache considers itself in need of update.
      *
-     * @param timeout The timeout for this cached Fragment
+     * @param timeout The timeout for this cached MemoryFragment
      */
-    public Fragment(Fragment oldFragment, String condition, long timeout) {
+    public MemoryFragment(MemoryFragment oldFragment, String condition, long timeout) {
 
         this.content   = oldFragment != null ? oldFragment.content : null;
         this.condition = (condition != null && condition.equals("")) ? null : condition;
@@ -92,7 +95,7 @@ public class Fragment {
     }
 
     /**
-     * If the content of this Fragment has not yet been initialized, this method
+     * If the content of this MemoryFragment has not yet been initialized, this method
      * will block until it has.  Otherwise, it returns content immediately.
      *
      * @return the content
@@ -105,7 +108,7 @@ public class Fragment {
     }
     
     /**
-     * If the content of this Fragment has not yet been initialized, this method
+     * If the content of this MemoryFragment has not yet been initialized, this method
      * will block until either (1) it is initialized, or (2) <code>waitFor</code>
      * has passed.  Otherwise, it will return content immediately, even if currently
      * locked for update.
@@ -122,7 +125,7 @@ public class Fragment {
     }
     
     /**
-     * @return true if the Fragment is expired, locked, and the lockWait has passed,
+     * @return true if the MemoryFragment is expired, locked, and the lockWait has passed,
      *         otherwise false.
      */
     public synchronized boolean isExpiredAndAbandoned() {
@@ -132,7 +135,7 @@ public class Fragment {
     }
 
     /**
-     * @return true if the Fragment is expired and unlocked, or if the fragment
+     * @return true if the MemoryFragment is expired and unlocked, or if the fragment
      *         abandoned (has been locked for > than lockWaitTimeout)
      */
     public synchronized boolean isExpiredUnlockedOrAbandoned() {
@@ -146,8 +149,8 @@ public class Fragment {
      * Atomic bundling of a few tasks:
      *  (a) Check if this fragment is expired
      *  (b) Check if the condition under which this fragment was created has expired
-     *  (c) Check that no other Thread currently has a lock-for-update on this Fragment
-     *  - If (a || b) && c then lock this Fragment for update by the calling Thread
+     *  (c) Check that no other Thread currently has a lock-for-update on this MemoryFragment
+     *  - If (a || b) && c then lock this MemoryFragment for update by the calling Thread
      *    and return true; otherwise return false.
      *
      * @param The current condition
@@ -162,7 +165,7 @@ public class Fragment {
             return true;
         }
 
-        // If this Fragment is currently locked for update by a different Thread
+        // If this MemoryFragment is currently locked for update by a different Thread
         // and the lock has not expired, return false.
         if (updateLock.isLocked()) {
             if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: Fragment currently locked by another thread, returning false...");
@@ -176,7 +179,7 @@ public class Fragment {
             // Check the conditions for update
             boolean condChanged = this.condition != null && !condition.equals(this.condition);
 
-            // If the content is null, the condition has changed, or the Fragment is expired, try to acquire the lock
+            // If the content is null, the condition has changed, or the MemoryFragment is expired, try to acquire the lock
             success = (content == null || (System.currentTimeMillis() - updated) >= timeout || condChanged) ? updateLock.tryLock() : false;
 
             if (log.isTraceEnabled()) {
@@ -207,7 +210,7 @@ public class Fragment {
             return true;
         }
 
-        // If this Fragment is currently locked for update by a different Thread
+        // If this MemoryFragment is currently locked for update by a different Thread
         // and the lock has not expired, return false.
         if (updateLock.isLocked()) {
             if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: Fragment currently locked by another thread, returning false...");
@@ -218,7 +221,7 @@ public class Fragment {
 
         synchronized (this) {
 
-            // If the content is null, the condition has changed, or the Fragment is expired, try to acquire the lock
+            // If the content is null, the condition has changed, or the MemoryFragment is expired, try to acquire the lock
             success = updateLock.tryLock();
 
             if (success)

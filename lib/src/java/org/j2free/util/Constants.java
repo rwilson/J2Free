@@ -105,12 +105,6 @@ public class Constants {
 
     public static final String PROP_DECAY_EPOCH            = "decay.epoch";
 
-    // Fragment Cache Config
-    public static final String PROP_FRAGMENT_CACHE_ON         = "fragment.cache.enabled";
-    public static final String PROP_FRAGMENT_REQUEST_TIMEOUT  = "fragment.cache.request.timeout"; // In Seconds
-    public static final String PROP_FRAGMENT_WARNING_DURATION = "fragment.cache.warning.duration"; // In Seconds
-    public static final String PROP_FRAGMENT_CLEANER_INTERVAL = "fragment.cleaner.interval"; // In Seconds
-
     // Spymemcached Config
     public static final String PROP_SPYMEMCACHED_ON           = "spymemcached.enabled";
     public static final String PROP_SPYMEMCACHED_ADDRESSES    = "spymemcached.addresses";

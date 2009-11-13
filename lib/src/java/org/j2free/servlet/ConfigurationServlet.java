@@ -18,6 +18,7 @@
 package org.j2free.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.util.Iterator;
 
@@ -41,9 +42,10 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.cache.FragmentCache;
 import org.j2free.email.EmailService;
 import org.j2free.http.QueuedHttpCallService;
-import org.j2free.jsp.tags.cache.FragmentCache;
+import org.j2free.jsp.tags.FragmentCacheTag;
 import org.j2free.servlet.filter.InvokerFilter;
 import org.j2free.util.Global;
 import org.j2free.util.Priority;
@@ -70,7 +72,7 @@ import static org.j2free.util.Constants.*;
  *  - <tt>ProxyServlet</tt>
  *  - <tt>SecureServlet</tt>
  *  - <tt>J2FreeAdminServlet</tt>
- *  - <tt>FragmentCache</tt>
+ *  - <tt>FragmentCacheTag</tt>
  *  - <tt>FragmentCleaner</tt>
  *  - <tt>Task ScheduledExecutorService</tt>
  *  - <tt>Spymemcached</tt>
@@ -235,25 +237,66 @@ public class ConfigurationServlet extends HttpServlet {
                 addServletMapping(config, PROP_SERVLET_ADMIN_PATH, DEFAULT_ADMIN_PATH, J2FreeAdminServlet.class);
 
             // (10) Fragment Cache Configuration
-            boolean cacheEnabled = config.getBoolean(PROP_FRAGMENT_CACHE_ON);
+            boolean cacheEnabled = config.getBoolean(FragmentCache.Properties.ENABLED);
             if (cacheEnabled) {
-                log.info("Enabling fragment cache...");
-                FragmentCache.enabled.set(cacheEnabled);
+                log.info("Enabling fragment caching...");
+                FragmentCacheTag.enable();
+            } else {
+                FragmentCacheTag.disable();
             }
 
             // This is expected to be in seconds
-            long temp = config.getLong(PROP_FRAGMENT_REQUEST_TIMEOUT,-1l);
-            if (temp != -1)
-                FragmentCache.REQUEST_TIMEOUT.set(temp);
+            long temp = config.getLong(FragmentCache.Properties.REQUEST_TIMEOUT, -1l);
+            if (temp != -1) {
+                log.info("Setting FragmentCacheTag request timeout: " + temp);
+                FragmentCacheTag.setRequestTimeout(temp);
+            }
 
             // The property is in seconds, but WARNING_COMPUTE_DURATION does NOT use a TimeUnit, so it's in ms
-            temp = config.getLong(PROP_FRAGMENT_WARNING_DURATION,-1l);
-            if (temp != -1)
-                FragmentCache.WARNING_COMPUTE_DURATION.set(temp * 1000);
+            temp = config.getLong(FragmentCache.Properties.WARNING_DURATION, -1l);
+            if (temp != -1) {
+                log.info("Setting FragmentCacheTag warning duration: " + temp);
+                FragmentCacheTag.setWarningComputeDuration(temp * 1000);
+            }
 
-            // (11) Fragment Cleaner
-            long interval = config.getLong(PROP_FRAGMENT_CLEANER_INTERVAL, DEFAULT_FRAGMENT_CLEANER_INTERVAL);
-            FragmentCache.scheduleCleaner(interval, TimeUnit.SECONDS, false);
+            // Get the fragment cache names
+            String[] cacheNames = config.getStringArray(FragmentCache.Properties.ENGINE_NAMES);
+            for (String cacheName : cacheNames) {
+                
+                String cacheClassName = config.getString(
+                                            String.format(FragmentCache.Properties.ENGINE_CLASS_TEMPLATE, cacheName)
+                                        );
+                try {
+
+                    // Load up the class
+                    Class<? extends FragmentCache> cacheClass = (Class<? extends FragmentCache>)Class.forName(cacheClassName);
+
+                    // Look for a constructor that takes a config
+                    Constructor<? extends FragmentCache> constructor = null;
+                    try {
+                        constructor = cacheClass.getConstructor(Configuration.class);
+                    } catch (Exception e) { }
+
+                    FragmentCache cache;
+
+                    // If we found the configuration constructor, use it
+                    if (constructor != null) {
+                        cache = constructor.newInstance(config);
+                    } else {
+                        // otherwise use a default no-args constructor
+                        log.warn("Could not find a " + cacheClass.getSimpleName() + " constructor that takes a Configuration, defaulting to no-args constructor");
+                        cache = cacheClass.newInstance();
+                    }
+
+                    // register the cache with the FragmentCacheTag using the config strategy-name, or the engineName
+                    // if a strategy-name is not specified
+                    log.info("Registering FragmentCache strategy: [name=" + cacheName + ", class=" + cacheClass.getName() + "]");
+                    FragmentCacheTag.registerStrategy(cacheName, cache);
+
+                } catch (Exception e) {
+                    log.error("Error enabling FragmentCache engine: " + cacheName, e);
+                }
+            }
 
             // (12) For Task execution
             if (config.getBoolean(PROP_TASK_EXECUTOR_ON,false)) {
@@ -313,7 +356,7 @@ public class ConfigurationServlet extends HttpServlet {
                             log.warn("Error reading requeue-and-pause policy priority: " + config.getString(PROP_MAIL_RQAP_PRIORITY,"") + ", using default");
                         }
 
-                        interval = config.getLong(PROP_MAIL_RQAP_INTERVAL,DEFAULT_MAIL_RQAP_INTERVAL);
+                        long interval = config.getLong(PROP_MAIL_RQAP_INTERVAL,DEFAULT_MAIL_RQAP_INTERVAL);
                         EmailService.setErrorPolicy(new EmailService.RequeueAndPause(priority, interval, TimeUnit.SECONDS));
 
                     }

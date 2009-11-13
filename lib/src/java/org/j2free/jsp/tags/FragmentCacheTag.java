@@ -1,5 +1,5 @@
 /*
- * FragmentCache.java
+ * FragmentCacheTag.java
  *
  * Created on April 2nd, 2009
  *
@@ -15,27 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.j2free.jsp.tags.cache;
+package org.j2free.jsp.tags;
 
 import java.io.IOException;
 
-
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTagSupport;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.j2free.util.ServletUtils;
+
+import org.j2free.cache.Fragment;
+import org.j2free.cache.FragmentCache;
+
+import static org.j2free.util.ServletUtils.*;
 
 /**
  *  Implementation of a fragment cache as a custom tag.  This fragment cache
@@ -43,34 +44,80 @@ import org.j2free.util.ServletUtils;
  * 
  * @author  Ryan Wilson
  */
-public class FragmentCache extends BodyTagSupport {
+public class FragmentCacheTag extends BodyTagSupport {
     
-    private static final Log log = LogFactory.getLog(FragmentCache.class);
+    private static final Log log = LogFactory.getLog(FragmentCacheTag.class);
 
-    public static final AtomicLong WARNING_COMPUTE_DURATION = new AtomicLong(10000);
+    /***********************************************************************
+     * Static Implementation
+     */
+    private static final String ATTRIBUTE_FORCE_REFRESH = "nocache";
 
-    public static final AtomicBoolean enabled = new AtomicBoolean(false);
+    // The possible FragmentCaches
+    private static final ConcurrentHashMap<String, FragmentCache> caches
+            = new ConcurrentHashMap<String, FragmentCache>(5, 1.0f, 5);
+
+    // The default FragmentCache
+    private static final AtomicReference<FragmentCache> defaultCache
+            = new AtomicReference<FragmentCache>(null);
+
+    /**
+     * @return The underlying {@link FragmentCache} associated with the specified
+     *         strategy name; useful for code looking to evict a cache {@link Fragment}
+     *         outside of the FragmentCacheTag.
+     */
+    public static FragmentCache getCache(String strategy) {
+        return caches.get(strategy);
+    }
+
+    /**
+     * @return The underlying default {@link FragmentCache}, useful for code looking
+     *         to evict a cache {@link Fragment} outside of the FragmentCacheTag.
+     */
+    public static FragmentCache getDefaultCache() {
+        return defaultCache.get();
+    }
+
+    public static void registerStrategy(String name, FragmentCache cache) {
+        caches.put(name, cache);
+        if (defaultCache.get() == null) {
+            defaultCache.compareAndSet(null, cache);
+        }
+    }
+
+    /**
+     * Globally turn the cache on or off
+     */
+    private static final AtomicBoolean enabled = new AtomicBoolean(false);
+
+    public static void enable() {
+        enabled.set(true);
+    }
+
+    public static void disable() {
+        enabled.set(false);
+    }
 
     // This is the max amount of time a thread will wait() on another thread
     // that is currently updating the Fragment.  If the updating thread does
     // not complete the update within REQUEST_TIMEOUT, the waiting thread
     // will print a message to refresh the page.
-    public static final AtomicLong REQUEST_TIMEOUT = new AtomicLong(20);
+    private static final AtomicLong REQUEST_TIMEOUT = new AtomicLong(20);
+    public static void setRequestTimeout(long timeout) {
+        REQUEST_TIMEOUT.set(timeout);
+    }
 
-    private static final String ATTRIBUTE_FORCE_REFRESH = "nocache";
+    private static final AtomicLong WARNING_COMPUTE_DURATION = new AtomicLong(10000);
+    public static void setWarningComputeDuration(long duration) {
+        WARNING_COMPUTE_DURATION.set(duration);
+    }
 
-    // The backing ConcurrentMap
-    private static final ConcurrentMap<String,Fragment> cache =
-            new ConcurrentHashMap<String,Fragment>(50000,0.8f,50);
+    /***********************************************************************
+     * Tag Instance Implementation
+     */
 
-    // The cleaner instance
-    private static final FragmentCleaner cleaner = new FragmentCleaner(cache);
-
-    // A single-threaded executor to run the cleaner task
-    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
-    // A ScheduledFuture representing the cleaner task
-    private static volatile ScheduledFuture cleanerFuture = null;
+    // Used to hold a reference to a particular cache b/t start and end tags
+    private FragmentCache cache;
 
     // Cache Timeout
     private long timeout;
@@ -81,13 +128,17 @@ public class FragmentCache extends BodyTagSupport {
     // Cache Condition, used to specify a value to monitor for a change
     private String condition;
 
+    // Cache strategy, if there are multiple registered, this is used
+    // to specify which to use
+    private String strategy;
+
     // If true, the cache will be ignored for this request
     private boolean disable;
 
     // The time unit of the expiration
     private String unit;
     
-    public FragmentCache() {
+    public FragmentCacheTag() {
         super();
         disable = false;
     }
@@ -106,6 +157,10 @@ public class FragmentCache extends BodyTagSupport {
 
     public void setDisable(boolean disable) {
         this.disable = disable;
+    }
+
+    public void setStrategy(String strategy) {
+        this.strategy = strategy;
     }
 
     public void setUnit(String unit) {
@@ -148,7 +203,7 @@ public class FragmentCache extends BodyTagSupport {
 
         // timeout is assumed to be on milliseconds, but there
         // is the additional parameter
-        if (!ServletUtils.empty(unit)) {
+        if (!empty(unit)) {
             try {
                 TimeUnit timeUnit = TimeUnit.valueOf(unit);
                 if (timeUnit != TimeUnit.MILLISECONDS) {
@@ -160,44 +215,52 @@ public class FragmentCache extends BodyTagSupport {
             }
         }
 
+        // If the user specified a cache, try to get that one
+        if (!empty(strategy)) {
+            cache = caches.get(strategy);
+            if (cache == null) {
+                log.warn("Failed to find specified cache: " + strategy);
+                cache = defaultCache.get();
+            }
+        } else {
+            // Otherwise use the default
+            cache = defaultCache.get();
+        }
+
+        if (cache == null) {
+            log.error("Failed to find any cache for fragment! [key=" + key + "]");
+            return EVAL_BODY_BUFFERED;
+        }
+
         // See if there is a cached Fragment already
-        Fragment cached = cache.get(key);
+        Fragment fragment = cache.get(key);
 
         // If not ...
-        if (cached == null) {
+        if (fragment == null) {
 
-            // If the fragment didn't exist, create a Fragment
             if (log.isTraceEnabled()) log.trace("cached == null [key: " + key + "]");
-            Fragment fragment = new Fragment(condition, timeout);
 
+            // If the fragment didn't exist, store a new one...
             // Necessary to use putIfAbset, because the map could have changed
-            // since calling cache.get(key) above
-            cached = cache.putIfAbsent(key, fragment);
-
-            // If putIfAbsent(key,fragment) returned null, then there was not
-            // a Fragment for this key in the map, even by this point.
-            if (cached == null) {
-                cached = fragment;
-            }
+            // since calling cache.get(key) above.  In either case, the implementation
+            // of FragmentCache guarantees that the retruned value of this function will
+            // be the current Fragment stored in the cache by this key.
+            fragment = cache.putIfAbsent(key, cache.createFragment(condition, timeout));
             
-        } else if (cached != null && cached.isExpiredAndAbandoned()) {
+        } else if (fragment != null && fragment.isExpiredAndAbandoned()) {
             // Or if it exists but has expired and is abandoned (meaning its' lock-for-update
             // has been held past its' lock wait timeout.
             
             // If we're here, it probably means that a thread hit an exception while updating the old fragment and was never
             // able to unlock the fragment.  So, remove the old fragment, then create a new one starting with the old content
             log.warn("Found unmodifiable Fragment, replacing [key: " + key + "], with a duplicate (but modifiable) Fragment");
-            Fragment fragment = new Fragment(cached,condition,timeout);
-            
-            if (cache.replace(key, cached, fragment)) {
-                cached = fragment;
-            }
+            fragment = cache.replace(key, fragment, cache.createFragment(fragment, condition, timeout));
         }
 
         // Try to acquire the lock for update.  If successful, then
         // the Fragment needs to be updated and this Thread has taken
         // the responsibility to do so.
-        if (cached.tryAcquireForUpdate(condition)) {
+        if (fragment.tryAcquireForUpdate(condition)) {
             if (log.isTraceEnabled()) log.trace("successfully acquired lock-for-update [key: " + key + "]");
             return EVAL_BODY_BUFFERED;
         }
@@ -209,7 +272,7 @@ public class FragmentCache extends BodyTagSupport {
         // only return false if another thread is already refreshing it
         // which is fine.
         if (forceRefresh) {
-            if (cached.tryAcquireForUpdate()) {
+            if (fragment.tryAcquireForUpdate()) {
                 if (log.isTraceEnabled()) log.trace("successfully acquired lock-for-update [key: " + key + "]");
                 return EVAL_BODY_BUFFERED;
             }
@@ -223,7 +286,7 @@ public class FragmentCache extends BodyTagSupport {
         String response = null;
         try {
             if (log.isTraceEnabled()) log.trace("calling cached.getContent() [key: " + key + "]");
-            response = cached.get(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
+            response = fragment.get(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
             if (log.isTraceEnabled()) log.trace("cached.getContent() returned [key: " + key + "]");
         } catch (InterruptedException e) {
             log.error("Error writing Fragment.getContent() to page",e);
@@ -260,26 +323,30 @@ public class FragmentCache extends BodyTagSupport {
         BodyContent body = getBodyContent();
         String content   = body.getString();
 
-        Fragment cached = cache.get(key);
-        
-        // Update the Fragment, doing this before writing to the page will release
-        // waiting threads sooner.
-        if (!disable) {
-            if (log.isTraceEnabled()) log.trace("doAfterBody Getting Fragment [key: " + key + "]");
+        // Make sure we had a cache
+        if (cache != null) {
 
-            // Get a reference to the Fragment, then try to update it.
-            if (cached == null) {
-                log.warn("Fragment for key[" + key + "] became null between doStartTag and doAfterBody, probably removed by cleaner");
-            } else {
-                if (!cached.tryUpdateAndRelease(content, condition)) {
-                    log.warn("Failed to update Fragment[key=" + key + "], unable to obtain lock.  Fragment must have changed since doStartTag.");
-                } else if (log.isTraceEnabled()) {
-                    log.trace("Cache updated and lock released [key: " + key + "]");
+            Fragment fragment = cache.get(key);
+
+            // Update the Fragment, doing this before writing to the page will release
+            // waiting threads sooner.
+            if (!disable) {
+                if (log.isTraceEnabled()) log.trace("doAfterBody Getting Fragment [key: " + key + "]");
+
+                // Get a reference to the Fragment, then try to update it.
+                if (fragment == null) {
+                    log.warn("Fragment for key[" + key + "] became null between doStartTag and doAfterBody, probably removed by cleaner");
+                } else {
+                    if (!fragment.tryUpdateAndRelease(content, condition)) {
+                        log.warn("Failed to update Fragment[key=" + key + "], unable to obtain lock.  Fragment must have changed since doStartTag.");
+                    } else if (log.isTraceEnabled()) {
+                        log.trace("Cache updated and lock released [key: " + key + "]");
+                    }
                 }
+
+            } else if (log.isTraceEnabled()) {
+                log.trace("Disable set, not caching [key: " + key + "]");
             }
-            
-        } else if (log.isTraceEnabled()) {
-            log.trace("Disable set, not caching [key: " + key + "]");
         }
         
         // Attempt to write the body to the page
@@ -296,38 +363,21 @@ public class FragmentCache extends BodyTagSupport {
 
     @Override
     public int doEndTag() throws JspException {
-        Fragment fragment = cache.get(key);
-        if (fragment != null) {
-            fragment.tryRelease();
+        // Make sure we had a cache
+        if (cache != null) {
+            Fragment fragment = cache.get(key);
+            if (fragment != null) {
+                fragment.tryRelease();
+            }
         }
         return EVAL_PAGE;
     }
 
-    /**
-     * Non-blocking method, so two threads could theoretically schedule the cleaner
-     * at the same time and not interfere with each other.
-     *
-     * @param interval The time interval
-     * @param unit The time unit the interval is in
-     */
-    public static void scheduleCleaner(long interval, TimeUnit unit, boolean runNow) {
-
-        if (cleanerFuture != null)
-            cleanerFuture.cancel(false);
-
-        if (runNow)
-            cleaner.run();
-
-        cleanerFuture = executor.scheduleAtFixedRate(cleaner, interval, interval, unit);
+    @Override
+    public void release() {
+        super.release();
+        disable = false;
+        cache   = null;
     }
 
-    /**
-     * Evicts a fragment from the cache, if it exists
-     *
-     * @param key the fragment to evict
-     * @return true if a fragment was evicted, otherwise false
-     */
-    public static boolean evict(String key) {
-        return cache.remove(key) != null;
-    }
 }

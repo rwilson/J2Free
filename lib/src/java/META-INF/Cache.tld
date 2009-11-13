@@ -5,7 +5,7 @@
     <uri>http://tags.j2free.org/Cache</uri>
     <tag>
         <name>fragment</name>
-        <tag-class>org.j2free.jsp.tags.cache.FragmentCache</tag-class>
+        <tag-class>org.j2free.jsp.tags.FragmentCacheTag</tag-class>
         <body-content>JSP</body-content>
         <attribute>
             <description>The unique key for the cache</description>
@@ -40,6 +40,17 @@
             <name>unit</name>
             <required>false</required>
             <rtexprvalue>false</rtexprvalue>
+            <type>java.lang.String</type>
+        </attribute>
+        <attribute>
+            <description>
+                Optional parameter to specify which FragmentCache should be used to cache this Fragment.
+                NOTE: The specified strategy MUST be registered with the FragmentCacheTag, otherwise the
+                default cache will be used.
+            </description>
+            <name>strategy</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
             <type>java.lang.String</type>
         </attribute>
     </tag>

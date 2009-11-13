@@ -19,6 +19,9 @@ public class RequireController extends TagSupport {
 
     private boolean closeTx;
 
+    // Just used to hold the reference b/t start and end tags
+    private Controller controller;
+
     public RequireController() {
         closeTx = false;
     }
@@ -26,11 +29,11 @@ public class RequireController extends TagSupport {
     @Override
     public int doStartTag() throws JspException {
 
+        // defaults
         closeTx = false;
+        controller = null;
 
         HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
-
-        Controller controller = null;
 
         try {
             
@@ -68,8 +71,6 @@ public class RequireController extends TagSupport {
 
         HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
 
-        Controller controller = Controller.get(false);
-
         if (closeTx && controller != null) {
             try {
                 Controller.release(controller);
@@ -85,6 +86,7 @@ public class RequireController extends TagSupport {
     @Override
     public void release() {
         closeTx = false;
+        controller = null;
         super.release();
     }
 }
