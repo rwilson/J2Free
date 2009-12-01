@@ -28,6 +28,7 @@ import java.util.Map;
 /**
  *
  * @author Ryan Wilson 
+ * @deprecated
  */
 public abstract class RestClientMethod {
 

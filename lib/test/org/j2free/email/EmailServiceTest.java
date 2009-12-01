@@ -42,7 +42,6 @@ public class EmailServiceTest extends TestCase {
         BasicConfigurator.resetConfiguration();
     }
 
-
     public void testSend() throws InterruptedException {
 
         Properties props = System.getProperties();

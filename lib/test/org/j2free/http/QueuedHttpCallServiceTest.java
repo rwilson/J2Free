@@ -7,6 +7,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import junit.framework.TestCase;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Layout;
+import org.apache.log4j.PatternLayout;
 import org.j2free.http.QueuedHttpCallService.Report;
 import org.j2free.util.concurrent.CountingSet;
 
@@ -19,6 +23,20 @@ import static java.lang.System.out;
 public class QueuedHttpCallServiceTest extends TestCase {
 
     private static final int N_THREADS = 100;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        Layout layout = new PatternLayout("%c{1} %x - %m%n");
+        ConsoleAppender appender = new ConsoleAppender(layout);
+        BasicConfigurator.configure(appender);
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        BasicConfigurator.resetConfiguration();
+    }
 
     public void testSubmit() throws InterruptedException {
 

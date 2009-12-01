@@ -39,7 +39,8 @@ import org.w3c.dom.NodeList;
 
 /**
  *
- * @author Ryan Wilson 
+ * @author Ryan Wilson
+ * @deprecated 
  */
 public class XmlResponseHandler extends ResponseHandler<Document> {
     

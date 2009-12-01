@@ -28,6 +28,8 @@ import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.j2free.util.KeyValuePair;
+
 
 /**
  * <tt>QueuedExecutorService</tt> a thread-safe service with static methods
@@ -68,8 +70,10 @@ public final class QueuedHttpCallService {
     public static void enable(int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout) {
 
         if (executor != null) {
+
             if (executor.isShutdown() || executor.isTerminated())
                 throw new IllegalStateException("Invalid operation, QueuedHttpCallService is already shutdown");
+            
             if (executor.isTerminating())
                 throw new IllegalStateException("Invalid operation, QueuedHttpCallService is shutting down");
 
@@ -97,6 +101,10 @@ public final class QueuedHttpCallService {
         cmParams.setMaxTotalConnections(maxPoolSize);
 
         httpClient = new HttpClient(connectionManager);
+    }
+
+    public static boolean isEnabled() {
+        return executor != null && !executor.isShutdown() && !executor.isTerminated() && !executor.isTerminating();
     }
 
     public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
@@ -142,7 +150,7 @@ public final class QueuedHttpCallService {
             
             HttpMethod method;
 
-            List<HttpQueryParam> params = task.getQueryParams();
+            List<KeyValuePair<String,String>> params = task.getQueryParams();
 
             if (task.method == HttpCallTask.Method.GET) {
                 method = new GetMethod(task.url);
@@ -150,7 +158,7 @@ public final class QueuedHttpCallService {
                 StringBuilder query = new StringBuilder();
                 
                 boolean first = true;
-                for (HttpQueryParam param : params) {
+                for (KeyValuePair<String,String> param : params) {
                     if (first) {
                         query.append("?");
                         first = false;
@@ -158,7 +166,7 @@ public final class QueuedHttpCallService {
                         query.append("&");
                     }
 
-                    query.append(param.name + "=" + param.value);
+                    query.append(param.key + "=" + param.value);
                 }
 
             } else {
@@ -167,8 +175,8 @@ public final class QueuedHttpCallService {
 
                 NameValuePair[] data = new NameValuePair[params.size()];
                 int i = 0;
-                for (HttpQueryParam param : params) {
-                    data[i] = new NameValuePair(param.name, param.value);
+                for (KeyValuePair<String,String> param : params) {
+                    data[i] = new NameValuePair(param.key, param.value);
                     i++;
                 }
                 

@@ -35,6 +35,7 @@ import org.json.JSONObject;
 /**
  *
  * @author Ryan Wilson 
+ * @deprecated
  */
 public class JSONResponseHandler extends ResponseHandler<Object> {
     

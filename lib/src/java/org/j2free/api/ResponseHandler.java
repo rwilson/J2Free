@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 /**
  *
  * @author Ryan Wilson 
+ * @deprecated
  */
 public abstract class ResponseHandler<T> {
     

@@ -10,10 +10,12 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import java.util.Map;
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.httpclient.Header;
 
+import org.j2free.util.KeyValuePair;
 import org.j2free.util.Priority;
 
 /**
@@ -32,7 +34,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
 
     public final Method method;
 
-    private final List<HttpQueryParam> queryParams;
+    private final List<KeyValuePair<String,String>> queryParams;
     private final List<Header> requestHeaders;
 
     public final String url;
@@ -87,7 +89,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         this.priority        = priority;
         this.created         = new Date();
 
-        this.queryParams     = new LinkedList<HttpQueryParam>();
+        this.queryParams     = new LinkedList<KeyValuePair<String,String>>();
         this.requestHeaders  = new LinkedList<Header>();
     }
 
@@ -95,15 +97,24 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         requestHeaders.add(header);
     }
 
-    public synchronized void addQueryParam(HttpQueryParam param) {
+    public synchronized void addQueryParam(String name, String value) {
+        addQueryParam(new KeyValuePair<String, String>(name, value));
+    }
+
+    public synchronized void addQueryParam(KeyValuePair<String,String> param) {
         queryParams.add(param);
     }
 
-	public synchronized void addQueryParams(List<HttpQueryParam> params) {
+    public synchronized void addQueryParams(Map<String, String> params) {
+        for (Map.Entry<String,String> entry : params.entrySet())
+            addQueryParam(new KeyValuePair<String, String>(entry.getKey(), entry.getValue()));
+    }
+
+    public synchronized void addQueryParams(List<KeyValuePair<String,String>> params) {
         queryParams.addAll(params);
     }
 
-    public synchronized List<HttpQueryParam> getQueryParams() {
+    public synchronized List<KeyValuePair<String,String>> getQueryParams() {
         return Collections.unmodifiableList(queryParams);
     }
 
