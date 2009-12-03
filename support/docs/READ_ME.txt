@@ -1,29 +1,6 @@
 Need to:
 - copy TLD's into working directory
 
-- Add to web.xml:
-<context-param>
-    <param-name>default_mail_from</param-name>
-    <param-value>PolIQuiz@Publi.us</param-value>
-</context-param>
-<context-param>
-    <param-name>default_mail_from_personal</param-name>
-    <param-value>No-Reply PoliQuiz</param-value>
-</context-param>
-<context-param>
-    <param-name>feedback_email</param-name>
-    <param-value>PolIQuiz@Publi.us</param-value>
-</context-param>
-<context-param>
-    <param-name>mail_jndi</param-name>
-    <param-value>mail/poliquiz</param-value>
-</context-param>
-<!-- 0 = developemnt = RUN_MODE_DEVELOPMENT, 1 = production = RUN_MODE_PRODUCTION -->
-<context-param>
-    <param-name>run_mode</param-name>
-    <param-value>0</param-value>
-</context-param>
-
 - Register Filters:
 <filter>
     <filter-name>ErrorLogFilter</filter-name>

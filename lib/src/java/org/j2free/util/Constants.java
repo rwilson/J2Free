@@ -68,26 +68,26 @@ public class Constants {
     public static final String PROP_SMTP_AUTH              = "mail.smtp.auth";
     public static final String PROP_SMTP_USER              = "mail.smtp.user";
     public static final String PROP_SMTP_PASS              = "mail.smtp.pass";
+    public static final String PROP_MAIL_HEADER_PREFIX     = "mail.header.";
 
     // EmailService config
     public static final String PROP_MAIL_SERVICE_ON        = "mail.service.enabled";
-    public static final String PROP_MAIL_SERVICE_COREPOOL  = "mail.service.threads.core";
-    public static final String PROP_MAIL_SERVICE_MAXPOOL   = "mail.service.threads.max";
-    public static final String PROP_MAIL_SERVICE_KEEPALIVE = "mail.service.threads.keep-alive";
     public static final String PROP_MAIL_ERROR_POLICY      = "mail.service.error-policy";
     public static final String PROP_MAIL_REQUEUE_PRIORITY  = "mail.service.error-policy.requeue.priority";
-    public static final String PROP_MAIL_RQAP_PRIORITY     = "mail.service.error-policy.requeue-and-pause.priority";
-    public static final String PROP_MAIL_RQAP_INTERVAL     = "mail.service.error-policy.requeue-and-pause.interval";
 
     public static final String VALUE_MAIL_POLICY_DISCARD   = "discard";
     public static final String VALUE_MAIL_POLICY_REQUEUE   = "requeue";
-    public static final String VALUE_MAIL_POLICY_RQAP      = "requeue-and-pause";
 
     public static final String PROP_MAIL_DUMMY_MODE        = "mail.service.dummy.enabled";
     public static final String PROP_MAIL_TEMPLATE_DIR      = "mail.service.template.dir";
     public static final String PROP_MAIL_DEFAULT_TEMPLATE  = "mail.service.template.default";
 
     public static final String PROP_RUNMODE                = "run-mode";
+
+    // ErrorReporter config
+    public static final String PROP_ERROR_REPORTER_ENABLED = "error.reporter.enabled";
+    public static final String PROP_ERROR_REPORTER_TO      = "error.reporter.to";
+    public static final String PROP_ERROR_REPORTER_FROM    = "error.reporter.from";
 
     // Invoker Servlet config
     public static final String PROP_INVOKER_BENCHMARK      = "filter.invoker.benchmark.enabled";
@@ -116,9 +116,6 @@ public class Constants {
     
     public static final String PROP_SERVLET_LOGOUT_ON         = "servlet.logout.enabled";
     public static final String PROP_SERVLET_LOGOUT_PATH       = "servlet.logout.path";
-
-    public static final String PROP_SERVLET_SECURE_ON         = "servlet.secure.enabled";
-    public static final String PROP_SERVLET_SECURE_PATH       = "servlet.secure.path";
 
     public static final String PROP_SERVLET_PROXY_ON          = "servlet.proxy.enabled";
     public static final String PROP_SERVLET_PROXY_PATH        = "servlet.proxy.path";

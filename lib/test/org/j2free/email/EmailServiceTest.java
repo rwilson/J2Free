@@ -25,8 +25,7 @@ import static java.lang.System.out;
 public class EmailServiceTest extends TestCase {
     
     private static final int N_THREADS = 20;
-    private static final String KEY = "test-emailservice-key";
-    private static final KeyValuePair<String,String> FROM = new KeyValuePair<String,String>("Test","from@test.com");
+    private static final KeyValuePair<String,String> FROM = new KeyValuePair<String,String>("Test","from@example.com");
 
     @Override
     protected void setUp() throws Exception {
@@ -47,10 +46,8 @@ public class EmailServiceTest extends TestCase {
         Properties props = System.getProperties();
         Session session = Session.getInstance(props);
 
-        EmailService service = new EmailService(session);
-        EmailService.initialize(1,1,0);
-        EmailService.registerInstance(KEY, service);
-        EmailService.enableDummyMode();
+        EmailService.init(session, null);
+        EmailService.setDummyMode(true);
 
         final CountDownLatch startGate = new CountDownLatch(1);
         final CountDownLatch endGate   = new CountDownLatch(N_THREADS);
@@ -64,10 +61,9 @@ public class EmailServiceTest extends TestCase {
                         startGate.await();
 
                         for (int i = 0; i < 100; i++) {
-                            EmailService.getInstance(KEY)
-                                        .sendPlain(
+                            EmailService.sendPlain(
                                             FROM,
-                                            "to@test.com",
+                                            "example@example.com",
                                             getName() + " #" + i,
                                             "Body",
                                             Priority.values()[((Double)(Math.floor(Priority.values().length * Math.random()))).intValue()]

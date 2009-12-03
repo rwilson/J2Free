@@ -334,10 +334,6 @@ public class ServletUtils {
         return false;
     }
 
-    public static String getCaptchaCorrect(HttpServletRequest req) {
-        return (String) (req.getSession(true).getAttribute(nl.captcha.servlet.Constants.SIMPLE_CAPCHA_SESSION_KEY));
-    }
-
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, false);

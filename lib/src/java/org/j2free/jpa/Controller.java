@@ -88,7 +88,7 @@ public final class Controller {
      *         be associated with the current <tt>Thread</tt>. The returned
      *         <tt>Controller</tt> will have an open transaction.
      */
-    public static Controller get() throws IllegalStateException {
+    public static Controller get() {
         return get(true, true);
     }
 
@@ -98,14 +98,14 @@ public final class Controller {
      *         be associated with the current <tt>Thread</tt>. The returned
      *         <tt>Controller</tt> will have an open transaction.
      */
-    public static Controller get(boolean create) throws IllegalStateException {
+    public static Controller get(boolean create) {
         return get(create, create);
     }
 
     /**
      * @param create if true, and there is not already a Controller associated
-     *        with this <tt>Thread</tt>, a new Controller will be created.
-     *        Otherwise, null will be returned.
+     *        with this <tt>Thread</tt>, a new Controller will be created. Null
+     *        will never be returned.
      * 
      * @param begin if true, the Controller transaction is open
      * 
@@ -115,6 +115,8 @@ public final class Controller {
      *         <tt>Thread</tt>.  If <tt>create</tt> is false, null will be returned
      *         if there was not already a <tt>Controller</tt> associated with this
      *         <tt>Thread</tt>.
+     *
+     * @throws IllegalStateException if there is an error creating the controller
      */
     public static Controller get(boolean create, boolean begin) {
 
@@ -149,6 +151,8 @@ public final class Controller {
      *         any Thread.  Callers MUST call end() on the controller, but need
      *         not call release. This controller does not have a transaction
      *         open; it's essentially up to the caller to manage the state.
+     *
+     * @throws IllegalStateException if there is an error creating the controller
      */
     public static Controller getIsolatedInstance() {
         try {

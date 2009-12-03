@@ -86,7 +86,7 @@ public class FragmentCacheTag extends BodyTagSupport {
     }
 
     /**
-     * Globally turn the cache on or off
+     * Globally turn the cache on or off (off by default)
      */
     private static final AtomicBoolean enabled = new AtomicBoolean(false);
 

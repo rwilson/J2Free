@@ -19,10 +19,9 @@ import net.jcip.annotations.ThreadSafe;
  * accept a <tt>PriorityBlockingQueue&lt;Runnable&gt;</tt>.
  *
  * <tt>PriorityFuture</tt> will, when sorted, be ordered first
- * by priority, and second by ths time of the <tt>PriorityFuture</tt>
- * creation, which it maintains internally.
+ * by priority, then FIFO.
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 @ThreadSafe
 public class PriorityFuture<V> extends FutureTask<V> implements Comparable<PriorityFuture<V>> {
@@ -31,7 +30,7 @@ public class PriorityFuture<V> extends FutureTask<V> implements Comparable<Prior
     private final Date     created;
 
     public PriorityFuture(Callable<V> callable) {
-        this(callable,Priority.DEFAULT);
+        this(callable, Priority.DEFAULT);
     }
 
     public PriorityFuture(Callable<V> callable, Priority priority) {
@@ -59,7 +58,6 @@ public class PriorityFuture<V> extends FutureTask<V> implements Comparable<Prior
             return 1;
 
         int cmp = this.priority.compareTo(other.priority);
-
         return cmp == 0 ? this.created.compareTo(other.created) : cmp;
     }
 

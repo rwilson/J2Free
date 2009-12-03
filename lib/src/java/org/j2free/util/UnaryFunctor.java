@@ -6,8 +6,8 @@ package org.j2free.util;
  * 
  * @author Ryan Wilson
  */
-public interface Functor<T> {
+public interface UnaryFunctor<A> {
 
-    public T run();
+    public <R> R run(A arg);
 
 }
