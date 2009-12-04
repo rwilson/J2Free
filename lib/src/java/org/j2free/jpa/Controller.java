@@ -176,8 +176,14 @@ public final class Controller {
      * release() when finished with the controller to avoid
      * a memory leak.
      *
-     * This version of release calls controller.end() and
-     * removes the ThreadLocal controller
+     * This version of release is done as:
+     * <pre>
+     *      try {
+     *          controller.end();
+     *      } finally {
+     *          release();
+     *      }
+     * </pre>
      */
     public static void release(Controller controller) throws SystemException,
                                                              RollbackException,
@@ -190,9 +196,10 @@ public final class Controller {
         }
     }
 
-    /*****************************************************
-     * Instance implementation
-     ****************************************************/
+    //------------------------------------------------------------//
+    // Instance implementation
+    //------------------------------------------------------------//
+    
     protected UserTransaction tx;
     protected EntityManager em;
     protected FullTextEntityManager fullTextEntityManager;
@@ -210,18 +217,32 @@ public final class Controller {
         problem = null;
     }
 
+    /**
+     * @return The CMT <tt>UserTransaction</tt>
+     */
     public UserTransaction getUserTransaction() {
         return tx;
     }
 
+    /**
+     * @return The underlying <tt>EntityManager</tt>
+     */
     public EntityManager getEntityManager() {
         return em;
     }
 
+    /**
+     * Clears the persistence context.
+     * @see {@link EntityManager} clear
+     */
     public void clear() {
         em.clear();
     }
 
+    /**
+     * Flush the persistence context, after which
+     * @see {@link EntityManager} flush
+     */
     public void flush() {
         try {
             em.flush();
@@ -231,6 +252,13 @@ public final class Controller {
         }
     }
 
+    /**
+     * Equivalent to:
+     * <pre>
+     *      controller.flush();
+     *      controller.clear();
+     * </pre>
+     */
     public void flushAndClear() {
         try {
             em.flush();
@@ -241,6 +269,9 @@ public final class Controller {
         }
     }
 
+    /**
+     * Marks the current transaction to be rolled back.
+     */
     public void markForRollback() {
         try {
             tx.setRollbackOnly();
@@ -249,6 +280,10 @@ public final class Controller {
         }
     }
 
+    /**
+     * @return true if the current transaction has been
+     *         marked for rollback, otherwise false
+     */
     public boolean isMarkedForRollback() {
         try {
             return tx.getStatus() == Status.STATUS_MARKED_ROLLBACK;
@@ -257,6 +292,9 @@ public final class Controller {
         }
     }
 
+    /**
+     * @return a <tt>FullTextEntityManager</tt> for Hibernate Search
+     */
     public FullTextEntityManager getFullTextEntityManager() {
 
         if (fullTextEntityManager == null || !fullTextEntityManager.isOpen()) {
@@ -265,6 +303,13 @@ public final class Controller {
         return fullTextEntityManager;
     }
 
+    /**
+     * Begins the container managed <tt>UserTransaction</tt> and clears fields used to
+     * store problems / errors.
+     *
+     * @throws NotSupportedException
+     * @throws SystemException
+     */
     public void begin() throws NotSupportedException, SystemException {
         
         // Make sure a transaction isn't already in progress
@@ -282,6 +327,15 @@ public final class Controller {
         errors  = null;
     }
 
+    /**
+     * Ends the contatiner managed <tt>UserTransaction</tt>, committing
+     * or rolling back as necessary.
+     *
+     * @throws SystemException
+     * @throws RollbackException
+     * @throws HeuristicMixedException
+     * @throws HeuristicRollbackException
+     */
     public void end() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
         try {
 
@@ -317,6 +371,9 @@ public final class Controller {
         }
     }
 
+    /**
+     * @return true if <tt>begin</tt> has been called, otherwise false
+     */
     public boolean isTransactionOpen() {
         try {
             return tx.getStatus() == Status.STATUS_ACTIVE;
@@ -325,6 +382,9 @@ public final class Controller {
         }
     }
 
+    /**
+     * @return the Hibernate Session
+     */
     public Session getSession() {
         return ((EntityManagerImpl) em.getDelegate()).getSession();
     }
@@ -361,14 +421,37 @@ public final class Controller {
         return em.createNativeQuery(query);
     }
 
+    /**
+     * @param <T> The type of entity to fetch
+     * @param entityClass The class of the entity to fetch
+     * @param entityId The id of the entity to fetch
+     * @return The entity, or null if it was not found
+     */
     public <T> T findPrimaryKey(Class<T> entityClass, Object entityId) {
         return (T) em.find(entityClass, entityId);
     }
 
+    /**
+     * Equivalent to:
+     * <pre>
+     *      list(entityClass, -1, -1);
+     * </pre>
+     *
+     * @param <T> The type of entity to fetch
+     * @param entityClass The class of the entity to fetch
+     * @return a <tt>List</tt> of entities found
+     */
     public <T> List<T> list(Class<T> entityClass) {
         return list(entityClass, -1, -1);
     }
 
+    /**
+     * @param <T> The type of entity to fetch
+     * @param entityClass The class of the entity to fetch
+     * @param start The first entity to fetch
+     * @param limit How many entities to fetch
+     * @return a <tt>List</tt> of entities found
+     */
     public <T> List<T> list(Class<T> entityClass, int start, int limit) {
         Query query = em.createQuery("SELECT e FROM " + entityClass.getSimpleName() + " e");
 
@@ -382,6 +465,11 @@ public final class Controller {
         return (List<T>) query.getResultList();
     }
 
+    /**
+     * @param <T> The type of entity to fetch
+     * @param entityClass The class of the entity to count
+     * @return The number of entities of the specified type
+     */
     public <T> int count(Class<T> entityClass) {
 
         Object o = null;
@@ -398,6 +486,12 @@ public final class Controller {
         }
     }
 
+    /**
+     * @param <T> The type of entity to fetch
+     * @param entityClass The class of the entity to count
+     * @param parameters the {@link KeyValuePair}s for the variables referenced in the query
+     * @return The number of entities found
+     */
     public <T> int count(Query query, KeyValuePair<String, ? extends Object>... parameters) {
         int count = -1;
         Object o = null;
@@ -417,6 +511,11 @@ public final class Controller {
         return count;
     }
 
+    /**
+     * @param queryString A JPQL/HQL query string
+     * @param parameters the {@link KeyValuePair}s for the variables referenced in the query
+     * @return The number of entities found
+     */
     public int count(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         return count(em.createQuery(queryString), parameters);
     }

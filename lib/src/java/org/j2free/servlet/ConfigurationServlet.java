@@ -22,6 +22,7 @@ import java.io.InputStream;
 
 import java.lang.reflect.Constructor;
 
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 
 import java.util.Iterator;
@@ -32,7 +33,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.mail.Authenticator;
 import javax.mail.PasswordAuthentication;
@@ -41,9 +41,6 @@ import javax.mail.Session;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
-
-import net.spy.memcached.AddrUtil;
-import net.spy.memcached.MemcachedClient;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -447,14 +444,20 @@ public class ConfigurationServlet extends HttpServlet {
                     log.error("Error configuring spymemcached; enabled but no addresses!");
                 } else {
                     try {
-                        MemcachedClient client = new MemcachedClient(
-                                                    //new BinaryConnectionFactory(),
-                                                    AddrUtil.getAddresses(addresses)
-                                                );
+                        
+                        Class klass = Class.forName("net.spy.memcached.MemcachedClient");
+                        Constructor clientConstructor = klass.getConstructor(List.class);
+
+                        klass = Class.forName("net.spy.memcached.AddrUtil");
+                        Method addrMethod = klass.getMethod("getAddresses", String.class);
+                        
+                        Object client = clientConstructor.newInstance(addrMethod.invoke(null, addresses));
+
                         context.setAttribute(CONTEXT_ATTR_SPYMEMCACHED, client);
                         Global.put(CONTEXT_ATTR_SPYMEMCACHED, client);
                         log.info("Spymemcached client created, connected to " + addresses);
-                    } catch (IOException ioe) {
+                        
+                    } catch (Exception ioe) {
                         log.error("Error creating memcached client [addresses=" + addresses + "]", ioe);
                     }
                 }

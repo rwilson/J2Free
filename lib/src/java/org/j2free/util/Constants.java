@@ -124,7 +124,7 @@ public class Constants {
     public static final String PROP_SERVLET_ADMIN_PATH        = "servlet.admin.path";
 
     // Default config file location
-    public static final String DEFAULT_CONFIG_PATH            = "/etc/j2free.properties";
+    public static final String DEFAULT_CONFIG_PATH            = "j2free.properties";
 
     // EmailService defaults
     public static final String DEFAULT_EMAIL_TEMPLATE_DIR     = "/WEB-INF/email-templates/";

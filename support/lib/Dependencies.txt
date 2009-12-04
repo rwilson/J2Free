@@ -1,0 +1,79 @@
+=========================================
+Buildtime (these will always be in the app server at runtime):
+=========================================
+jsp-api.jar
+servlet-api.jar
+jta.jar
+
+=========================================
+Runtime
+=========================================
+
+General:
+  commons-logging-1.1.jar
+  commons-logging-adapters-1.1.jar
+
+Hibernate:
+  hibernate3.jar
+  antlr-2.7.6.jar
+  commons-collections-3.1.jar
+  dom4j-1.6.1.jar
+  javassist-3.4.GA.jar
+  jta-1.1.jar
+  slf4j-api-1.5.2.jar
+
+
+Hibernate Annotations: (Assumes Hibernate)
+  hibernate-annotations.jar
+  hibernate-commons-annotations.jar
+  ejb3-persistence.jar
+
+Hibernate Validator: (Assumes Hibernate + Annotations)
+  hibernate-validator.jar
+
+Hibernate Entity Manager: (Assumes Hibernate + Annotations + Validator)
+  hibernate-entitymanager.jar
+
+Hibernate Search: (Assumes Hibernate + Hibernate Annotations)
+  hibernate-search.jar
+  lucene-core.jar
+  slf4j-api: required together with a slf4j-[impl].jar eg slf4j-log4j12.jar
+
+  Optional:
+	jms.jar: needed for JMS based clustering strategy if unavailable from server
+	jsr-250-api.jar: needed for JMS based clustering strategy if unavailable from server
+	solr-core.jar: needed if @AnalyzerDef is used
+	solr-common.jar: needed if @AnalyzerDef is used
+	lucene-snowball.jar: needed if snowball stemmer is used
+
+Hibernate Second-level cache (Ehcache):
+  ehcache-1.2.3.jar
+
+Hibernate Bytecode Processing:
+  hibernate-cglib-repack-2.1.3.jar (for cglib)
+  javassist-3.4.GA.jar
+
+Configuration:
+  commons-collections
+  commons-lang
+  commons-logging
+  commons-codec (for PropertiesConfiguration)
+
+  Optional:
+	memcached-2.3.1.jar (spymemcached, if enabled)
+
+QueuedHttpService:
+  commons-httpclient-3.1.jar
+  commons-codec (1.2)
+  commons-logging
+  Json.jar (json response parsing)
+
+EmailService:
+  mail.jar
+  mail-api.jar
+
+InvokerFilter:
+  scannotation-1.0.2.jar
+
+ConditionalSetTag:
+  standard.jar
