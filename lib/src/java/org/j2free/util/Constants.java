@@ -53,6 +53,7 @@ public class Constants {
     public static final String UTF_8     = "UTF-8";
     public static final String UTF_16    = "UTF-16";
     public static final String EMPTY     = "";
+    public static final String SPACE     = " ";
 
     // For validating e-mails
     public static final String EMAIL_REGEX                 = "^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:[A-Za-z]{2}|edu|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)$";

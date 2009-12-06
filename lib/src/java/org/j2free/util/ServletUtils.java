@@ -10,11 +10,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
-
 import java.util.StringTokenizer;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -22,12 +23,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.j2free.jpa.Controller;
-import org.j2free.security.SecurityUtils;
-
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import org.j2free.jpa.Controller;
+import org.j2free.security.SecurityUtils;
 
 import static org.j2free.util.Constants.*;
 
@@ -39,13 +43,13 @@ public class ServletUtils {
 
     private static final Log log = LogFactory.getLog(ServletUtils.class);
 
-    public static int getIntParameter(HttpServletRequest req, String paramName) {
-        return getIntParameter(req, paramName, -1);
+    public static int getIntParameter(HttpServletRequest req, String name) {
+        return getIntParameter(req, name, -1);
     }
 
-    public static int getIntParameter(HttpServletRequest req, String paramName, int defaultValue) {
-        int i = defaultValue;
-        String s = req.getParameter(paramName);
+    public static int getIntParameter(HttpServletRequest req, String name, int defValue) {
+        int i = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 i = Integer.parseInt(s);
@@ -55,14 +59,14 @@ public class ServletUtils {
         return i;
     }
 
-    public static short getShortParameter(HttpServletRequest req, String paramName) {
+    public static short getShortParameter(HttpServletRequest req, String name) {
         short s = -1;
-        return getShortParameter(req, paramName, s);
+        return getShortParameter(req, name, s);
     }
 
-    public static short getShortParameter(HttpServletRequest req, String paramName, short defaultValue) {
-        short i = defaultValue;
-        String s = req.getParameter(paramName);
+    public static short getShortParameter(HttpServletRequest req, String name, short defValue) {
+        short i = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 i = Short.parseShort(s);
@@ -72,9 +76,9 @@ public class ServletUtils {
         return i;
     }
 
-    public static long getLongParameter(HttpServletRequest req, String paramName, long defaultValue) {
-        long l = defaultValue;
-        String s = req.getParameter(paramName);
+    public static long getLongParameter(HttpServletRequest req, String name, long defValue) {
+        long l = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 l = Long.parseLong(s);
@@ -84,9 +88,9 @@ public class ServletUtils {
         return l;
     }
 
-    public static float getFloatParameter(HttpServletRequest req, String paramName, float defaultValue) {
-        float i = defaultValue;
-        String s = req.getParameter(paramName);
+    public static float getFloatParameter(HttpServletRequest req, String name, float defValue) {
+        float i = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 i = Float.parseFloat(s);
@@ -96,9 +100,9 @@ public class ServletUtils {
         return i;
     }
 
-    public static double getDoubleParameter(HttpServletRequest req, String paramName, double defaultValue) {
-        double i = defaultValue;
-        String s = req.getParameter(paramName);
+    public static double getDoubleParameter(HttpServletRequest req, String name, double defValue) {
+        double i = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 i = Double.parseDouble(s);
@@ -108,9 +112,9 @@ public class ServletUtils {
         return i;
     }
 
-    public static boolean getBooleanParameter(HttpServletRequest req, String paramName, boolean defaultValue) {
-        boolean b = defaultValue;
-        String s = req.getParameter(paramName);
+    public static boolean getBooleanParameter(HttpServletRequest req, String name, boolean defValue) {
+        boolean b = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 b = Boolean.parseBoolean(s);
@@ -120,9 +124,9 @@ public class ServletUtils {
         return b;
     }
 
-    public static java.sql.Date getDateParameter(HttpServletRequest req, String paramName, java.sql.Date defaultValue) {
-        java.sql.Date d = defaultValue;
-        String s = req.getParameter(paramName);
+    public static java.sql.Date getDateParameter(HttpServletRequest req, String name, java.sql.Date defValue) {
+        java.sql.Date d = defValue;
+        String s = req.getParameter(name);
         if (s != null) {
             try {
                 d = java.sql.Date.valueOf(s);
@@ -132,38 +136,35 @@ public class ServletUtils {
         return d;
     }
 
-    public static String getStringParameter(HttpServletRequest req, String paramName) {
-        return getStringParameter(req, paramName, "");
+    public static String getStringParameter(HttpServletRequest req, String name) {
+        return getStringParameter(req, name, EMPTY);
     }
 
-    public static String getStringParameter(HttpServletRequest req, String paramName, String defaultValue) {
-        String s = req.getParameter(paramName);
+    public static String getStringParameter(HttpServletRequest req, String name, String defValue) {
+        String s = req.getParameter(name);
         if (s == null) {
-            s = defaultValue;
+            s = defValue;
         }
         return s == null ? s : s.trim();
     }
 
-    public static String[] getStringArrayParameter(HttpServletRequest req, String paramName, String delimiter) {
-        return getStringArrayParameter(req, paramName, delimiter, new String[0]);
+    public static String[] getStringArrayParameter(HttpServletRequest req, String name, String del) {
+        return getStringArrayParameter(req, name, del, new String[0]);
     }
 
-    public static String[] getStringArrayParameter(HttpServletRequest req, String paramName, String delimiter,
-                                                   String[] defaultValue) {
-        String s = req.getParameter(paramName);
+    public static String[] getStringArrayParameter(HttpServletRequest req, String name, String del, String[] defValue) {
+        String s = req.getParameter(name);
 
         if (s == null) {
-            return defaultValue;
+            return defValue;
         }
 
-        return splitAndTrim(s, delimiter);
+        return splitAndTrim(s, del);
     }
 
     /**
-     * @author  Ryan
-     * @description Prints the stack trace of a Throwable object to a String and
-     *              returns the String.
-     * @param   t - the Throwable item
+     * @return the stack trace of a Throwable object as a String
+     * @param t the Throwable item
      */
     public static String throwableToString(Throwable t) {
         StringWriter sw = new StringWriter();
@@ -174,30 +175,32 @@ public class ServletUtils {
         return sw.toString();
     }
 
+    /**
+     * @param href The href attribute
+     * @param text The text
+     * @return a HTML a tag in String form
+     */
     public static String formHyperlink(String href, String text) {
-        return "<a href=\"" + href + "\">" + text + "</a>";
+        return String.format("<a href=\"%s\">%s</a>", href, text);
     }
 
     /** 
-     * @param   words to join
-     * @param   separator, the separator to put between words
-     * @return  String of words concatonated with the separator
+     * @param words to join
+     * @param separator, the separator to put between words
+     * @return String of words concatonated with the separator
      */
     public static String join(Object[] words, String separator) {
 
-        if (words == null || words.length == 0) {
-            return "";
-        }
+        if (ArrayUtils.isEmpty(words)) return EMPTY;
 
-
-        String ret = "";
+        StringBuilder ret = new StringBuilder();
         for (int i = 0; i < words.length; i++) {
             if (i > 0) {
-                ret += separator;
+                ret.append(separator);
             }
-            ret += words[i].toString();
+            ret.append(words[i].toString());
         }
-        return ret;
+        return ret.toString();
     }
 
     /**
@@ -207,19 +210,16 @@ public class ServletUtils {
      */
     public static String join(int[] words, String separator) {
 
-        if (words == null || words.length == 0) {
-            return "";
-        }
+        if (ArrayUtils.isEmpty(words)) return EMPTY;
 
-
-        String ret = "";
+        StringBuilder ret = new StringBuilder();
         for (int i = 0; i < words.length; i++) {
             if (i > 0) {
-                ret += separator;
+                ret.append(separator);
             }
-            ret += words[i];
+            ret.append(words[i]);
         }
-        return ret;
+        return ret.toString();
     }
 
     /**
@@ -229,19 +229,16 @@ public class ServletUtils {
      */
     public static String join(float[] words, String separator) {
 
-        if (words == null || words.length == 0) {
-            return "";
-        }
+        if (ArrayUtils.isEmpty(words)) return EMPTY;
 
-
-        String ret = "";
+        StringBuilder ret = new StringBuilder();
         for (int i = 0; i < words.length; i++) {
             if (i > 0) {
-                ret += separator;
+                ret.append(separator);
             }
-            ret += words[i];
+            ret.append(words[i]);
         }
-        return ret;
+        return ret.toString();
     }
 
     /**
@@ -251,19 +248,16 @@ public class ServletUtils {
      */
     public static String join(double[] words, String separator) {
 
-        if (words == null || words.length == 0) {
-            return "";
-        }
+        if (ArrayUtils.isEmpty(words)) return EMPTY;
 
-
-        String ret = "";
+        StringBuilder ret = new StringBuilder();
         for (int i = 0; i < words.length; i++) {
             if (i > 0) {
-                ret += separator;
+                ret.append(separator);
             }
-            ret += words[i];
+            ret.append(words[i]);
         }
-        return ret;
+        return ret.toString();
     }
 
     /**
@@ -272,9 +266,8 @@ public class ServletUtils {
      * @return  Array of Strings
      */
     public static String[] splitAndTrim(String joined, String separator) {
-        if (joined == null || joined.equals("")) {
-            return new String[0];
-        }
+
+        if (StringUtils.isEmpty(joined)) return new String[0];
 
         if (separator == null) {
             return new String[]{joined};
@@ -295,20 +288,20 @@ public class ServletUtils {
     public static <T extends Object> String join(Collection<T> words, String separator) {
 
         if (words == null || words.isEmpty()) {
-            return "";
+            return EMPTY;
         }
 
-        String ret = "";
+        StringBuilder ret = new StringBuilder();
         Iterator<T> itr = words.iterator();
         int i = 0;
         while (itr.hasNext()) {
             if (i > 0) {
-                ret += separator;
+                ret.append(separator);
             }
-            ret += itr.next().toString();
+            ret.append(itr.next().toString());
             i++;
         }
-        return ret;
+        return ret.toString();
     }
 
     /**
@@ -321,7 +314,7 @@ public class ServletUtils {
         if (query != null) {
             int pos = query.lastIndexOf("&sig=");
             if (pos != -1) {
-                query = query.replaceFirst("&sig=.{40}", "");
+                query = query.replaceFirst("&sig=.{40}", EMPTY);
                 query = query + key;
                 String sig = request.getParameter("sig");
                 try {
@@ -385,7 +378,7 @@ public class ServletUtils {
             String responseString = responseWrapper.toString();
 
             if (compress) {
-                responseString = compress(responseString);
+                responseString = compressHTML(responseString);
             }
 
             response.setContentLength(responseString.length());
@@ -575,31 +568,18 @@ public class ServletUtils {
             throws ServletException, IOException {
         
         response.setStatus(statusCode);
-        response.getWriter().println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<" + statusCode + "/>");
+        response.getWriter().println(String.format("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<%d/>", statusCode));
     }
     
     /**
-     * Expects to compress HTML by replacing line breaks with spaces, and reducing whitespace to single spaces.
+     * Expects to compressHTML HTML by replacing line breaks with spaces, and reducing whitespace to single spaces.
      *
-     * @param content The string to compress.
+     * @param content The string to compressHTML.
      * @return the compressed String, or an empty string if <code>content</code> is null.
      */
-    public static String compress(String content) {
-        if (content == null) {
-            return "";
-        }
-
-        return content.replaceAll("\n", " ").replaceAll("\\s{2,}", " ").replaceAll(" />", "/>");
-    }
-
-    // Will return the controller if using the default
-    public static Controller getController(HttpServletRequest request) {
-        return (Controller) request.getAttribute(Controller.ATTRIBUTE_KEY);
-    }
-
-    // Will return the controller if using a subclass
-    public static <T extends Controller> T getController(HttpServletRequest request, Class<T> controllerClass) {
-        return (T) request.getAttribute(Controller.ATTRIBUTE_KEY);
+    public static String compressHTML(String content) {
+        if (StringUtils.isEmpty(content)) return EMPTY;
+        return content.replaceAll("\n", SPACE).replaceAll("\\s{2,}", SPACE).replaceAll(" />", "/>");
     }
 
     /**
@@ -694,7 +674,7 @@ public class ServletUtils {
      *  @return true if the String argument is null or an empty String, otherwise false
      */
     public static boolean empty(String str) {
-        return str == null || str.equals(EMPTY);
+        return StringUtils.isEmpty(str);
     }
 
     /**
@@ -708,7 +688,7 @@ public class ServletUtils {
      * @return true if the array argument is null or length == 0, otherwise false
      */
     public static boolean empty(Object[] array) {
-        return array == null || array.length == 0;
+        return ArrayUtils.isEmpty(array);
     }
 
     /**
@@ -716,15 +696,14 @@ public class ServletUtils {
      * the argument quotes that were in the string escaped.
      */
     public static String quote(String toQuote, char quote) {
-        toQuote = toQuote.replace("" + quote, "\\" + quote);
-        return quote + toQuote + quote;
+        return String.format("%s%s%s", quote, toQuote.replace(Character.toString(quote), "\\" + quote), quote);
     }
 
     /**
      * Appends a newline char to the end of the string and returns it.
      */
     public static String line(String str) {
-        return str + "\n";
+        return String.format("%s\n", str);
     }
 
     /**
@@ -740,31 +719,30 @@ public class ServletUtils {
 
     public static String toCamelCase(String source) {
 
-        if (source == null || source.equals("")) {
-            return "";
-        }
+        if (StringUtils.isEmpty(source)) return EMPTY;
+        if (StringUtils.isBlank(source)) return source;
 
-        source = source.replaceAll("-|_|\\.", " ");
+        source = source.replaceAll("-|_|\\.", SPACE);
 
-        String[] parts = source.split(" ");
+        String[] parts = source.split(SPACE);
 
-        StringBuilder result = new StringBuilder();
+        StringBuilder ret = new StringBuilder();
 
         for (int i = 0; i < parts.length; i++) {
             if (i == 0) {
-                result.append(parts[i]);
+                ret.append(parts[i]);
             } else {
-                result.append(capitalizeFirst(parts[i]));
+                ret.append(capitalizeFirst(parts[i]));
             }
         }
 
-        return result.toString();
+        return ret.toString();
     }
 
     public static String capitalizeFirst(String source) {
-        if (source == null || source.equals("")) {
-            return "";
-        }
+
+        if (StringUtils.isEmpty(source)) return EMPTY;
+        if (StringUtils.isBlank(source)) return source;
 
         if (source.length() == 1) {
             return source.toUpperCase();
@@ -776,7 +754,7 @@ public class ServletUtils {
     public static String describeRequest(HttpServletRequest req) {
 
         if (req == null) {
-            return "";
+            return EMPTY;
         }
 
         HttpSession session = null;
@@ -882,7 +860,7 @@ public class ServletUtils {
      * Removes a cookie
      */
     public static void removeCookie(HttpServletResponse response, String name, boolean useRootPath) {
-        createCookie(response, name, "", -1, useRootPath);
+        createCookie(response, name, EMPTY, -1, useRootPath);
     }
 
     /**

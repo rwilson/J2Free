@@ -247,7 +247,7 @@ public class MemoryFragment implements Fragment {
 
         // Update the fields
         synchronized (this) {
-            this.content   = ServletUtils.compress(content);
+            this.content   = ServletUtils.compressHTML(content);
             this.condition = (condition != null && condition.equals("")) ? null : condition;
             this.updated   = System.currentTimeMillis();
         }
