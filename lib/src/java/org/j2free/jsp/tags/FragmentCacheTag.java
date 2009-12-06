@@ -78,6 +78,14 @@ public class FragmentCacheTag extends BodyTagSupport {
         return defaultCache.get();
     }
 
+    /**
+     * Registers the specified cache under the specified cache strategy name.
+     * If this is the first cache strategy to be registered, it will also
+     * become the default.
+     * 
+     * @param name The name by which to reference this cache strategy
+     * @param cache An instance of FragmentCache
+     */
     public static void registerStrategy(String name, FragmentCache cache) {
         caches.put(name, cache);
         if (defaultCache.get() == null) {
@@ -90,12 +98,22 @@ public class FragmentCacheTag extends BodyTagSupport {
      */
     private static final AtomicBoolean enabled = new AtomicBoolean(false);
 
+    /**
+     * Enables fragment caching
+     */
     public static void enable() {
         enabled.set(true);
     }
 
+    /**
+     * Disables fragment caching, clears any cached fragments
+     */
     public static void disable() {
         enabled.set(false);
+        
+        for (FragmentCache fc : caches.values()) {
+            fc.clear();
+        }
     }
 
     // This is the max amount of time a thread will wait() on another thread

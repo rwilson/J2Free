@@ -8,21 +8,21 @@ package org.j2free.http;
 import java.util.concurrent.FutureTask;
 
 import net.jcip.annotations.ThreadSafe;
-import org.j2free.http.QueuedHttpCallService.HttpCallable;
+import org.apache.commons.httpclient.HttpClient;
 
 /**
  * Extends FutureTask so that instances of HttpCallTask can be ordered by
  * priority in a PriorityBlockingQueue in the QueuedHttpCallService.
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 @ThreadSafe
-public final class HttpCallFuture extends FutureTask<HttpCallResult> implements Comparable<HttpCallFuture> {
+final class HttpCallFuture extends FutureTask<HttpCallResult> implements Comparable<HttpCallFuture> {
 
     private final HttpCallTask task;
 
-    public HttpCallFuture(HttpCallTask task, HttpCallable callable) {
-        super(callable);
+    protected HttpCallFuture(HttpCallTask task, HttpClient httpClient) {
+        super(new HttpCallable(task, httpClient));
         this.task = task;
     }
 

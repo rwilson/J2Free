@@ -29,7 +29,7 @@ public class ErrorReporter {
     private static final AtomicReference<KeyValuePair<String,String>> FROM
             = new AtomicReference<KeyValuePair<String,String>>(null);
 
-    public static void init(String to, KeyValuePair<String, String> from) {
+    public static void configure(String to, KeyValuePair<String, String> from) {
         TO.set(to);
         FROM.set(from);
     }
@@ -54,7 +54,7 @@ public class ErrorReporter {
             throw new IllegalStateException("ErrorReporter has not been properly initialized!");
 
         try {
-            EmailService.sendPlain(
+            SimpleEmailService.sendPlain(
                 FROM.get(),
                 TO.get(),
                 subject,

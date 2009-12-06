@@ -46,8 +46,8 @@ public class EmailServiceTest extends TestCase {
         Properties props = System.getProperties();
         Session session = Session.getInstance(props);
 
-        EmailService.init(session, null);
-        EmailService.setDummyMode(true);
+        final EmailService service = new EmailService(session);
+        service.setDummyMode(true);
 
         final CountDownLatch startGate = new CountDownLatch(1);
         final CountDownLatch endGate   = new CountDownLatch(N_THREADS);
@@ -61,7 +61,7 @@ public class EmailServiceTest extends TestCase {
                         startGate.await();
 
                         for (int i = 0; i < 100; i++) {
-                            EmailService.sendPlain(
+                            service.sendPlain(
                                             FROM,
                                             "example@example.com",
                                             getName() + " #" + i,
@@ -88,7 +88,7 @@ public class EmailServiceTest extends TestCase {
 
         out.println("All messages submitted in " + (end - start) + "ms");
 
-        boolean normal = EmailService.shutdown(30, TimeUnit.SECONDS);
+        boolean normal = service.shutdown(30, TimeUnit.SECONDS);
         assertTrue(normal);
     }
 }

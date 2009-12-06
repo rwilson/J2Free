@@ -2,95 +2,80 @@
  * QueuedHttpCallService.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.j2free.http;
 
-
-import java.io.IOException;
 import java.util.List;
 
-import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.jcip.annotations.ThreadSafe;
 
-import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.NameValuePair;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.j2free.util.KeyValuePair;
-
-
 /**
- * <tt>QueuedExecutorService</tt> a thread-safe service with static methods
+ * <tt>QueuedExecutorService</tt> a thread-safe service with methods
  * to execute http calls in priority order.  Internally, uses a {@link ThreadPoolExecutor}
  * that is configured to use a {@link PriorityBlockingQueue} to order tasks
  * by priority.
  *
- * The {@link HttpCallTask} objects are executed in instances of the internal
- * {@link HttpCallable}, which is intentionally not published.  <tt>QueuedHttpCallService</tt>
- * is final specifically to prevent subclassing from publishing {@link HttpCallable} to
- * alien code.
+ * The {@link HttpCallTask} objects are executed in instances of  {@link HttpCallable}.
  *
  * @author Ryan Wilson
  */
 @ThreadSafe
-public final class QueuedHttpCallService {
+public final class QueuedHttpCallService implements HttpCallService {
 
     private static final Log log = LogFactory.getLog(QueuedHttpCallService.class);
 
-    private static ThreadPoolExecutor                 executor;
-    private static MultiThreadedHttpConnectionManager connectionManager;
-    private static HttpClient                         httpClient;
+    private final ThreadPoolExecutor                 executor;
+    private final MultiThreadedHttpConnectionManager connectionManager;
+    private final HttpClient                         httpClient;
 
-    public static HttpCallFuture submit(final HttpCallTask task) {
-
-        if (task == null)
-            throw new IllegalArgumentException("HttpCallTask cannot be null");
-
-        if (executor == null)
-            throw new IllegalStateException("Invalid operation, QueuedHttpCallService has not been started");
-
-        HttpCallFuture future = new HttpCallFuture(task, new HttpCallable(task));
-        executor.execute(future);
-
-        return future;
-    }
-
-    public static void enable(int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout) {
-
-        if (executor != null) {
-
-            if (executor.isShutdown() || executor.isTerminated())
-                throw new IllegalStateException("Invalid operation, QueuedHttpCallService is already shutdown");
-            
-            if (executor.isTerminating())
-                throw new IllegalStateException("Invalid operation, QueuedHttpCallService is shutting down");
-
-            throw new IllegalStateException("Invalid operation, QueuedHttpCallService is already started");
-        }
+    /**
+     * Enables this service.
+     *
+     * @param maxPoolSize The max number of threads
+     * @param threadIdle How long a thread can be idle before terminating it
+     * @param connectTimeout How long to wait for a connection
+     * @param socketTimeout How long to wait for an operation
+     * @throws IllegalStateException if called when the service is already running
+     */
+    public QueuedHttpCallService(int corePoolSize, int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout) {
 
         if (maxPoolSize < 0)
             maxPoolSize = Integer.MAX_VALUE;
 
         executor = new ThreadPoolExecutor(
-                maxPoolSize,
+                corePoolSize,
                 maxPoolSize,
                 threadIdle,
                 TimeUnit.SECONDS,
-                new PriorityBlockingQueue<Runnable>()
+                new PriorityBlockingQueue<Runnable>(100)
             );
-        //executor.allowCoreThreadTimeOut(true); // Only available in 1.6
+
+        executor.allowCoreThreadTimeOut(true);  // allow the threads to timeout if unused
+        executor.prestartCoreThread();          // start up just one thread
 
         connectionManager = new MultiThreadedHttpConnectionManager();
 
@@ -103,25 +88,70 @@ public final class QueuedHttpCallService {
         httpClient = new HttpClient(connectionManager);
     }
 
-    public static boolean isEnabled() {
-        return executor != null && !executor.isShutdown() && !executor.isTerminated() && !executor.isTerminating();
+    /**
+     * Submits an HttpCallTask for execution
+     * 
+     * @param task The task to execute
+     * @return a HttpCallFuture representing the result of executing
+     *         the specified task
+     */
+    public Future<HttpCallResult> submit(final HttpCallTask task) {
+
+        if (task == null)
+            throw new IllegalArgumentException("HttpCallTask cannot be null");
+
+        /**
+         * Why is this all necessary?
+         *  - Only tasks submitted with execute will end up in the PriorityBlockingQueue
+         *  - ThreadPoolExecutor.execute will only accept Runnables
+         *  - To return a result, we need to submit a Callable
+         *  - So we wrap a Callable in a FutureTask, but FutureTask is not Comparable
+         *  - So, we use a HttpCallFuture, which extends FutureTask to implement Comparable
+         *  - But, we don't want the user to be able to arbitrarily execute the FutureTask
+         *    which they could if we returned the HttpCallFuture, so we just return it as
+         *    a Future.
+         */
+
+        HttpCallFuture future = new HttpCallFuture(task, httpClient);
+        executor.execute(future);
+        return future;
     }
 
-    public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+    /**
+     * @return true of this service is currently accepting new tasks
+     */
+    public boolean isEnabled() {
+        return !executor.isShutdown() && !executor.isTerminated() && !executor.isTerminating();
+    }
+
+    /**
+     * Attempts to shutdown the service in an ordely fashion, allowing all
+     * queued tasks to finish executing but not accepting any new tasks.
+     *
+     * @param timeout how long to wait
+     * @param unit
+     * @return true if the service is shutdown as a result of this call, otherwise false
+     * @throws InterruptedException if the current thread is interrupted while waiting
+     *         for the executor to shutdown.
+     */
+    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
         executor.shutdown();
         return executor.awaitTermination(timeout, unit);
     }
 
-    public static List<Runnable> shutdownNow() {
+    /**
+     * Shuts down the service immediately, terminating any running tasks
+     * @return a list of tasks running or waiting to be run
+     */
+    public List<Runnable> shutdownNow() {
         return executor.shutdownNow();
     }
 
-    public static Report reportStatus() {
-
-        if (executor == null)
-            throw new IllegalStateException("Invalid operation, QueuedHttpCallService has not been started");
-
-        return new Report(
+    /**
+     * @return The status of this service
+     */
+    public HttpServiceReport reportStatus() {
+        return new HttpServiceReport(
                 executor.getPoolSize(),             // current Pool size
                 executor.getLargestPoolSize(),      // largest ever since startup
                 executor.getMaximumPoolSize(),      // max pool size
@@ -129,157 +159,5 @@ public final class QueuedHttpCallService {
                 executor.getTaskCount(),            // num tasks submitted
                 executor.getCompletedTaskCount()    // num tasks completed
             );
-    }
-
-    /**
-     * Implementation of Callable that takes a HttpCallTask and,
-     * when called, returns the result of the task as a HttpCallResult.
-     *
-     * This class is <tt>protected</tt> because it needs to be seen by <tt>HttpCallFuture</tt>
-     * but should never be access outside of <tt>HttpCallFuture</tt> or <tt>QueuedHttpCallService</tt>
-     */
-    protected static class HttpCallable implements Callable<HttpCallResult> {
-
-        private final HttpCallTask task;
-
-        private HttpCallable(HttpCallTask task) {
-            this.task = task;
-        }
-
-        public HttpCallResult call() throws IOException {
-            
-            HttpMethod method;
-
-            List<KeyValuePair<String,String>> params = task.getQueryParams();
-
-            if (task.method == HttpCallTask.Method.GET) {
-                method = new GetMethod(task.url);
-                
-                StringBuilder query = new StringBuilder();
-                
-                boolean first = true;
-                for (KeyValuePair<String,String> param : params) {
-                    if (first) {
-                        query.append("?");
-                        first = false;
-                    } else {
-                        query.append("&");
-                    }
-
-                    query.append(param.key + "=" + param.value);
-                }
-
-            } else {
-                
-                method = new PostMethod(task.url);
-
-                NameValuePair[] data = new NameValuePair[params.size()];
-                int i = 0;
-                for (KeyValuePair<String,String> param : params) {
-                    data[i] = new NameValuePair(param.key, param.value);
-                    i++;
-                }
-                
-                ((PostMethod)method).setRequestBody(data);
-            }
-
-            for (Header header : task.getRequestHeaders())
-                method.setRequestHeader(header);
-
-            method.setFollowRedirects(task.followRedirects);
-
-            try {
-
-                if (log.isDebugEnabled()) 
-                    log.debug("Making HTTP call [url=" + task.url + "]");
-                
-                httpClient.executeMethod(method);
-                
-                if (log.isDebugEnabled())
-                    log.debug("Call returned [status=" + method.getStatusCode() + "]");
-
-                return new HttpCallResult(method);
-
-            } finally {
-                method.releaseConnection();
-            }
-        }
-    }
-
-    /**
-     * Class for holding the reporting the current state of
-     * the QueueHttpCallService
-     */
-    public static class Report {
-
-        private final int currentPoolSize;
-        private final int largestPoolSize;
-        private final int maxPoolSize;
-
-        private final int activeThreadCount;
-
-        private final long totalTaskCount;
-        private final long completedTaskCount;
-
-        /**
-         * @param the corePoolSize
-         * @param the currentPoolSize
-         * @param the largestPoolSize since startup
-         * @param the maxPoolSize
-         * @param the activeThreadCount
-         * @param the totalTaskCount - total tasks submitted since start
-         * @param the completedTaskCount - total tasks completed since start
-         */
-        public Report(int curPS, int largestPS, int maxPS, int activeTC, long totalTC, long completedTC) {
-            this.currentPoolSize    = curPS;
-            this.largestPoolSize    = largestPS;
-            this.maxPoolSize        = maxPS;
-            this.activeThreadCount  = activeTC;
-            this.totalTaskCount     = totalTC;
-            this.completedTaskCount = completedTC;
-        }
-
-        /**
-         * @return the currentPoolSize
-         */
-        public int getCurrentPoolSize() {
-            return currentPoolSize;
-        }
-
-        /**
-         * @return the largestPoolSize
-         */
-        public int getLargestPoolSize() {
-            return largestPoolSize;
-        }
-
-        /**
-         * @return the maxPoolSize
-         */
-        public int getMaxPoolSize() {
-            return maxPoolSize;
-        }
-
-        /**
-         * @return the activeThreadCount
-         */
-        public int getActiveThreadCount() {
-            return activeThreadCount;
-        }
-
-        /**
-         * @return the totalTaskCount
-         */
-        public long getTotalTaskCount() {
-            return totalTaskCount;
-        }
-
-        /**
-         * @return the completedTaskCount
-         */
-        public long getCompletedTaskCount() {
-            return completedTaskCount;
-        }
-
     }
 }

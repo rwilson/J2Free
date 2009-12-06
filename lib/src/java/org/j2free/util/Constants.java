@@ -57,6 +57,10 @@ public class Constants {
     // For validating e-mails
     public static final String EMAIL_REGEX                 = "^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:[A-Za-z]{2}|edu|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)$";
 
+    // For dynamic reconfiguration
+    public static final String PROP_RECONFIG_ENABLED       = "dynamic-reconfig.enabled";
+    public static final String PROP_RECONFIG_INTERVAL      = "dynamic-reconfig.interval";
+
     // For setting the application context value of "localhost"
     public static final String PROP_LOCALHOST              = "local.host";
     public static final String PROP_LOCALPORT              = "local.port";
@@ -99,7 +103,9 @@ public class Constants {
 
     // Http Call Service
     public static final String PROP_HTTP_SRVC_ON           = "http.service.enabled";
-    public static final String PROP_HTTP_SRVC_MAX_POOL     = "http.service.pool-size";
+    public static final String PROP_HTTP_SRVC_CORE_POOL    = "http.service.core-threads";
+    public static final String PROP_HTTP_SRVC_MAX_POOL     = "http.service.max-threads";
+    public static final String PROP_HTTP_SRVC_POOL_IDLE    = "http.service.thread-idle";
     public static final String PROP_HTTP_SRVC_CONNECT_TOUT = "http.client.connect.timeout";
     public static final String PROP_HTTP_SRVE_SOCKET_TOUT  = "http.client.socket.timeout";
 
@@ -126,6 +132,9 @@ public class Constants {
     // Default config file location
     public static final String DEFAULT_CONFIG_PATH            = "j2free.properties";
 
+    // Dynamic reconfig default interval
+    public static final int DEFAULT_RECONFIG_INTERVAL         = 300;
+
     // EmailService defaults
     public static final String DEFAULT_EMAIL_TEMPLATE_DIR     = "/WEB-INF/email-templates/";
 
@@ -133,10 +142,8 @@ public class Constants {
     public static final int  DEFAULT_MAIL_SERVICE_COREPOOL    = DEFAULT_MAIL_SERVICE_MAXPOOL / 2;
     public static final long DEFAULT_MAIL_SERVICE_KEEPALIVE   = 180;
 
-    public static final long DEFAULT_MAIL_RQAP_INTERVAL       = 5 * 60;
-
     // Http Service defaults
-    public static final long DEFAULT_HTTP_SRVC_THREAD_IDLE    = 60;
+    public static final long DEFAULT_HTTP_SRVC_THREAD_IDLE    = 300;
     public static final int  DEFAULT_HTTP_SRVC_CONNECT_TOUT   = 30;
     public static final int  DEFAULT_HTTP_SRVE_SOCKET_TOUT    = 30;
 

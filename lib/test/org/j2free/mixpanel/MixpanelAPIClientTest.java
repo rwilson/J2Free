@@ -1,14 +1,17 @@
 package org.j2free.mixpanel;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import junit.framework.TestCase;
+
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.PatternLayout;
-import org.j2free.http.HttpCallFuture;
+
 import org.j2free.http.HttpCallResult;
-import org.j2free.http.QueuedHttpCallService;
+import org.j2free.http.SimpleHttpService;
 import org.j2free.util.KeyValuePair;
 
 /**
@@ -38,20 +41,15 @@ public class MixpanelAPIClientTest extends TestCase {
             fail("QueuedHttpCallService could not be called!");
         }
 
-        MixpanelAPIClient client = MixpanelAPIClient.get();
-        assertNull(client);
+        SimpleMixpanelClient.init("dc864fba5af121e62ef6106d83d21f19");
 
-        MixpanelAPIClient.init("dc864fba5af121e62ef6106d83d21f19");
-        client = MixpanelAPIClient.get();
-        assertNotNull(client);
+        SimpleHttpService.init(5, -1, 60l, 30, 30);
+        assertTrue(SimpleHttpService.isEnabled());
 
-        QueuedHttpCallService.enable(-1, 5, 30, 30);
-        assertTrue(QueuedHttpCallService.isEnabled());
+        SimpleMixpanelClient.setDebug(true);
+        SimpleMixpanelClient.track("test-event", null, null, new KeyValuePair("test-id", "a"));
 
-        client.enableDebug();
-        client.trackEvent("test-event", null, null, new KeyValuePair("test-id", "a"));
-
-        HttpCallFuture future = MixpanelAPIClient.track("test-event", null, null, new KeyValuePair("test-id", "b"));
+        Future<HttpCallResult> future = SimpleMixpanelClient.track("test-event", null, null, new KeyValuePair("test-id", "b"));
         try {
             HttpCallResult result = future.get();
             System.out.println("result [status=" + result.getStatusCode() + ", body=" + result.getResponse() + "]");
@@ -62,7 +60,7 @@ public class MixpanelAPIClientTest extends TestCase {
         }
 
         try {
-            boolean normal = QueuedHttpCallService.shutdown(30, TimeUnit.SECONDS);
+            boolean normal = SimpleHttpService.shutdown(30, TimeUnit.SECONDS);
             assertTrue(normal);
         } catch (Exception e) {
             e.printStackTrace();

@@ -9,8 +9,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-
 import java.util.Map;
+
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.httpclient.Header;
@@ -49,7 +49,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      * </pre>
      */
     public HttpCallTask(String url) {
-        this(Method.GET,url);
+        this(Method.GET, url);
     }
 
     /**
@@ -59,7 +59,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      * </pre>
      */
     public HttpCallTask(Method method, String url) {
-        this(method,url,false);
+        this(method, url, false);
     }
 
     /**
@@ -79,7 +79,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      * </pre>
      */
     public HttpCallTask(Method method, String url, boolean followRedirects) {
-        this(method,url,followRedirects,Priority.DEFAULT);
+        this(method, url, followRedirects, Priority.DEFAULT);
     }
     
     public HttpCallTask(Method method, String url, boolean followRedirects, Priority priority) {

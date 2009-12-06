@@ -40,7 +40,7 @@ public class StaticJspServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-        dispatchRequest(request,response, directory.get() + request.getRequestURI().replaceFirst("/", EMPTY) + ".jsp");
+        dispatchRequest(request,response, directory.get() + request.getRequestURI().replaceFirst(request.getContextPath(), EMPTY) + ".jsp");
     }
     
     @Override

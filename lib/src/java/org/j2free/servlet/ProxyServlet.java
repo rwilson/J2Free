@@ -8,6 +8,7 @@ package org.j2free.servlet;
 import java.io.*;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
@@ -16,10 +17,9 @@ import org.apache.commons.logging.LogFactory;
 
 import org.j2free.annotations.ServletConfig;
 
-import org.j2free.http.HttpCallFuture;
 import org.j2free.http.HttpCallResult;
 import org.j2free.http.HttpCallTask;
-import org.j2free.http.QueuedHttpCallService;
+import org.j2free.http.SimpleHttpService;
 
 /**
  * @author Ryan Wilson
@@ -71,7 +71,7 @@ public class ProxyServlet extends HttpServlet {
          */
 
         HttpCallTask task = new HttpCallTask(fetchUrl);
-        HttpCallFuture future = QueuedHttpCallService.submit(task);
+        Future<HttpCallResult> future = SimpleHttpService.submit(task);
         HttpCallResult result;
 
         try {
