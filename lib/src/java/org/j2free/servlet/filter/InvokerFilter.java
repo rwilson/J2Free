@@ -15,16 +15,17 @@
  */
 package org.j2free.servlet.filter;
 
+import com.reardencommerce.kernel.collections.shared.evictable.ConcurrentLinkedHashMap;
+import com.reardencommerce.kernel.collections.shared.evictable.ConcurrentLinkedHashMap.EvictionPolicy;
+
 import java.io.*;
 import java.net.URL;
 
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,12 +44,10 @@ import javax.servlet.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.j2free.annotations.InitParam;
 import org.j2free.annotations.ServletConfig;
 import org.j2free.annotations.ServletConfig.SSLOption;
 
 import org.j2free.jpa.Controller;
-import org.j2free.util.ServletUtils;
 import org.j2free.util.UncaughtServletExceptionHandler;
 
 import static org.j2free.util.ServletUtils.*;
@@ -59,6 +58,15 @@ import org.scannotation.ClasspathUrlFinder;
 import org.scannotation.WarUrlFinder;
 
 /**
+ * InvokerFilter will try to use the fastest method to resolve
+ * a URL to a Servlet, which in most cases will be O(1).  "Most"
+ * means either a Servlet that was mapped with a non-regex,
+ * non-wildcard URL, or a Servlet that was mapped with a regex or
+ * wildcard URL and was accessed somewhat recently.
+ *
+ * InvokerFilter will, however, attempt to contain its memory
+ * usage, preferring to resolve infrequently access URLs only
+ * when requested.
  *
  * @author  Ryan Wilson
  */
@@ -66,82 +74,52 @@ public class InvokerFilter implements Filter {
 
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
 
-    // Convenience class for grouping info about a servlet mapping, avoids multiple maps
-    private static class ServletMapping {
-
-        private final HttpServlet   servlet;
-        private final ServletConfig config;
-
-        public ServletMapping(HttpServlet servlet, ServletConfig config) {
-            this.servlet = servlet;
-            this.config  = config;
-        }
-    }
-
-    // Convenience class for setting javax.servlet.ServletConfig
-    private static class ServletConfigImpl implements javax.servlet.ServletConfig {
-
-        private final String name;
-        private final ServletContext context;
-
-        private final HashMap<String, String> initParams;
-
-        public ServletConfigImpl(String name, ServletContext context, InitParam[] initParams) {
-            this.name       = name;
-            this.context    = context;
-
-            this.initParams = new HashMap<String, String>();
-            for (InitParam param : initParams) {
-                this.initParams.put(param.name(), param.value());
-            }
-        }
-
-        public String getServletName() {
-            return name;
-        }
-
-        public ServletContext getServletContext() {
-            return context;
-        }
-
-        public String getInitParameter(String key) {
-            return initParams.get(key);
-        }
-
-        // UGLY HACK: ServletConfig requires getInitParameterNames return an Enumeration, which
-        //            is only implemented by StringTokenizer.  Anticipating that we won't ever
-        //            actually call this function, this is probably okay, but it's nasty.
-        public Enumeration getInitParameterNames() {
-            return new StringTokenizer(ServletUtils.join(initParams.keySet(), ","), ",");
-        }
-
-    }
-
     // Convenience class for referencing static resources
     private static final class Static extends HttpServlet { }
 
-    private static final AtomicBoolean benchmark                     = new AtomicBoolean(false);
-    private static final AtomicInteger sslRedirectPort               = new AtomicInteger(-1);
-    private static final AtomicInteger nonSslRedirectPort            = new AtomicInteger(-1);
+    // Paths to set different cache settings
+    private static final String SHORT_CACHE_REGEX           = ".*?\\.(jpg|gif|png|jpeg)";
+    private static final String LONG_CACHE_REGEX            = ".*?\\.(swf|js|css|flv)";
+    private static final String CAPTCHA_PATH                = "captcha.jpg";
 
-    private static final AtomicReference<String> bypassPath          = new AtomicReference(EMPTY);
+    private static final String SHORT_CACHE_VAL             = "max-age=21600";
+    private static final String LONG_CACHE_VAL              = "max-age=31536000";
+
+    private static final String HEADER_PRAGMA               = "Pragma";
+    private static final String HEADER_CACHE_CONTROL        = "Cache-Control";
+
+    private static final String PRAGMA_VAL                  = "cache";
+
+    private static final AtomicBoolean benchmark            = new AtomicBoolean(false);
+    private static final AtomicInteger sslRedirectPort      = new AtomicInteger(-1);
+    private static final AtomicInteger nonSslRedirectPort   = new AtomicInteger(-1);
+
+    // Holds a known path to not process
+    private static final AtomicReference<String> bypassPath = new AtomicReference(EMPTY);
 
     // For accessing the servlet context in static methods
-    private static final AtomicReference<ServletContext> servletContext = new AtomicReference(null);
+    private static final AtomicReference<ServletContext> servletContext
+            = new AtomicReference(null);
 
     // For error handling, a handler and redirect location
-    private static final AtomicReference<UncaughtServletExceptionHandler> exceptionHandler = new AtomicReference(null);
+    private static final AtomicReference<UncaughtServletExceptionHandler> exceptionHandler
+            = new AtomicReference(null);
 
-    // ConcurrentMap holds mappings from URLs to classes (specifically)
+    // Maps URLs to classes
     private static final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap
-            = new ConcurrentHashMap(10000, 0.8f, 50);
+            = new ConcurrentHashMap(500, 0.8f, 50);
+
+    // Maps the whole URL of resolved partial URLs to classes
+    private static final ConcurrentLinkedHashMap<String, Class<? extends HttpServlet>> partialsMap
+            = ConcurrentLinkedHashMap.create(EvictionPolicy.LRU, 10000, 50);
 
     // A map of regex's to test mappings against
-    private static final ConcurrentMap<String, Class<? extends HttpServlet>> regexMap = new ConcurrentHashMap();
+    private static final ConcurrentMap<String, Class<? extends HttpServlet>> regexMap
+            = new ConcurrentHashMap();
 
     // A map of HttpServlet classes to mappings for that class
-    private static final ConcurrentHashMap<Class<? extends HttpServlet>, ServletMapping> servletMap 
-            = new ConcurrentHashMap(100, 0.75f, 50);
+    private static final ConcurrentHashMap<Class<? extends HttpServlet>, InvokerServletMapping> servletMap
+            = new ConcurrentHashMap();
 
     // Used to queue requests during (re)configuration.  Fairness is enabled,
     // otherwise writes could wait indefinitely because of the high contention
@@ -180,13 +158,15 @@ public class InvokerFilter implements Filter {
      */
     public void destroy() {
         try {
+            write.lock();
 
             // Clear the mappings
             urlMap.clear();
+            partialsMap.clear();
             regexMap.clear();
 
             // Destroy the servlets used in the mappings
-            for (ServletMapping mapping : servletMap.values()) {
+            for (InvokerServletMapping mapping : servletMap.values()) {
                 mapping.servlet.destroy();
             }
 
@@ -210,33 +190,40 @@ public class InvokerFilter implements Filter {
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException {
 
-        HttpServletRequest request   = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) resp;
+        final HttpServletRequest  request  = (HttpServletRequest) req;
+        final HttpServletResponse response = (HttpServletResponse) resp;
 
-        String currentPath = request.getRequestURI().replaceFirst(request.getContextPath(), "");
+        // Get the path after the context-path (final so we can't accidentally fuck with it)
+        final String path = request.getRequestURI().substring(request.getContextPath().length());
 
-        long start   = System.currentTimeMillis(),  // start time
-             find    = 0,                           // time after figuring out what to do
+        // Benchmark vars
+        final long start   = System.currentTimeMillis();  // start time
+
+        long find    = 0,                           // time after figuring out what to do
              run     = 0,                           // time after processing
              finish  = 0;                           // finish time
 
         // Set cache-control based on content
-        if (currentPath.matches(".*?\\.(jpg|gif|png|jpeg)") && !currentPath.contains("captcha.jpg")) {
-            response.setHeader("Pragma", "cache");
-            response.setHeader("Cache-Control", "max-age=21600");
-        } else if (currentPath.matches(".*?\\.(swf|js|css|flv)")) {
-            response.setHeader("Pragma", "cache");
-            response.setHeader("Cache-Control", "max-age=31536000");
+        if (path.matches(SHORT_CACHE_REGEX) && !path.contains(CAPTCHA_PATH)) {
+            response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
+            response.setHeader(HEADER_CACHE_CONTROL, SHORT_CACHE_VAL);
+        } else if (path.matches(LONG_CACHE_REGEX)) {
+            response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
+            response.setHeader(HEADER_CACHE_CONTROL, LONG_CACHE_VAL);
         }
 
-        // This will block requests during configuration
         try {
+            
+            // This will block requests during configuration
             read.lock();
 
-            // Get the mapping
-            Class<? extends HttpServlet> klass = urlMap.get(currentPath);
+            // Try to get an explicit mapping from the whole URL to a class
+            Class<? extends HttpServlet> klass = urlMap.get(path);
 
-            /*
+            // Try to a fast lookup using the whole URL for a previously resolved partial URL.
+            if (klass == null) klass = partialsMap.get(path);
+
+            /**
              * If we don't already have an exact match for this path,
              * try to break it down.
              *
@@ -245,88 +232,94 @@ public class InvokerFilter implements Filter {
              * were discovered earlier to be static content, so don't
              * process those.
              */
-            if (klass == null && !currentPath.matches(bypassPath.get())) {
+            if (klass == null && !path.matches(bypassPath.get())) {
 
                 if (log.isTraceEnabled())
-                    log.trace("InvokerFilter for path: " + currentPath);
+                    log.trace("InvokerFilter for path: " + path);
 
-                // (1) If the exact match wasn't found, look for wildcard matches
-
+                // (1) Look for *.ext wildcard matches
                 String partial;
 
                 // If the path contains a "." then check for the *.ext patterns
-                if (currentPath.indexOf(".") != -1) {
-                    partial = currentPath.substring(currentPath.lastIndexOf("."));
+                int index = path.lastIndexOf(".");
+                if (index != -1) {
+                    partial = "*" + path.substring(index); // gives us the *.<THE_EXTENSION>
                     klass = urlMap.get(partial);
                 }
 
-                // (2) If we still haven't found it, check if any
-                // registered regex mappings against the path
+                // (2) Check any regex mappings against the path
                 if (klass == null) {
 
+                    // @TODO this iteration could be coslty... perhaps it would be more efficient to have
+                    //       constructed one long regex of all the possible regex mappings with
                     String regex;
                     Iterator<String> itr = regexMap.keySet().iterator();
                     while (itr.hasNext()) {
 
                         regex = itr.next();
 
-                        if (currentPath.matches(regex)) {
+                        if (path.matches(regex)) {
+                            // Sweet, we have a match, but make sure we actually get the klass
+                            // since it could have been altered since we got the iterator (though, unlikely)
                             klass = regexMap.get(regex);
-
-                            // gotta make sure the klass was still in there, since it could have been altered
-                            // since we got the iterator... (although, likely it wasn't)
-                            if (klass != null)
+                            if (klass != null) {
+                                // Even better, we got the klass, so move on
                                 break;
+                            }
                         }
                     }
                 }
 
-                // (3) If we didn't find a .* pattern and if the path includes
-                // a / then it's possible there is a mapping to a /* pattern
-                if (klass == null && currentPath.lastIndexOf("/") > 0) {
+                // (3) Check for possible /something/* patterns
+                if (klass == null) {
 
-                    partial = currentPath.substring(0, currentPath.lastIndexOf("/") + 1);
+                    // start with the full path
+                    partial = path; 
 
-                    // check for possible /*, /something/* patterns starting with most specific
-                    // and moving down to /*
-                    while (partial.lastIndexOf("/") > 0) {
+                    // Start with most specific and move down to just /*
+                    while ((index = partial.lastIndexOf("/")) > 0) {
 
-                        if (log.isTraceEnabled()) log.trace("trying to find wildcard resource " + partial);
+                        // Chop off everything past the last "/" and add the "*"
+                        partial = partial.substring(0, index + 1) + "*"; // if we had /first/second, we'd get /first/*
+
+                        if (log.isTraceEnabled()) log.trace("Trying wildcard partial resource: " + partial);
 
                         klass = urlMap.get(partial);
 
-                        // if we found a match, get out of this loop asap
-                        if (klass != null)
+                        // if we found a match, or if we made it to the simplest form and didn't find anything, get out
+                        if (klass != null || partial.equals("/*"))
                             break;
 
-                        // if it's only a slash and it wasn't found, get out asap
-                        if (partial.equals("/"))
-                            break;
+                        // Otherwise, let's try the next chunk, so chop the ending "/*" off
+                        partial = partial.substring(0, index); // If we had /first/second to start, we'd get /first
 
-                        // chop the ending '/' off
-                        partial = partial.substring(0, partial.length() - 2);
-
-                        // then set the string to be the remnants
-                        partial = partial.substring(0, partial.lastIndexOf("/") + 1);
+                        if (log.isTraceEnabled()) log.trace("Next partial: " + partial);
                     }
                 }
 
                 // (4) If we found a class in any way, register it with the currentPath for faster future lookups
+                //     UNLESS the config for that klass prohibits it (e.g. a servlet mapped to /user/* in an app
+                //     with millions of users could increase the size of urlMap well beyond what is optimal, so
+                //     if a servlet knows that is a possibility, it can specify to not save direct mappings when
+                //     the servlet was found via a partial mapping)
                 if (klass != null) {
-                    if (log.isTraceEnabled())
-                        log.trace("Matched path " + currentPath + " to " + klass.getName());
 
-                    urlMap.putIfAbsent(currentPath, klass);
+                    if (log.isTraceEnabled()) log.trace("Matched path " + path + " to " + klass.getName());
+                    
+                    // Make sure the ServletConfig supports direct lookups before storing the resolved path
+                    if (servletMap.get(klass).config.preferDirectLookups()) {
+                        partialsMap.putIfAbsent(path, klass);
+                    }
                 }
             }
 
             // If we didn't find it, then just pass it on
             if (klass == null) {
 
-                if (log.isTraceEnabled()) log.trace("Dynamic resource not found for path: " + currentPath);
+                if (log.isTraceEnabled()) log.trace("Dynamic resource not found for path: " + path);
 
                 // Save this path in the staticSet so we don't have to look it up next time
-                urlMap.putIfAbsent(currentPath, Static.class);
+                urlMap.putIfAbsent(path, Static.class);
 
                 find = System.currentTimeMillis();
                 chain.doFilter(req, resp);
@@ -336,7 +329,7 @@ public class InvokerFilter implements Filter {
 
                 // If it's known to be static, then pass it on
                 if (log.isTraceEnabled())
-                    log.trace("Processing known static path: " + currentPath);
+                    log.trace("Processing known static path: " + path);
 
                 find = System.currentTimeMillis();
                 chain.doFilter(req, resp);
@@ -344,26 +337,28 @@ public class InvokerFilter implements Filter {
 
             } else {
 
-                ServletMapping mapping = servletMap.get(klass);
-                ServletConfig  config  = mapping.config;
+                InvokerServletMapping mapping = servletMap.get(klass);
+
+                // @TODO Should probably check here to make sure we found a mapping...
+
+                ServletConfig config = mapping.config;
 
                 // If the klass requires SSL, make sure we're on an SSL connection
                 SSLOption sslOpt = config.ssl();
                 boolean isSsl    = request.isSecure();
                 if (sslOpt == SSLOption.REQUIRE && !isSsl) {
-                    log.debug("Redirecting over SSL: " + currentPath);
+                    if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path);
                     redirectOverSSL(request, response, sslRedirectPort.get());
                     return;
                 } else if (sslOpt == SSLOption.DENY && isSsl) {
-                    log.debug("Redirecting off SSL: " + currentPath);
+                    if (log.isDebugEnabled()) log.debug("Redirecting off SSL: " + path);
                     redirectOverNonSSL(request, response, nonSslRedirectPort.get());
                     return;
                 }
 
                 try {
 
-                    if (log.isTraceEnabled())
-                        log.trace("Dynamic resource found, servicing with " + klass.getName());
+                    if (log.isTraceEnabled()) log.trace("Dynamic resource found, servicing with " + klass.getName());
 
                     // Get the time after finding the resource
                     find = System.currentTimeMillis();
@@ -383,6 +378,8 @@ public class InvokerFilter implements Filter {
                         // REQUIRE: The servlet wants a Controller associated with the thread and request,
                         //          but does not want the transaction to be open
                         case REQUIRE:
+
+                            if (log.isTraceEnabled()) log.trace("Supplying Controller");
                             controller = Controller.get(true, false);
                             request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
 
@@ -397,6 +394,8 @@ public class InvokerFilter implements Filter {
                         // REQUIRE_OPEN: The servlet wants a Controller associated with the thread and request,
                         //               with an open trannsaction.
                         case REQUIRE_OPEN:
+
+                            if (log.isTraceEnabled()) log.trace("Supplying open Controller");
                             controller = Controller.get();
                             request.setAttribute(Controller.ATTRIBUTE_KEY, controller);
 
@@ -412,7 +411,7 @@ public class InvokerFilter implements Filter {
                     run  = System.currentTimeMillis();
 
                     if (request.getParameter("benchmark") != null) {
-                        log.info(klass.getName() + " execution time: " + (System.currentTimeMillis() - start));
+                        log.info(klass.getName() + " execution time: " + (run - start));
                     }
 
                 } catch (Exception e) {
@@ -428,40 +427,17 @@ public class InvokerFilter implements Filter {
             finish = System.currentTimeMillis();
 
             if (benchmark.get()) {
-                log.info(start + "\t" + (find - start) + "\t" + (run - find) + "\t" + (finish - run) + "\t" + currentPath);
+                log.info(
+                    String.format(
+                        "[path=%s, find=%d, run=%d, finish=%d]",
+                        path, (find - start), (run - find), (finish - run)
+                    )
+                );
             }
             
         } finally {
             read.unlock(); // Make sure to release the read lock
         }
-    }
-
-    /**
-     * This is a hack to create a servlet config to
-     * properly initialize the servlet.
-     */
-    public javax.servlet.ServletConfig getServletConfig(Class<? extends HttpServlet> klass) {
-
-        final String className = klass.getSimpleName();
-        
-        return new javax.servlet.ServletConfig() {
-
-            public String getServletName() {
-                return className;
-            }
-
-            public ServletContext getServletContext() {
-                return filterConfig.getServletContext();
-            }
-
-            public String getInitParameter(String arg0) {
-                return null;
-            }
-
-            public Enumeration getInitParameterNames() {
-                return null;
-            }
-        };
     }
 
     public void init(FilterConfig filterConfig) {
@@ -486,7 +462,7 @@ public class InvokerFilter implements Filter {
             write.lock();
 
             LinkedList<URL> urlList = new LinkedList<URL>();
-            urlList.addAll(Arrays.asList(ClasspathUrlFinder.findResourceBases("")));
+            urlList.addAll(Arrays.asList(ClasspathUrlFinder.findResourceBases(EMPTY)));
             urlList.addAll(Arrays.asList(WarUrlFinder.findWebInfLibClasspaths(servletContext.get())));
             
             URL[] urls = new URL[urlList.size()];
@@ -519,29 +495,30 @@ public class InvokerFilter implements Filter {
                                 if (config.mappings() != null) {
                                     for (String url : config.mappings()) {
 
-                                        if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
-                                            url = url.replaceAll("\\*", "");
+                                        // Leave the asterisk, we'll add it when matching...
+                                        //if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
+                                        //    url = url.replace("*", EMPTY);
 
-                                        if (urlMap.putIfAbsent(url, klass) == null)
-                                            log.debug("Mapping servlet " + klass.getName() + " to path " + url);
-                                        else
+                                        if (urlMap.putIfAbsent(url, klass) == null) {
+                                            if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to path " + url);
+                                        } else {
                                             log.error("Unable to map servlet  " + klass.getName() + " to path " + url + ", path already mapped to " + urlMap.get(url).getName());
-
+                                        }
                                     }
                                 }
 
                                 // If the config specifies a regex mapping...
                                 if (!empty(config.regex())) {
                                     regexMap.putIfAbsent(config.regex(), klass);
-                                    log.debug("Mapping servlet " + klass.getName() + " to regex path " + config.regex());
+                                    if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to regex path " + config.regex());
                                 }
 
                                 // Create an instance of the servlet and init it
                                 HttpServlet servlet = klass.newInstance();
-                                servlet.init( new ServletConfigImpl(klass.getName(), servletContext.get(), config.initParams()) );
+                                servlet.init( new InvokerServletConfig(klass.getName(), servletContext.get(), config.initParams()) );
 
                                 // Store a reference
-                                servletMap.put(klass, new ServletMapping(servlet, config));
+                                servletMap.put(klass, new InvokerServletMapping(servlet, config));
                             }
 
                         } catch (Exception e) {
@@ -569,10 +546,11 @@ public class InvokerFilter implements Filter {
 
             // Clear the mappings
             urlMap.clear();
+            partialsMap.clear();
             regexMap.clear();
 
             // Destroy the servlets used in the mappings
-            for (ServletMapping mapping : servletMap.values()) {
+            for (InvokerServletMapping mapping : servletMap.values()) {
                 mapping.servlet.destroy();
             }
 
@@ -601,10 +579,11 @@ public class InvokerFilter implements Filter {
             if (servletMap.get(klass) == null)
                 throw new IllegalStateException("Illegal attempt to create a mapping to an unregistered servlet!");
 
-            log.debug("Mapping servlet " + klass.getName() + " to path " + path);
+            if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to path " + path);
 
-            if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
-                path = path.replaceAll("\\*","");
+            // Leave the asterisk, we'll add it when matching...
+            //if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
+            //    path = path.replace("*", EMPTY);
 
             return urlMap.putIfAbsent(path, klass);
 
@@ -652,8 +631,8 @@ public class InvokerFilter implements Filter {
      *
      * @param useh A defined UncaughtServletExceptionHandler
      */
-    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler useh) {
+    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler handler) {
         log.info("UncaughtExceptionHandler registered.");
-        exceptionHandler.set(useh);
+        exceptionHandler.set(handler);
     }
 }

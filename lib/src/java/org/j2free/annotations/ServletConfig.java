@@ -57,4 +57,14 @@ public @interface ServletConfig {
     public ControllerOption controller() default ControllerOption.REQUIRE_OPEN;
 
     public InitParam[] initParams() default {};
+
+    /**
+     * If true, ServletConfigs that use regex or wildcard mappings
+     * will only resolve each possible variation once, after which
+     * a direct mapping to the resolved servlet will be stored,
+     * enabling O(1) lookups on future requests to the same path.
+     *
+     * It is not recommended that Servlets modify this value.
+     */
+    public boolean preferDirectLookups() default true;
 }

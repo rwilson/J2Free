@@ -21,19 +21,12 @@ import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.ThreadSafe;
 
 /**
+ * Implementations of Fragment MUST be thread-safe.
  *
  * @author Ryan Wilson
  */
 @ThreadSafe
 public interface Fragment {
-
-    /**
-     * If the content of this Fragment has not yet been initialized, this method
-     * will block until it has.  Otherwise, it returns content immediately.
-     *
-     * @return the content
-     */
-    public String get() throws InterruptedException;
 
     /**
      * If the content of this Fragment has not yet been initialized, this method
@@ -67,11 +60,11 @@ public interface Fragment {
      *  - If (a || b) && c then lock this Fragment for update by the calling Thread
      *    and return true; otherwise return false.
      *
-     * @param The current condition
+     * @param The current condition (only used if original condition was set)
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryAcquireForUpdate(final String condition);
+    public boolean tryLockForUpdate(final String condition);
 
     /**
      * This try will attempt to force-lock the fragment for update
@@ -81,7 +74,7 @@ public interface Fragment {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryAcquireForUpdate();
+    public boolean tryLockForUpdate();
 
     /**
      *  Checks that the caller Thread owns the update lock; if so

@@ -43,7 +43,7 @@ import org.j2free.cache.FragmentCacheStatistics;
 @ThreadSafe
 public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
 
-    private static final Log log = LogFactory.getLog(MemoryFragmentCache.class);
+    private final Log log = LogFactory.getLog(getClass());
 
     // Config Properties
     private static final String PROP_SIZE           = Properties.ENGINE_PREFIX + "memory.size";
@@ -113,8 +113,8 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
         return new MemoryFragment(condition, timeout);
     }
 
-    public MemoryFragment createFragment(MemoryFragment content, String condition, long timeout) {
-        return new MemoryFragment(content, condition, timeout);
+    public MemoryFragment createFragment(MemoryFragment base, String condition, long timeout) {
+        return base.clone(condition, timeout);
     }
 
     public MemoryFragment evict(String key) {
