@@ -56,8 +56,6 @@ public @interface ServletConfig {
 
     public ControllerOption controller() default ControllerOption.REQUIRE_OPEN;
 
-    public InitParam[] initParams() default {};
-
     /**
      * If true, ServletConfigs that use regex or wildcard mappings
      * will only resolve each possible variation once, after which

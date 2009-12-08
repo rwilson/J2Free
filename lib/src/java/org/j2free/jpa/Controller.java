@@ -87,6 +87,20 @@ public final class Controller {
      *         or if there wasn't one, a new <tt>Controller</tt> that will
      *         be associated with the current <tt>Thread</tt>. The returned
      *         <tt>Controller</tt> will have an open transaction.
+     *
+     * Code using <tt>Controller.get()</tt> MUST make sure to call
+     * <tt>release()</tt> when finished with the controller to avoid
+     * a memory leak.
+     *
+     * e.g.
+     * <pre>
+     *      try {
+     *          Controller controller = Controller.get();
+     *          // ... do some business ... or play ...
+     *      } finally {
+     *          Controller.release();
+     *      }
+     * </pre>
      */
     public static Controller get() {
         return get(true, true);
@@ -97,6 +111,20 @@ public final class Controller {
      *         or if there wasn't one, a new <tt>Controller</tt> that will
      *         be associated with the current <tt>Thread</tt>. The returned
      *         <tt>Controller</tt> will have an open transaction.
+     *
+     * Code using <tt>Controller.get()</tt> MUST make sure to call
+     * <tt>release()</tt> when finished with the controller to avoid
+     * a memory leak.
+     *
+     * e.g.
+     * <pre>
+     *      try {
+     *          Controller controller = Controller.get();
+     *          // ... do some business ... or play ...
+     *      } finally {
+     *          Controller.release();
+     *      }
+     * </pre>
      */
     public static Controller get(boolean create) {
         return get(create, create);
@@ -117,6 +145,20 @@ public final class Controller {
      *         <tt>Thread</tt>.
      *
      * @throws IllegalStateException if there is an error creating the controller
+     *
+     * Code using <tt>Controller.get()</tt> MUST make sure to call
+     * <tt>release()</tt> when finished with the controller to avoid
+     * a memory leak.
+     *
+     * e.g.
+     * <pre>
+     *      try {
+     *          Controller controller = Controller.get();
+     *          // ... do some business ... or play ...
+     *      } finally {
+     *          Controller.release();
+     *      }
+     * </pre>
      */
     public static Controller get(boolean create, boolean begin) {
 
@@ -148,9 +190,9 @@ public final class Controller {
 
     /**
      * @return a new <tt>Controller</tt> instance that is not associated with
-     *         any Thread.  Callers MUST call end() on the controller, but need
-     *         not call release. This controller does not have a transaction
-     *         open; it's essentially up to the caller to manage the state.
+     *         any Thread.  Callers MUST call <tt>end()</tt> on the controller. 
+     *         This controller does not have a transaction open; it's up to
+     *         the caller to manage the transaction.
      *
      * @throws IllegalStateException if there is an error creating the controller
      */
@@ -163,21 +205,7 @@ public final class Controller {
     }
 
     /**
-     * Code using <tt>Controller.get()</tt> MUST make sure to call
-     * <tt>release()</tt> when finished with the controller to avoid
-     * a memory leak.
-     * 
-     * e.g.
-     * <pre>
-     *      try {
-     *          Controller controller = Controller.get();
-     *          // ... do some business ... or play ... 
-     *      } finally {
-     *          Controller.release();
-     *      }
-     * </pre>
-     *
-     * <tt>release()</tt> will also call <tt>end()</tt> on the instance
+     * <tt>release()</tt> will internally call <tt>end()</tt> on the instance
      * associated with the current thread, if it was found.
      */
     public static void release() throws SystemException,
@@ -195,32 +223,6 @@ public final class Controller {
         }
     }
 
-    /**
-     * Code using Controller.get() MUST make sure to call
-     * release() when finished with the controller to avoid
-     * a memory leak.
-     *
-     * This version of release is done as:
-     * <pre>
-     *      try {
-     *          controller.end();
-     *      } finally {
-     *          release();
-     *      }
-     * </pre>
-     */
-    public static void release(Controller controller) throws SystemException,
-                                                             RollbackException,
-                                                             HeuristicMixedException,
-                                                             HeuristicRollbackException {
-        try {
-            if (controller != null) {
-                controller.end();
-            }
-        } finally {
-            release();
-        }
-    }
 
     //------------------------------------------------------------//
     // Instance implementation

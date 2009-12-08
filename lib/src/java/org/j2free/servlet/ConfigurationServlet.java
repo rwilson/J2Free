@@ -65,7 +65,7 @@ import org.j2free.email.SimpleEmailService;
 import org.j2free.email.Template;
 import org.j2free.http.SimpleHttpService;
 import org.j2free.jsp.tags.FragmentCacheTag;
-import org.j2free.servlet.filter.InvokerFilter;
+import org.j2free.invoker.InvokerFilter;
 import org.j2free.util.Global;
 import org.j2free.util.KeyValuePair;
 import org.j2free.util.Priority;
@@ -143,6 +143,7 @@ public class ConfigurationServlet extends HttpServlet {
         try {
             // Load the configuration
             final PropertiesConfiguration config = new PropertiesConfiguration(configPath);
+            config.setAutoSave(false);
 
             // Save the config where we can get at it later
             context.setAttribute(CONTEXT_ATTR_CONFIG, config);
@@ -161,13 +162,12 @@ public class ConfigurationServlet extends HttpServlet {
                     log.warn("Task execution must be enabled to use dynamic reconfiguration!");
                 } else {
 
+                    // We'll use this to see if the file needs reloading
+                    final FileChangedReloadingStrategy strategy = new FileChangedReloadingStrategy();
+                    strategy.setConfiguration(config);
+
                     // Create a task for reconfiguring the app
                     Runnable reconfigTask = new Runnable() {
-
-                        // We'll use this to see if the file needs reloading
-                        private final FileChangedReloadingStrategy strategy = new FileChangedReloadingStrategy();
-                        
-                        { strategy.setConfiguration(config); }
 
                         public void run() {
 
@@ -182,10 +182,13 @@ public class ConfigurationServlet extends HttpServlet {
                                     return;
                                 }
 
-                                config.reload();                            // load the changes
 
                                 try {
+                                    
+                                    config.load(configPath);                // load the changes
                                     reconfigure(config);                    // try to reconfigure the app
+                                    strategy.reloadingPerformed();          // let the strategy know we reloaded
+                                    
                                 } catch (ConfigurationException ce) {
                                     log.error("Error reconfiguration app, reverting to old config...", ce);
                                     try {
@@ -308,8 +311,10 @@ public class ConfigurationServlet extends HttpServlet {
             Set<String> staticJsps = context.getResourcePaths(staticJspDir);
             if (staticJsps != null && !staticJsps.isEmpty()) {
                 for (String jsp : staticJsps) {
-                    jsp = staticJspPath + jsp.replace(staticJspDir, EMPTY).replaceAll("\\.jsp$", EMPTY);
-                    InvokerFilter.addServletMapping(jsp, StaticJspServlet.class);
+                    if (jsp.endsWith(".jsp")) {
+                        jsp = staticJspPath + jsp.replace(staticJspDir, EMPTY).replaceAll("\\.jsp$", EMPTY);
+                        InvokerFilter.addServletMapping(jsp, StaticJspServlet.class);
+                    }
                 }
             }
         }
