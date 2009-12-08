@@ -94,10 +94,6 @@ public class Constants {
     public static final String PROP_ERROR_REPORTER_TO      = "error.reporter.to";
     public static final String PROP_ERROR_REPORTER_FROM    = "error.reporter.from";
 
-    // Invoker Servlet config
-    public static final String PROP_INVOKER_BENCHMARK      = "filter.invoker.benchmark.enabled";
-    public static final String PROP_INVOKER_BYPASSPATH     = "filter.invoker.bypass.path";
-
     // Task Execution config
     public static final String PROP_TASK_EXECUTOR_ON       = "task.executor.enabled";
     public static final String PROP_TASK_EXECUTOR_THREADS  = "task.executor.threads";

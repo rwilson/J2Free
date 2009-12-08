@@ -295,12 +295,7 @@ public class ConfigurationServlet extends HttpServlet {
         loadedConfigPropKeys.add("devMode");
 
         // InvokerFilter
-        InvokerFilter.configure(
-                config.getString(PROP_INVOKER_BYPASSPATH, EMPTY),
-                config.getBoolean(PROP_INVOKER_BENCHMARK, false),
-                config.getInteger(PROP_LOCALPORT, null),
-                config.getInteger(PROP_LOCALPORT_SSL, null)
-            );
+        InvokerFilter.configure(config);
 
         // StaticJspServlet
         if (config.getBoolean(PROP_STATICJSP_ON, false)) {

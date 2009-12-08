@@ -1,5 +1,5 @@
 /*
- * InvokerServletConfig.java
+ * ServletConfigImpl.java
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.j2free.util.ServletUtils;
  * @author Ryan Wilson
  */
 @Immutable
-final class InvokerServletConfig implements ServletConfig {
+final class ServletConfigImpl implements ServletConfig {
 
     private final String name;
 
@@ -47,7 +47,7 @@ final class InvokerServletConfig implements ServletConfig {
     // constructor and never externally published
     private final HashMap<String, String> initParams;
 
-    public InvokerServletConfig(String name, ServletContext context, InitParam[] initParams) {
+    public ServletConfigImpl(String name, ServletContext context, InitParam[] initParams) {
 
         this.name    = name;
         this.context = context;

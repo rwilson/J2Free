@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -48,6 +49,7 @@ import org.j2free.annotations.ServletConfig;
 import org.j2free.annotations.ServletConfig.SSLOption;
 
 import org.j2free.jpa.Controller;
+import org.j2free.util.Constants;
 import org.j2free.util.UncaughtServletExceptionHandler;
 
 import static org.j2free.util.ServletUtils.*;
@@ -70,9 +72,16 @@ import org.scannotation.WarUrlFinder;
  *
  * @author  Ryan Wilson
  */
-public class InvokerFilter implements Filter {
+public final class InvokerFilter implements Filter {
 
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
+
+    // Properties
+    public static class Property {
+        public static final String BENCHMARK_REQS   = "filter.invoker.benchmark.enabled";
+        public static final String BYPASS_PATH      = "filter.invoker.bypass.path";
+        public static final String MAX_SERVLET_USES = "filter.invoker.servlet-max-uses";
+    }
 
     // Convenience class for referencing static resources
     private static final class Static extends HttpServlet { }
@@ -93,8 +102,7 @@ public class InvokerFilter implements Filter {
     private static final AtomicBoolean benchmark            = new AtomicBoolean(false);
     private static final AtomicInteger sslRedirectPort      = new AtomicInteger(-1);
     private static final AtomicInteger nonSslRedirectPort   = new AtomicInteger(-1);
-
-    // Holds a known path to not process
+    private static final AtomicInteger maxServletUses       = new AtomicInteger(1000);
     private static final AtomicReference<String> bypassPath = new AtomicReference(EMPTY);
 
     // For accessing the servlet context in static methods
@@ -337,15 +345,12 @@ public class InvokerFilter implements Filter {
 
             } else {
 
-                InvokerServletMapping mapping = servletMap.get(klass);
-
-                // @TODO Should probably check here to make sure we found a mapping...
-
-                ServletConfig config = mapping.config;
+                final InvokerServletMapping mapping = servletMap.get(klass);
 
                 // If the klass requires SSL, make sure we're on an SSL connection
-                SSLOption sslOpt = config.ssl();
-                boolean isSsl    = request.isSecure();
+                final SSLOption sslOpt = mapping.config.ssl();
+                final boolean   isSsl  = request.isSecure();
+                
                 if (sslOpt == SSLOption.REQUIRE && !isSsl) {
                     if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path);
                     redirectOverSSL(request, response, sslRedirectPort.get());
@@ -363,10 +368,10 @@ public class InvokerFilter implements Filter {
                     // Get the time after finding the resource
                     find = System.currentTimeMillis();
 
-                    Controller controller;
+                    final Controller controller;
 
                     // Check the controller requirements of the configuration
-                    switch (config.controller()) {
+                    switch (mapping.config.controller()) {
 
                         /*********************************************************/
                         // NONE: The servlet will manage it's own Controller, if any
@@ -415,11 +420,46 @@ public class InvokerFilter implements Filter {
                     }
 
                 } catch (Exception e) {
+
                     run = System.currentTimeMillis();
-                    if (exceptionHandler.get() != null) {
-                        exceptionHandler.get().handleException(req, resp, e);
-                    } else {
-                        throw new ServletException(e);
+
+                    final UncaughtServletExceptionHandler uceh = exceptionHandler.get();
+                    if (uceh != null) {
+                        uceh.handleException(req, resp, e);
+                    } else throw new ServletException(e);
+
+                } finally {
+
+                    final int instanceUses = mapping.uses.incrementAndGet();
+                    if (instanceUses >= maxServletUses.get()) {
+                        try {
+
+                            final HttpServlet newInstance = klass.newInstance();          // Create a new instance
+                            newInstance.init(mapping.servlet.getServletConfig());   // Copy over the javax.servlet.ServletConfig
+
+                            final InvokerServletMapping newMapping = new InvokerServletMapping(newInstance, mapping.config);  // Use the new instance but the old org.j2free.annotations.ServletConfig
+
+                            if (log.isTraceEnabled()) {
+                                if (servletMap.replace(klass, mapping, newMapping)) {
+                                    log.trace("Successfully replaced old " + klass.getSimpleName() + " with a new instance");
+                                } else {
+                                    log.trace("Failed to replace old " + klass.getSimpleName() + " with a new instance");
+                                }
+                            } else {
+                                // if we're not tracing, don't bother checking the result, because
+                                // either (a) it succeeded and the new servlet is in place, or
+                                // (b) it failed meaning another thread beat us to it.
+                                servletMap.replace(klass, mapping, newMapping);
+                            }
+
+                            // In either case, the old serlvet is no longer in use, but DON'T
+                            // destroy it yet, since it may be in the process of serving other
+                            // requests. By removing the mapping to it, it should be garbage
+                            // collected.
+
+                        } catch (Exception e) {
+                            log.error("Error replacing " + klass.getSimpleName() + " instance after " + instanceUses + " uses!", e);
+                        }
                     }
                 }
             }
@@ -515,7 +555,7 @@ public class InvokerFilter implements Filter {
 
                                 // Create an instance of the servlet and init it
                                 HttpServlet servlet = klass.newInstance();
-                                servlet.init( new InvokerServletConfig(klass.getName(), servletContext.get(), config.initParams()) );
+                                servlet.init( new ServletConfigImpl(klass.getName(), servletContext.get(), config.initParams()) );
 
                                 // Store a reference
                                 servletMap.put(klass, new InvokerServletMapping(servlet, config));
@@ -548,13 +588,6 @@ public class InvokerFilter implements Filter {
             urlMap.clear();
             partialsMap.clear();
             regexMap.clear();
-
-            // Destroy the servlets used in the mappings
-            for (InvokerServletMapping mapping : servletMap.values()) {
-                mapping.servlet.destroy();
-            }
-
-            // Clear the ServletMappings
             servletMap.clear();
 
             load(); // Load it all up again
@@ -601,24 +634,27 @@ public class InvokerFilter implements Filter {
      * @param nonSslPort Port to be used for non-SSL requests
      * @param sslPort Port to be used for SSL-requests
      */
-    public static void configure(String bypass, boolean doBenchmark, Integer nonSslPort, Integer sslPort) {
+    public static void configure(Configuration config) {
 
         try {
             write.lock();
 
             // In case the user has let us know about paths that are guaranteed static
-            bypassPath.set(bypass);
+            bypassPath.set(config.getString(Property.BYPASS_PATH, EMPTY));
 
             // Can enable benchmarking globally
-            benchmark.set(doBenchmark);
+            benchmark.set(config.getBoolean(Property.BENCHMARK_REQS, false));
 
             // Set the SSL redirect port
-            if (sslPort != null && sslPort > 0)
-                sslRedirectPort.set(sslPort);
+            int val = config.getInt(Constants.PROP_LOCALPORT_SSL, -1);
+            if (val > 0) sslRedirectPort.set(val);
 
             // Set the SSL redirect port
-            if (nonSslPort != null && nonSslPort > 0)
-                nonSslRedirectPort.set(nonSslPort);
+            val = config.getInt(Constants.PROP_LOCALPORT, -1);
+            if (val > 0) nonSslRedirectPort.set(val);
+
+            val = config.getInt(Property.MAX_SERVLET_USES, 1000);
+            if (val > 0) maxServletUses.set(val);
 
         } finally {
             write.unlock(); // ALWAYS unlock

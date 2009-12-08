@@ -15,6 +15,7 @@
  */
 package org.j2free.servlet.filter;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServlet;
 import org.j2free.annotations.ServletConfig;
 
@@ -29,9 +30,12 @@ final class InvokerServletMapping {
     protected final HttpServlet servlet;
     protected final ServletConfig config;
 
+    protected final AtomicInteger uses;
+
     public InvokerServletMapping(HttpServlet servlet, ServletConfig config) {
         this.servlet = servlet;
         this.config  = config;
+        this.uses    = new AtomicInteger(0);
     }
     
 }
