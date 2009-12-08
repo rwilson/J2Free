@@ -163,12 +163,36 @@ public final class Controller {
     }
 
     /**
-     * Code using Controller.get() MUST make sure to call
-     * release() when finished with the controller to avoid
+     * Code using <tt>Controller.get()</tt> MUST make sure to call
+     * <tt>release()</tt> when finished with the controller to avoid
      * a memory leak.
+     * 
+     * e.g.
+     * <pre>
+     *      try {
+     *          Controller controller = Controller.get();
+     *          // ... do some business ... or play ... 
+     *      } finally {
+     *          Controller.release();
+     *      }
+     * </pre>
+     *
+     * <tt>release()</tt> will also call <tt>end()</tt> on the instance
+     * associated with the current thread, if it was found.
      */
-    public static void release() {
-        threadLocal.remove();
+    public static void release() throws SystemException,
+                                        RollbackException,
+                                        HeuristicMixedException,
+                                        HeuristicRollbackException {
+        
+        Controller controller = get(false);     // Get the controller associated with the current-thread
+        if (controller != null) {               // If there was one,
+            try {
+                controller.end();               // end the transaction
+            } finally {
+                threadLocal.remove();           // and ALWAYS disassociate it with the current-thread
+            }
+        }
     }
 
     /**
@@ -190,7 +214,9 @@ public final class Controller {
                                                              HeuristicMixedException,
                                                              HeuristicRollbackException {
         try {
-            controller.end();
+            if (controller != null) {
+                controller.end();
+            }
         } finally {
             release();
         }

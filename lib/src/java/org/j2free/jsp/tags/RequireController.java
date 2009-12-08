@@ -73,7 +73,7 @@ public class RequireController extends TagSupport {
 
         if (closeTx && controller != null) {
             try {
-                Controller.release(controller);
+                Controller.release();
                 request.removeAttribute(Controller.ATTRIBUTE_KEY);
             } catch (Exception se) {
                 throw new JspException(se);
