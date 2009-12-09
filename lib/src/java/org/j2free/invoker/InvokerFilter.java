@@ -60,8 +60,6 @@ import org.j2free.annotations.ServletConfig;
 import org.j2free.annotations.FilterConfig;
 import org.j2free.annotations.ServletConfig.SSLOption;
 
-import org.j2free.jpa.Controller;
-
 import org.j2free.util.Constants;
 import org.j2free.util.UncaughtServletExceptionHandler;
 
@@ -88,6 +86,9 @@ import org.scannotation.WarUrlFinder;
 public final class InvokerFilter implements Filter {
 
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
+
+    // Convenience class for referencing static resources
+    private static final class StaticResource extends HttpServlet { }
 
     // Properties
     public static class Property {
@@ -340,11 +341,11 @@ public final class InvokerFilter implements Filter {
 
             } else {
 
-                final ServletMapping mapping = servletMap.get(klass);
+                ServletMapping mapping = servletMap.get(klass);
 
                 // If the klass requires SSL, make sure we're on an SSL connection
-                final SSLOption sslOpt = mapping.config.ssl();
-                final boolean   isSsl  = request.isSecure();
+                SSLOption sslOpt = mapping.config.ssl();
+                boolean   isSsl  = request.isSecure();
                 
                 if (sslOpt == SSLOption.REQUIRE && !isSsl) {
                     if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path);
@@ -364,7 +365,7 @@ public final class InvokerFilter implements Filter {
                     resolve = System.currentTimeMillis();
 
                     // Service the end-point on the chain
-                    new Chain(request, response, path, mapping).service();
+                    new ServiceChain(filters.iterator(), path, mapping).service(request, response);
 
                     // Get the time after running
                     process = System.currentTimeMillis();
@@ -377,21 +378,21 @@ public final class InvokerFilter implements Filter {
 
                     process = System.currentTimeMillis();
 
-                    final UncaughtServletExceptionHandler uceh = exceptionHandler.get();
+                    UncaughtServletExceptionHandler uceh = exceptionHandler.get();
                     if (uceh != null) {
                         uceh.handleException(req, resp, e);
                     } else throw new ServletException(e);
 
                 } finally {
 
-                    final int instanceUses = mapping.uses.incrementAndGet();
+                    int instanceUses = mapping.incrementUses();
                     if (instanceUses >= maxServletUses.get()) {
                         try {
 
-                            final HttpServlet newInstance = klass.newInstance();          // Create a new instance
+                            HttpServlet newInstance = klass.newInstance();          // Create a new instance
                             newInstance.init(mapping.servlet.getServletConfig());   // Copy over the javax.servlet.ServletConfig
 
-                            final ServletMapping newMapping = new ServletMapping(newInstance, mapping.config);  // Use the new instance but the old org.j2free.annotations.ServletConfig
+                            ServletMapping newMapping = new ServletMapping(newInstance, mapping.config);  // new instance but old config
 
                             if (log.isTraceEnabled()) {
                                 if (servletMap.replace(klass, mapping, newMapping)) {
@@ -472,7 +473,8 @@ public final class InvokerFilter implements Filter {
 
             HashMap<String, Set<String>> annotationIndex = (HashMap<String, Set<String>>) annoDB.getAnnotationIndex();
             if (annotationIndex != null && !annotationIndex.isEmpty()) {
-                
+
+                //-----------------------------------------------------------
                 // Look for any classes annotated with @ServletConfig
                 Set<String> classNames = annotationIndex.get(ServletConfig.class.getName());
                 
@@ -541,7 +543,8 @@ public final class InvokerFilter implements Filter {
                     }
                 }
 
-                // Look for any classes annotated with @ServletConfig
+                //-----------------------------------------------------------
+                // Look for any classes annotated with @FiltersConfig
                 classNames = annotationIndex.get(FilterConfig.class.getName());
                 if (classNames != null) {
 
@@ -577,11 +580,12 @@ public final class InvokerFilter implements Filter {
                                         }
                                     );
 
-                                // Store a reference
-                                filters.add(new FilterMapping(filter, config.mapping()));
                                 if (log.isDebugEnabled()) log.debug("Mapping filter " + klass.getName() + " to path " + config.mapping());
+                                    
+                                // Store a reference
+                                filters.add( new FilterMapping(filter, config) );
                             }
-
+                            
                         } catch (Exception e) {
                             log.error("Error registering servlet [name=" + c + "]", e);
                         }
@@ -692,157 +696,5 @@ public final class InvokerFilter implements Filter {
     public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler handler) {
         log.info("UncaughtExceptionHandler registered.");
         exceptionHandler.set(handler);
-    }
-
-
-    // Convenience class for referencing static resources
-    private static final class StaticResource extends HttpServlet { }
-
-    // Convenience class for wrapping a servlet and config
-    private  static final class ServletMapping {
-
-        private final HttpServlet servlet;
-        private final ServletConfig config;
-
-        private final AtomicInteger uses;
-
-        private ServletMapping(HttpServlet servlet, ServletConfig config) {
-            this.servlet = servlet;
-            this.config  = config;
-            this.uses    = new AtomicInteger(0);
-        }
-
-    }
-
-    // Handles chain processing
-    private static class Chain {
-
-        private final ServletRequest request;
-        private final ServletResponse response;
-
-        private final String path;
-
-        private final EndPoint endPoint;
-
-        public Chain(ServletRequest req, ServletResponse resp, String path, ServletMapping endPoint) {
-            this.request  = req;
-            this.response = resp;
-            this.path     = path;
-            this.endPoint = new EndPoint(endPoint);
-        }
-
-        /**
-         * Equivalent to:
-         * <pre>
-         *      chain.service(null);
-         * </pre>
-         * @throws IOException
-         * @throws ServletException
-         */
-        private void service() throws IOException, ServletException {
-            service(null);
-        }
-
-        /**
-         * Recursively processes any filters until arriving at, and processing
-         * the end-point.
-         * 
-         * @param mapping The last FilterMaping to be processes, may be null to start
-         * @throws IOException
-         * @throws ServletException
-         */
-        private void service(FilterMapping mapping)
-            throws IOException, ServletException {
-
-            // Try to get the next filter on the current depth
-            mapping = mapping == null ? filters.first() : filters.ceiling(mapping);
-
-            // Skip some if they don't apply
-            while (mapping != null) {
-                if (mapping.appliesTo(path))
-                    break;
-
-                mapping = filters.ceiling(mapping); // Get the next most specific FilterMapping
-            }
-
-            final FilterMapping next = mapping;
-
-            // There are no filters, or we've reached the end of the filters, so service the end-point
-            if (next == null) {
-                endPoint.doFilter(request, response);
-            } else {
-                // Otherwise service the next filter
-                mapping.filter.doFilter(request, response, new FilterChain() {
-                    public void doFilter(ServletRequest req, ServletResponse resp) throws IOException, ServletException {
-                        service(next);
-                    }
-                });
-            }
-        }
-
-        // Wraps the servlet action as a final end-point for filter chains
-        private static class EndPoint implements FilterChain {
-
-            private final ServletMapping mapping;
-
-            private EndPoint(ServletMapping mapping) {
-                this.mapping = mapping;
-            }
-
-            public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException {
-
-                // Check the controller requirements of the configuration
-                switch (mapping.config.controller()) {
-
-                    /*********************************************************/
-                    // NONE: The servlet will manage it's own Controller, if any
-                    case NONE:
-                        mapping.servlet.service(request, response);
-                        break;
-
-                    /*********************************************************/
-                    // REQUIRE: The servlet wants a Controller associated with the thread and request,
-                    //          but does not want the transaction to be open
-                    case REQUIRE:
-
-                        if (log.isTraceEnabled()) {
-                            log.trace("Supplying Controller");
-                        }
-                        request.setAttribute(Controller.ATTRIBUTE_KEY, Controller.get(true, false));
-
-                        try {
-                            mapping.servlet.service(request, response);     // Service the request
-                        } finally {
-                            try {
-                                Controller.release();                 // Since this filter opened it, make sure to release it
-                            } catch (Exception e) {
-                                throw new ServletException("Error releasing Controller", e);
-                            }
-                        }
-                        break;
-
-                    /*********************************************************/
-                    // REQUIRE_OPEN: The servlet wants a Controller associated with the thread and request,
-                    //               with an open trannsaction.
-                    case REQUIRE_OPEN:
-
-                        if (log.isTraceEnabled()) {
-                            log.trace("Supplying open Controller");
-                        }
-                        request.setAttribute(Controller.ATTRIBUTE_KEY, Controller.get());
-
-                        try {
-                            mapping.servlet.service(request, response);     // Service the request
-                        } finally {
-                            try {
-                                Controller.release();                 // Since this filter opened it, make sure to release it
-                            } catch (Exception e) {
-                                throw new ServletException("Error releasing Controller", e);
-                            }
-                        }
-                        break;
-                }
-            }
-        }
     }
 }

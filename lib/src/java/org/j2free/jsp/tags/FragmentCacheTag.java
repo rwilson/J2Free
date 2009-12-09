@@ -112,8 +112,9 @@ public class FragmentCacheTag extends BodyTagSupport {
     public static void disable() {
         enabled.set(false);
         for (FragmentCache fc : caches.values()) {
-            fc.clear();
+            fc.destroy();
         }
+        caches.clear();
     }
 
     // This is the max amount of time a thread will wait() on another thread

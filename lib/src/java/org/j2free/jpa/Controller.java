@@ -103,39 +103,13 @@ public final class Controller {
      * </pre>
      */
     public static Controller get() {
-        return get(true, true);
-    }
-
-    /**
-     * @return The <tt>Controller</tt> associated with the current <tt>Thread</tt>,
-     *         or if there wasn't one, a new <tt>Controller</tt> that will
-     *         be associated with the current <tt>Thread</tt>. The returned
-     *         <tt>Controller</tt> will have an open transaction.
-     *
-     * Code using <tt>Controller.get()</tt> MUST make sure to call
-     * <tt>release()</tt> when finished with the controller to avoid
-     * a memory leak.
-     *
-     * e.g.
-     * <pre>
-     *      try {
-     *          Controller controller = Controller.get();
-     *          // ... do some business ... or play ...
-     *      } finally {
-     *          Controller.release();
-     *      }
-     * </pre>
-     */
-    public static Controller get(boolean create) {
-        return get(create, create);
+        return get(true);
     }
 
     /**
      * @param create if true, and there is not already a Controller associated
-     *        with this <tt>Thread</tt>, a new Controller will be created. Null
-     *        will never be returned.
-     * 
-     * @param begin if true, the Controller transaction is open
+     *        with this <tt>Thread</tt>, a new Controller will be created. 
+     *        <tt>null</tt> will never be returned.
      * 
      * @return The <tt>Controller</tt> associated with the current <tt>Thread</tt>.
      *         If there wasn't one, and <tt>create</tt> is true, then a new
@@ -160,28 +134,17 @@ public final class Controller {
      *      }
      * </pre>
      */
-    public static Controller get(boolean create, boolean begin) {
+    public static Controller get(boolean create) {
 
-        // Get the controller associated with this Thread
-        Controller controller = threadLocal.get();
+        Controller controller = threadLocal.get();      // Get the controller associated with this Thread
 
-        // If there wasn't one and the user requested one be created
-        if (controller == null && create) {
-            // Try to create one...
+        if (controller == null && create) {             // If there wasn't one and the user requested one be created
             try {
-                controller = new Controller();
-                threadLocal.set(controller);
-            } catch (NamingException ne) {
-                throw new IllegalStateException("Error creating Controller", ne);
-            }
-        }
-
-        // If the user wanted the transaction to be open
-        if (controller != null && begin) {
-            try {
-                controller.begin();
+                controller = new Controller();          // Try to create one...
+                controller.begin();                     // and start the transaction...
+                threadLocal.set(controller);            // and associate it with the current thread
             } catch (Exception e) {
-                throw LaunderThrowable.launderThrowable(e);
+                throw new IllegalStateException("Error creating Controller", e);
             }
         }
 

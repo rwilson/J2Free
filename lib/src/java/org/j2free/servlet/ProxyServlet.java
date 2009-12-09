@@ -26,7 +26,7 @@ import org.j2free.http.SimpleHttpService;
  * @version 1.0
  */
 @ServletConfig(
-    controller = ServletConfig.ControllerOption.NONE
+    requireController = false
 )
 public class ProxyServlet extends HttpServlet {
 

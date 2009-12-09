@@ -18,7 +18,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.j2free.annotations.ServletConfig;
 import org.j2free.annotations.ServletConfig.SSLOption;
-import org.j2free.annotations.ServletConfig.ControllerOption;
 
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
@@ -29,7 +28,7 @@ import static org.j2free.util.Constants.*;
  */
 @ServletConfig(
     ssl        = SSLOption.OPTIONAL,
-    controller = ControllerOption.REQUIRE_OPEN
+    requireController = true
 )
 public class StaticJspServlet extends HttpServlet {
 

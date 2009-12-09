@@ -153,6 +153,7 @@ public class ConfigurationServlet extends HttpServlet {
             configure(config);
 
             // Dynamic reconfiguration settings (only modifiable on initial load)
+            /*
             if (config.getBoolean(PROP_RECONFIG_ENABLED, false)) {
 
                 // Dynamic reconfig requires task-executor
@@ -162,16 +163,14 @@ public class ConfigurationServlet extends HttpServlet {
                     log.warn("Task execution must be enabled to use dynamic reconfiguration!");
                 } else {
 
-                    // We'll use this to see if the file needs reloading
-                    final FileChangedReloadingStrategy strategy = new FileChangedReloadingStrategy();
-                    strategy.setConfiguration(config);
-
                     // Create a task for reconfiguring the app
                     Runnable reconfigTask = new Runnable() {
 
+                        private long lastModified = config.getFile().lastModified();
+
                         public void run() {
 
-                            if (strategy.reloadingRequired()) {             // See if the file has changed
+                            if (config.getFile().lastModified() > lastModified) {             // See if the file has changed
 
                                 log.info(configPath + " has changed, proceeding with reconfiguration.");
 
@@ -182,12 +181,12 @@ public class ConfigurationServlet extends HttpServlet {
                                     return;
                                 }
 
-
                                 try {
                                     
                                     config.load(configPath);                // load the changes
                                     reconfigure(config);                    // try to reconfigure the app
-                                    strategy.reloadingPerformed();          // let the strategy know we reloaded
+
+                                    lastModified = config.getFile().lastModified();
                                     
                                 } catch (ConfigurationException ce) {
                                     log.error("Error reconfiguration app, reverting to old config...", ce);
@@ -199,6 +198,9 @@ public class ConfigurationServlet extends HttpServlet {
                                         System.exit(1); // Don't have an active config right now, so gtfo
                                     }
                                 }
+                                
+                            } else if (log.isTraceEnabled()) {
+                                log.trace("Config file has not changed.");
                             }
                         }
                     };
@@ -226,7 +228,8 @@ public class ConfigurationServlet extends HttpServlet {
                     // save a ref to the future
                     reconfigFutureRef.set(reconfigFuture);
                 }
-            }
+             }
+             */
 
         } catch (ConfigurationException ce) {
             log.error("Error configuring app", ce);

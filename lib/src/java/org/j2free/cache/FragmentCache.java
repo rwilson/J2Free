@@ -54,6 +54,11 @@ public interface FragmentCache<T extends Fragment> {
         // FragmentCache implementation config templates
         public static final String ENGINE_CLASS_TEMPLATE = ENGINE_PREFIX + "%s.class";
     }
+
+    /**
+     * Performs any resource cleanup
+     */
+    public void destroy();
     
     /**
      * Removes all {@link Fragment} instances from the <tt>FragmentCache</tt>.

@@ -99,6 +99,13 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
         this.cleaner = new MemoryFragmentCleaner(this);
     }
 
+    public void destroy() {
+        clear();
+        if (cleanerFuture != null) {
+            cleanerFuture.cancel(true);
+        }
+    }
+
     public int clear() {
         int size = map.size();
         map.clear();

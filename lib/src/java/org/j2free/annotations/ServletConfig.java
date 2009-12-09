@@ -32,29 +32,13 @@ public @interface ServletConfig {
         REQUIRE     // Require SSL connections to this servlet
     };
 
-    /**
-     * NONE: Do not instantiate or associate a Controller when servicing a
-     *       request with this servlet.
-     *
-     * REQUIRE: Instantiate a Controller and associate it with the current Thread
-     *       when servicing a request with this servlet.
-     *
-     * REQUIRE_OPEN: Instantiate a Controller, associate it with the current Thread,
-     *       and begin a Transaction when servicing a request with this servlet.
-     */
-    public static enum ControllerOption {
-        NONE,
-        REQUIRE,
-        REQUIRE_OPEN
-    };
-
     public String[] mappings() default {};
 
     public String regex() default "";
 
     public SSLOption ssl() default SSLOption.DENY;
 
-    public ControllerOption controller() default ControllerOption.REQUIRE_OPEN;
+    public boolean requireController() default true;
 
     /**
      * If true, ServletConfigs that use regex or wildcard mappings

@@ -12,14 +12,13 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 
 import org.j2free.annotations.ServletConfig;
-import org.j2free.annotations.ServletConfig.ControllerOption;
 
 /**
  * @author Ryan Wilson
  * @version
  */
 @ServletConfig(
-    controller = ControllerOption.NONE
+    requireController = false
 )
 public class LogoutServlet extends HttpServlet {
 

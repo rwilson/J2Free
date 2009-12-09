@@ -26,6 +26,8 @@ public @interface FilterConfig {
 
     public String mapping();
 
+    public boolean requireController() default false;
+
     // @TODO implement regex filter maappings (this is going to suck...)
     //public String regex() default "";
 
