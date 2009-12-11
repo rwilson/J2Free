@@ -109,7 +109,7 @@ public final class Controller {
     /**
      * @param create if true, and there is not already a Controller associated
      *        with this <tt>Thread</tt>, a new Controller will be created. 
-     *        <tt>null</tt> will never be returned.
+     *        <tt>null</tt> will never be returned if create == <tt>true</tt>
      * 
      * @return The <tt>Controller</tt> associated with the current <tt>Thread</tt>.
      *         If there wasn't one, and <tt>create</tt> is true, then a new
@@ -146,10 +146,10 @@ public final class Controller {
             try {
                 controller = new Controller();          // Try to create one...
                 controller.begin();                     // and start the transaction...
+                threadLocal.set(controller);            // and associate it with the current thread
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            threadLocal.set(controller);            // and associate it with the current thread
         }
 
         return controller;
@@ -559,6 +559,7 @@ public final class Controller {
 
     public <T> T persist(T entity, boolean flush) {
         try {
+            
             em.persist(entity);
 
             this.errors = null;
@@ -572,8 +573,7 @@ public final class Controller {
             this.errors  = ise.getInvalidValues();
 
             for (InvalidValue error : ise.getInvalidValues()) {
-                log.warn("Invalid Value: " + error.getBeanClass() + "." + error.getPropertyName() + " = " + error.
-                        getValue() + " | " + error.getMessage());
+                log.warn("Invalid Value: " + error.getBeanClass() + "." + error.getPropertyName() + " = " + error.getValue() + " | " + error.getMessage());
             }
 
             markForRollback();

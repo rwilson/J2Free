@@ -97,28 +97,28 @@ final class ServiceChain {
 
         boolean release = false;                            // Holds whether we need to release the Controller here
 
-        if (link.requiresController()) {                    // If the next Servicable requires a Controller
-
-            log.trace("Next link requires Controller");
-
-            Controller controller = Controller.get(false);  // Try to get an existing one
-
-            if (controller == null) {                       // If there wasn't one already
-                log.trace("No Controller associated with Thread, creating...");
-                controller = Controller.get();              // Create a new one
-                release = true;                             // And take responsibility for closing it
-            }
-
-            // If the Servicable requires a Controller and we don't have one,
-            // then blow up loudly because all resources futher down the chain
-            // will be expecting a Controller and we can't provide that.
-            if (controller == null)
-                throw new ServletException("Error provied required Controller to " + link.getName());
-            else
-                request.setAttribute(Controller.ATTRIBUTE_KEY, controller); // But if we got it, set it as a req attribute
-        }
-
         try {
+
+            if (link.requiresController()) {                    // If the next Servicable requires a Controller
+
+                log.trace("Next link requires Controller");
+
+                Controller controller = Controller.get(false);  // Try to get an existing one
+
+                if (controller == null) {                       // If there wasn't one already
+                    log.trace("No Controller associated with Thread, creating...");
+                    controller = Controller.get();              // Create a new one
+                    release = true;                             // And take responsibility for closing it
+                }
+
+                // If the Servicable requires a Controller and we don't have one,
+                // then blow up loudly because all resources futher down the chain
+                // will be expecting a Controller and we can't provide that.
+                if (controller == null)
+                    throw new ServletException("Error provied required Controller to " + link.getName());
+                else
+                    request.setAttribute(Controller.ATTRIBUTE_KEY, controller); // But if we got it, set it as a req attribute
+            }
 
             if (log.isTraceEnabled()) {
                 log.trace("Servicing link [name=" + link.getName() +"]");
