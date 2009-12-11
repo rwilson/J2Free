@@ -5,7 +5,6 @@
  */
 package org.j2free.util;
 
-import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
@@ -27,7 +26,7 @@ import net.jcip.annotations.ThreadSafe;
 public class PriorityFuture<V> extends FutureTask<V> implements Comparable<PriorityFuture<V>> {
 
     private final Priority priority;
-    private final Date     created;
+    private final long     created;
 
     public PriorityFuture(Callable<V> callable) {
         this(callable, Priority.DEFAULT);
@@ -36,17 +35,17 @@ public class PriorityFuture<V> extends FutureTask<V> implements Comparable<Prior
     public PriorityFuture(Callable<V> callable, Priority priority) {
         super(callable);
         this.priority = priority;
-        this.created  = new Date();
+        this.created  = System.currentTimeMillis();
     }
 
     public PriorityFuture(Runnable runnable, V result) {
-        this(runnable,result,Priority.DEFAULT);
+        this(runnable, result, Priority.DEFAULT);
     }
 
     public PriorityFuture(Runnable runnable, V result, Priority priority) {
         super(runnable, result);
         this.priority = priority;
-        this.created  = new Date();
+        this.created  = System.currentTimeMillis();
     }
 
     public Priority getPriority() {
@@ -58,7 +57,9 @@ public class PriorityFuture<V> extends FutureTask<V> implements Comparable<Prior
             return 1;
 
         int cmp = this.priority.compareTo(other.priority);
-        return cmp == 0 ? this.created.compareTo(other.created) : cmp;
+        if (cmp != 0) return cmp;
+
+        return Float.valueOf(Math.signum(other.created - this.created)).intValue();
     }
 
 }

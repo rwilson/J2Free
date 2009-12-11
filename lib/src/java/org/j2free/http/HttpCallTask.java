@@ -6,7 +6,6 @@
 package org.j2free.http;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +39,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
     public final String url;
     public final boolean followRedirects;
     public final Priority priority;
-    public final Date created;
+    public final long created;
 
     /**
      * Equivalent to:
@@ -87,7 +86,7 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         this.url             = url;
         this.followRedirects = followRedirects;
         this.priority        = priority;
-        this.created         = new Date();
+        this.created         = System.currentTimeMillis();
 
         this.queryParams     = new LinkedList<KeyValuePair<String,String>>();
         this.requestHeaders  = new LinkedList<Header>();
@@ -140,6 +139,6 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         if (c != 0)
             return c;
 
-        return this.created.compareTo(other.created);
+        return Float.valueOf(Math.signum(other.created - this.created)).intValue();
     }
 }

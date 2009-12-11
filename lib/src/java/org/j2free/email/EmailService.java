@@ -164,7 +164,7 @@ public final class EmailService {
      * @param isDummy
      */
     public void setDummyMode(boolean isDummy) {
-        log.info(String.format("Dummy mode %s...", isDummy ? "disabled" : "enabled"));
+        log.info(String.format("Dummy mode %s...", isDummy ? "enabled" : "disabled"));
         dummy.set(isDummy);
     }
 
@@ -521,12 +521,12 @@ public final class EmailService {
      */
     private class EmailSendTask implements Runnable, Comparable<EmailSendTask> {
 
-        private final Date created;
+        private final long created;
         private final PriorityReference<MimeMessage> message;
 
         public EmailSendTask(PriorityReference<MimeMessage> message) {
             this.message = message;
-            this.created = new Date();
+            this.created = System.currentTimeMillis();
         }
 
         public void run() {
@@ -565,7 +565,10 @@ public final class EmailService {
                 return 1;
 
             int cmp = this.message.getPriority().compareTo(other.message.getPriority());
-            return cmp == 0 ? this.created.compareTo(other.created) : cmp;
+            if (cmp != 0)
+                return cmp;
+
+            return Float.valueOf(Math.signum(other.created - this.created)).intValue();
         }
     }
 

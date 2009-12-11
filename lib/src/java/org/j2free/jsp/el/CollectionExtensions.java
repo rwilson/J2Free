@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import javax.servlet.ServletException;
 import org.j2free.util.ServletUtils;
 import org.j2free.jpa.Controller;
 
@@ -53,12 +54,45 @@ public class CollectionExtensions {
         return c == null ? true : c.isEmpty();
     }
     
-    public static <T extends Object> List<T> filter(Collection c, String filter) {
-        return Controller.get().filter(c,filter);
+    public static <T extends Object> List<T> filter(Collection c, String filter) throws ServletException {
+
+        boolean release = false;
+        try {
+            
+            Controller controller = Controller.get(false);
+            if (controller == null) {
+                controller = Controller.get();
+                release = true;
+            }
+            
+            return controller.filter(c,filter);
+            
+        } finally {
+            if (release) {
+                Controller.release();
+            }
+        }
     }
 
-    public static <T extends Object> List<T> filterLimited(Collection c, String filter, int start, int limit) {
-        return Controller.get().filter(c,filter,start,limit);
+    public static <T extends Object> List<T> filterLimited(Collection c, String filter, int start, int limit)
+            throws ServletException {
+
+        boolean release = false;
+        try {
+            
+            Controller controller = Controller.get(false);
+            if (controller == null) {
+                controller = Controller.get();
+                release = true;
+            }
+            
+            return controller.filter(c,filter,start,limit);
+
+        } finally {
+            if (release) {
+                Controller.release();
+            }
+        }
     }
 
     public static String join(Collection c, String delimiter) {

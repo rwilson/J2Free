@@ -124,18 +124,16 @@ final class ServiceChain {
                 log.trace("Servicing link [name=" + link.getName() +"]");
             }
             link.service(request, response, this);
-            
+
+        } catch (Exception e) {
+            throw new ServletException("Error servicing chain", e); // Wrap any exceptions as ServletException
         } finally {
             // If this Servicable has the responsibility to release a Controller
             // Don't need to check requiresController() again, since release can ONLY
             // be true if requiresController() was true.
             if (release) {
-                try {
-                    log.trace("Releasing Controller");
-                    Controller.release();
-                } catch (Exception e) {
-                    throw new ServletException("Error releaseing Controller", e);
-                }
+                log.trace("Releasing Controller");
+                Controller.release();
             }
         }
     }

@@ -116,10 +116,6 @@ public final class InvokerFilter implements Filter {
     private static final AtomicInteger maxServletUses       = new AtomicInteger(1000);
     private static final AtomicReference<String> bypassPath = new AtomicReference(EMPTY);
 
-    // For accessing the servlet context in static methods
-    private static final AtomicReference<ServletContext> servletContext
-            = new AtomicReference(null);
-
     // For error handling, a handler and redirect location
     private static final AtomicReference<UncaughtServletExceptionHandler> exceptionHandler
             = new AtomicReference(null);
@@ -150,37 +146,11 @@ public final class InvokerFilter implements Filter {
     private static final Lock          read  = lock.readLock();
     private static final Lock          write = lock.writeLock();
 
-    public InvokerFilter() {
-    }
-
     /**
-     * Destroy method for this filter
-     *
+     * Required impls
      */
-    public void destroy() {
-        try {
-            write.lock();
-
-            // Clear the mapping
-            urlMap.clear();
-            partialsMap.clear();
-            regexMap.clear();
-
-            // Destroy the servlets used in the mapping
-            for (ServletMapping mapping : servletMap.values()) {
-                mapping.servlet.destroy();
-            }
-
-            // Clear the ServletMappings
-            servletMap.clear();
-
-            // Clear filer mappings
-            filters.clear();
-
-        } finally {
-            write.unlock();
-        }
-    }
+    public void init(javax.servlet.FilterConfig fc) { }
+    public void destroy() { }
 
     /**
      *
@@ -436,30 +406,24 @@ public final class InvokerFilter implements Filter {
     }
 
     /**
-     * Saves the ServletContext and loads annotated classes
-     * @param fc The FilterConfig
-     */
-    public void init(javax.servlet.FilterConfig fc) {
-        log.debug("Enabling InvokerFilter...");
-        servletContext.set(fc.getServletContext()); // Need to hold on to this for later
-        load();
-    }
-
-    /**
      * Locks to prevent request processing while mapping is added.
      *
      * Finds all classes annotated with ServletConfig and maps the class to
      * the url specified in the annotation.  Wildcard mapping are allowed in
      * the form of *.extension or /some/path/*
+     *
+     * @param context an active ServletContext
      */
-    private static void load() {
+    public static void load(final ServletContext context) {
         
+        log.debug("Scanning resources...");
+
         try {
             write.lock();
 
             LinkedList<URL> urlList = new LinkedList<URL>();
             urlList.addAll(Arrays.asList(ClasspathUrlFinder.findResourceBases(EMPTY)));
-            urlList.addAll(Arrays.asList(WarUrlFinder.findWebInfLibClasspaths(servletContext.get())));
+            urlList.addAll(Arrays.asList(WarUrlFinder.findWebInfLibClasspaths(context)));
             
             URL[] urls = new URL[urlList.size()];
             urls = urlList.toArray(urls);
@@ -520,7 +484,7 @@ public final class InvokerFilter implements Filter {
                                             }
 
                                             public ServletContext getServletContext() {
-                                                return servletContext.get();
+                                                return context;
                                             }
 
                                             public String getInitParameter(String name) {
@@ -567,7 +531,7 @@ public final class InvokerFilter implements Filter {
                                             }
 
                                             public ServletContext getServletContext() {
-                                                return servletContext.get();
+                                                return context;
                                             }
 
                                             public String getInitParameter(String namw) {
@@ -604,19 +568,21 @@ public final class InvokerFilter implements Filter {
      * Clears loaded configuration, used for dynamic reconfiguation.
      * Locks to prevent request processing while modifications are made.
      */
-    public static void reload() {
+    public static void reset() {
 
         try {
             write.lock();
 
-            // Clear the mapping
+            // Destroy the servlets used in the mapping
+            for (ServletMapping mapping : servletMap.values()) {
+                mapping.servlet.destroy();
+            }
+
             urlMap.clear();
             partialsMap.clear();
             regexMap.clear();
             servletMap.clear();
             filters.clear();
-
-            load(); // Load it all up again
 
         } finally {
             write.unlock(); // ALWAYS unlock

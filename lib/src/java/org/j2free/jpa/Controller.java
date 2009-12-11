@@ -72,7 +72,7 @@ import org.j2free.util.KeyValuePair;
  */
 public final class Controller {
 
-    protected static final Log log = LogFactory.getLog(Controller.class);
+    private static final Log log = LogFactory.getLog(Controller.class);
 
     public static final String ATTRIBUTE_KEY = "controller";
 
@@ -118,9 +118,12 @@ public final class Controller {
      *         if there was not already a <tt>Controller</tt> associated with this
      *         <tt>Thread</tt>.
      *
-     * @throws IllegalStateException if there is an error creating the controller
+     * @throws RuntimeException if there is an error creating the controller
      *
-     * Code using <tt>Controller.get()</tt> MUST make sure to call
+     * Exceptions normally thrown by beginning a UserTransaction are laundered
+     * from checked exceptions to unchecked RuntimeExceptions so that code calling
+     * Controller.get() does not ALWAYS have to catch the exception.  However,
+     * code using <tt>Controller.get()</tt> MUST make sure to call
      * <tt>release()</tt> when finished with the controller to avoid
      * a memory leak.
      *
@@ -139,13 +142,14 @@ public final class Controller {
         Controller controller = threadLocal.get();      // Get the controller associated with this Thread
 
         if (controller == null && create) {             // If there wasn't one and the user requested one be created
+            // don't set the ThreadLocal until after we know the tx was opened successfully
             try {
                 controller = new Controller();          // Try to create one...
                 controller.begin();                     // and start the transaction...
-                threadLocal.set(controller);            // and associate it with the current thread
             } catch (Exception e) {
-                throw new IllegalStateException("Error creating Controller", e);
+                throw new RuntimeException(e);
             }
+            threadLocal.set(controller);            // and associate it with the current thread
         }
 
         return controller;
@@ -157,31 +161,34 @@ public final class Controller {
      *         This controller does not have a transaction open; it's up to
      *         the caller to manage the transaction.
      *
-     * @throws IllegalStateException if there is an error creating the controller
+     * @throws RuntimeException if there is an error creating the controller
      */
     public static Controller getIsolatedInstance() {
         try {
             return new Controller();
         } catch (NamingException ne) {
-            throw new IllegalStateException("Error creating isolated Controller", ne);
+            throw new RuntimeException("Error creating isolated Controller", ne);
         }
     }
 
     /**
+     * Releases a Controller associated with the current thread, if there was one.
+     * 
      * <tt>release()</tt> will internally call <tt>end()</tt> on the instance
      * associated with the current thread, if it was found.
+     *
+     * @throws RuntimeException if there is an exception ending the UserTransaction
      */
-    public static void release() throws SystemException,
-                                        RollbackException,
-                                        HeuristicMixedException,
-                                        HeuristicRollbackException {
+    public static void release() {
         
-        Controller controller = get(false);     // Get the controller associated with the current-thread
-        if (controller != null) {               // If there was one,
+        Controller controller = threadLocal.get();     // Get the controller associated with the current-thread
+        if (controller != null) {                      // If there was one,
             try {
-                controller.end();               // end the transaction
+                controller.end();                      // end the transaction
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             } finally {
-                threadLocal.remove();           // and ALWAYS disassociate it with the current-thread
+                threadLocal.remove();                  // and ALWAYS disassociate it with the current-thread
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * ConfigurationServlet.java
+ * ConfigurationListener.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
  *
@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.j2free.servlet;
+package org.j2free.config;
 
+import org.j2free.servlet.*;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,23 +37,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.mail.Authenticator;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServlet;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -76,15 +73,6 @@ import static org.j2free.util.Constants.*;
 
 
 /**
- * <tt>ConfigurationServlet</tt> should be loaded first by specifying
- * &lt;load-on-startup&gt;1&lt;/load-on-startup&gt; in web.xml.  This
- * servlet sets all context init params as context attributes.
- *
- * Additionally, <tt>ConfigurationServlet</tt> will look for a config
- * properties file in the default location, or a custom location if
- * the context init-param <tt>config-file</tt> is specified and, if
- * found, will set context-attributes for all properties.
- *
  * If a <tt>Configuration</tt> is found and successfully loaded, then
  * the following items will be configured accordingly:
  *  - <tt>RunMode</tt>
@@ -112,22 +100,22 @@ import static org.j2free.util.Constants.*;
  *
  * @author Ryan Wilson
  */
-public class ConfigurationServlet extends HttpServlet {
+public class ConfigurationListener implements ServletContextListener {
 
-    private static final Log log = LogFactory.getLog(ConfigurationServlet.class);
+    private final Log log = LogFactory.getLog(ConfigurationListener.class);
 
-    private static final AtomicReference<Runnable> reconfigTaskRef = new AtomicReference(null);
-    private static final AtomicReference<ScheduledFuture> reconfigFutureRef = new AtomicReference(null);
+    private Runnable        reconfigTask;
+    private ScheduledFuture reconfigFuture;
 
     // Stores what properties from the config file are saved in the ServletContext,
     // so that they can be removed before reconfiguration
-    private static final ConcurrentHashSet<String> loadedConfigPropKeys = new ConcurrentHashSet();
+    private final ConcurrentHashSet<String> loadedConfigPropKeys = new ConcurrentHashSet();
 
-    @Override
-    public void init() throws ServletException {
-        super.init();
+    protected ServletContext context;
 
-        ServletContext context = getServletContext();
+    public synchronized void contextInitialized(ServletContextEvent event) {
+
+        context = event.getServletContext();
         
         // Get the configuration file
         String configPathTemp = (String)context.getInitParameter(INIT_PARAM_CONFIG_PATH);
@@ -191,7 +179,7 @@ public class ConfigurationServlet extends HttpServlet {
                                 } catch (ConfigurationException ce) {
                                     log.error("Error reconfiguration app, reverting to old config...", ce);
                                     try {
-                                        config.load(configPath + ".bkp");   // reload the backup configuration
+                                        config.load(configPath + ".bkp");   // reset the backup configuration
                                         reconfigure(config);                // reconfigure with the backup
                                     } catch (ConfigurationException cee) {
                                         log.fatal("Error loading backup configuration! Exiting...", cee);
@@ -236,29 +224,10 @@ public class ConfigurationServlet extends HttpServlet {
         }
     }
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        response.setContentType("text/plain");
-
-        Runnable reconfigTask = reconfigTaskRef.get();
-        if (reconfigTask == null) {
-            log.info("Dynamic reconfiguration not enabled!");
-            response.getWriter().println("Dynamic reconfiguration is not enabled.");
-        } else {
-            reconfigTask.run();
-            log.info("Reconfiguration complete.");
-            response.getWriter().println("Reconfiguration complete.");
-        }
-    }
-
     /**
      * Configures a J2Free application
      */
-    private void configure(Configuration config) throws ConfigurationException {
-
-        ServletContext context = getServletContext();
+    private synchronized void configure(Configuration config) throws ConfigurationException {
 
         // Anything with the value "localhost" will be set to the IP if possible
         String localhost = config.getString(PROP_LOCALHOST, "localhost");
@@ -297,11 +266,12 @@ public class ConfigurationServlet extends HttpServlet {
             log.warn("Error setting runmode, invalid value: " + runMode);
         }
 
-        context.setAttribute("devMode",RUN_MODE != RunMode.PRODUCTION);
+        context.setAttribute("devMode", RUN_MODE != RunMode.PRODUCTION);
         loadedConfigPropKeys.add("devMode");
 
         // InvokerFilter
         InvokerFilter.configure(config);
+        InvokerFilter.load(context);
 
         // StaticJspServlet
         if (config.getBoolean(PROP_STATICJSP_ON, false)) {
@@ -419,7 +389,7 @@ public class ConfigurationServlet extends HttpServlet {
         } else {
 
             // Not allowed to shutdown the taskExecutor if dynamic reconfig is enabled
-            if (reconfigTaskRef.get() == null) {
+            if (reconfigTask == null) {
                 // Shutdown and remove references to the taskManager previously created
                 taskExecutor = (ScheduledExecutorService)Global.get(CONTEXT_ATTR_TASK_MANAGER);
                 if (taskExecutor != null) {
@@ -429,7 +399,7 @@ public class ConfigurationServlet extends HttpServlet {
                 }
             } else {
                 // We could just log a warning that you can't do this, but the user
-                // might not see that, so we're going to refuse to reload a configuration
+                // might not see that, so we're going to refuse to reset a configuration
                 // that cannot be loaded in whole successfully.
                 throw new ConfigurationException("Cannot disable task execution service, dynamic reconfiguration is enabled!");
             }
@@ -682,12 +652,19 @@ public class ConfigurationServlet extends HttpServlet {
         }
     }
 
+    public synchronized void contextDestroyed(ServletContextEvent event) {
+        clearConfiguration();
+    }
+
     /**
      * Configures a J2Free application
      */
-    private void reconfigure(Configuration config) throws ConfigurationException {
+    private synchronized void reconfigure(Configuration config) throws ConfigurationException {
+        clearConfiguration();
+        configure(config);
+    }
 
-        ServletContext context = getServletContext();
+    private synchronized void clearConfiguration() {
 
         // Remove all properties from the ServletContext that were set in the
         // previous configuration.
@@ -697,13 +674,18 @@ public class ConfigurationServlet extends HttpServlet {
         loadedConfigPropKeys.clear();
 
         // InvokerFilter
-        InvokerFilter.reload(); // this clears all mappings and rescans
-
-        // Load the configuration
-        configure(config);
+        InvokerFilter.reset(); // this clears all mappings and rescans
     }
 
-    private void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass) {
+    /**
+     * Internal method for adding a servlet config
+     *
+     * @param config
+     * @param pathProp
+     * @param defaultPath
+     * @param servletClass
+     */
+    private synchronized void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass) {
 
         String path;
         Class  oldKlass;

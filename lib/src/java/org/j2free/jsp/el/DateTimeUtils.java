@@ -10,24 +10,28 @@ package org.j2free.jsp.el;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+
+import org.j2free.util.Constants;
 
 /**
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 public class DateTimeUtils {
-    
+
+    private static final long SECONDS_PER_HOUR = 60 * 60;
+    private static final long SECONDS_PER_DAY  = 60 * 60 * 24;
+
+    private static final long MILLIS_PER_DAY   = 1000 * SECONDS_PER_DAY;
+
     public static int getCountdown(java.util.Date event) {
 
         if (event == null)
             return -1;
         
-        Date today  = new Date();
-        long todayEpoch  = today.getTime();
-        long targetEpoch = event.getTime();
-        
-        return ((Double)Math.floor(((targetEpoch - todayEpoch) / (60*60*24)) / 1000)).intValue();
+        return ((Double)Math.floor(((event.getTime() - System.currentTimeMillis()) / SECONDS_PER_DAY) / 1000)).intValue();
     }
     
     /**
@@ -49,9 +53,7 @@ public class DateTimeUtils {
         
         int month   = -1;
         int day     = -1;
-        int year    = -1;
         int hours   = -1;
-        int minutes = -1;
         
         String mth = "", dy = "", yr = "", hrs = "", mnts = "", ampm = "";
         
@@ -156,129 +158,115 @@ public class DateTimeUtils {
     
     public static String formatDateLowPrecision(Date date) {
 
-        if (date == null)
-            return "";
+        if (date == null) return Constants.EMPTY;
+
+        Calendar spec = Calendar.getInstance();
+        spec.setTime(date);
+
+        long diff = System.currentTimeMillis() - date.getTime();
+        if (diff < 0) return Constants.EMPTY;
         
-        Date now = new Date();
-        String output = "";
-        SimpleDateFormat monthFormat = new SimpleDateFormat("MMMMM");
-        SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy");
-        SimpleDateFormat dayFormat = new SimpleDateFormat("d");
-        
-        long diff = now.getTime() - date.getTime();
-        
-        if (diff < (1000*60*60*12) && diff > 0) {    // IF LESS THAN 12 HOURS AGO
+        if (diff < (MILLIS_PER_DAY / 2) && diff > 0) {    // IF LESS THAN 12 HOURS AGO
+            
             long seconds = diff / 1000;
             
-            long hours = (seconds/(60*60));
-            seconds   -= (hours*60*60);
+            long hours = (seconds / SECONDS_PER_HOUR);
+            seconds   -= (hours * SECONDS_PER_HOUR);
             
-            long minutes = (seconds/60);
-            seconds     -= (minutes*60);
+            long minutes = (seconds / 60);
+            seconds     -= (minutes * 60);
             
             if (hours > 1) {
-                output = hours + " hours ago";
+                return hours + " hours ago";
             } else if (hours == 1) {
-                output = "1 hour ago";
+                return "1 hour ago";
             } else if (minutes > 1) {
-                output = minutes + " minutes ago";
+                return minutes + " minutes ago";
             } else {
-                output = "1 minute ago";
+                return "1 minute ago";
             }
             
         } else {
-        
-            if (monthFormat.format(date).equals(monthFormat.format(now)) && yearFormat.format(date).equals(yearFormat.format(now))) {
-                diff = Integer.valueOf(dayFormat.format(now)) - Integer.valueOf(dayFormat.format(date));
-                if (diff == 0) return "Today";
-                if (diff == 1) return "Yesterday";
-            }
+
+            Calendar now  = Calendar.getInstance();
+            diff = now.get(Calendar.DAY_OF_YEAR) - spec.get(Calendar.DAY_OF_YEAR);
+           
+            if (diff == 0)
+                return "Today";
+            else if (diff == 1)
+                return "Yesterday";
 
             SimpleDateFormat df = new SimpleDateFormat("EEEEEEEEEE, MMM d");
             return df.format(date);
         }
-        
-        return output;
     }
     
     public static String formatDateMinPrecision(Date date) {
 
-        if (date == null)
-            return "";
+        if (date == null) return Constants.EMPTY;
         
-        Date now = new Date();
+        Calendar now  = Calendar.getInstance();
+        Calendar spec = Calendar.getInstance();
+        spec.setTime(date);
         
-        long diff = now.getTime() - date.getTime();
-        
-        if (diff < (1000*60*60*24)  && diff > 0) {    // IF LESS THAN 12 HOURS AGO
-            
+        long diff = now.get(Calendar.DAY_OF_YEAR) - spec.get(Calendar.DAY_OF_YEAR);
+        if (diff == 0)
             return "Today";
-            
-        } else if (diff < (1000*60*60*48)  && diff > 0) {
-            
+        else if (diff == 1)
             return "Yesterday";
-            
-        } else {
         
-            SimpleDateFormat df = new SimpleDateFormat("MMM d, yyyy");
-            return df.format(date);
-        }
+        SimpleDateFormat df = new SimpleDateFormat("MMM d, yyyy");
+        return df.format(date);
     }
     
     public static String asEllapsedDays(Date date) {
 
-        if (date == null)
-            return "";
+        if (date == null) return Constants.EMPTY;
 
-        int days = ((Double)Math.floor((System.currentTimeMillis() - date.getTime()) / (1000 * 60 * 60 * 24))).intValue();
+        Calendar now  = Calendar.getInstance();
+        Calendar spec = Calendar.getInstance();
+        spec.setTime(date);
 
-        if (days == 0) {
-
+        long diff = now.get(Calendar.DAY_OF_YEAR) - spec.get(Calendar.DAY_OF_YEAR);
+        if (diff == 0)
             return "Today";
-
-        } else if (days == 1) {
-
+        else if (diff == 1)
             return "Yesterday";
-
-        } else {
-
-            return days + " days ago";
-        }
+        else
+            return String.format("%d days ago", diff);
     }
 
     public static String formatDateNoTime(Date date) {
         
-        if (date == null)
-            return "";
+        if (date == null) return Constants.EMPTY;
         
-        Date now = new Date();
-        String output = "";
-        SimpleDateFormat monthFormat = new SimpleDateFormat("MMMMM");
-        SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy");
-        SimpleDateFormat dayFormat = new SimpleDateFormat("d");
-        
-        if (monthFormat.format(date).equals(monthFormat.format(now)) && yearFormat.format(date).equals(yearFormat.format(now))) {
-            int diff = Integer.valueOf(dayFormat.format(now)) - Integer.valueOf(dayFormat.format(date));
-            if (diff == 0) return "Today";
-            if (diff == 1) return "Yesterday";
-        }
-        
+        Calendar now  = Calendar.getInstance();
+        Calendar spec = Calendar.getInstance();
+        spec.setTime(date);
+
+        long diff = now.get(Calendar.DAY_OF_YEAR) - spec.get(Calendar.DAY_OF_YEAR);
+        if (diff == 0)
+            return "Today";
+        else if (diff == 1)
+            return "Yesterday";
+
         SimpleDateFormat df = new SimpleDateFormat("EEEEEEEEEE, MMM d, yyyy");
         return df.format(date);
     }
     
     public static String formatDateTimeOnly(Date date) {
         
-        if (date == null)
-            return "";
+        if (date == null) return Constants.EMPTY;
         
         long diff = System.currentTimeMillis() - date.getTime();
+        
         String output = "";
         if (diff < (1000*60*60*6)) {    // IF LESS THAN 6 HOURS AGO
+
             long seconds = diff / 1000;
             
-            long hours = (seconds/(60*60));
-            seconds   -= (hours*60*60);
+            long hours = (seconds / SECONDS_PER_HOUR);
+            seconds   -= (hours * SECONDS_PER_HOUR);
             
             long minutes = (seconds/60);
             seconds     -= (minutes*60);
@@ -291,20 +279,23 @@ public class DateTimeUtils {
             } else {
                 output = seconds + " seconds ago";
             }
+
         } else {
             SimpleDateFormat df = new SimpleDateFormat("h:mm a");
             output = df.format(date);
         }
+        
         return output;
     }
     
     public static String formatDate(Date date, String pattern, boolean relativeToNow) {
         
         if (date == null)
-            return "";
+            return Constants.EMPTY;
         
         // Only knows how to handle relative dates in terms of hours, minutes, seconds ago
         if (relativeToNow) {
+            
             long diff    = System.currentTimeMillis() - date.getTime();
             long seconds = diff / 1000;
             
@@ -335,15 +326,15 @@ public class DateTimeUtils {
     public static String formatDate(Date date) {
 
         if (date == null)
-            return "";
+            return Constants.EMPTY;
 
         long diff = System.currentTimeMillis() - date.getTime();
         String output = "";
         if (diff < (1000*60*60*6)) {    // IF LESS THAN 6 HOURS AGO
             long seconds = diff / 1000;
             
-            long hours = (seconds/(60*60));
-            seconds   -= (hours*60*60);
+            long hours = (seconds / SECONDS_PER_HOUR);
+            seconds   -= (hours * SECONDS_PER_HOUR);
             
             long minutes = (seconds/60);
             seconds     -= (minutes*60);
@@ -373,19 +364,19 @@ public class DateTimeUtils {
     public static String asEllapsedTime(Double millis) {
 
         if (millis == null)
-            return "";
+            return Constants.EMPTY;
 
         long avgM = millis.longValue();
         
-        String output = new String();
+        String output = "";
         
         long seconds = avgM / 1000;
 
-        long days = (seconds/(60*60*24));
-        seconds  -= (days*60*60*24);
+        long days = (seconds / SECONDS_PER_DAY);
+        seconds  -= (days * SECONDS_PER_DAY);
         
-        long hours = (seconds/(60*60));
-        seconds   -= (hours*60*60);
+        long hours = (seconds / SECONDS_PER_HOUR);
+        seconds   -= (hours * SECONDS_PER_HOUR);
         
         long minutes = (seconds/60);
         seconds     -= (minutes*60);
