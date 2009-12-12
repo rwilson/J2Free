@@ -271,10 +271,9 @@ public class FragmentCacheTag extends BodyTagSupport {
             // be the current Fragment stored in the cache by this key.
             fragment = cache.putIfAbsent(key, cache.createFragment(condition, timeout));
             
-        } else if (fragment != null && fragment.isExpiredAndAbandoned()) {
+        } else if (fragment != null && fragment.isLockAbandoned()) {
 
-            // Or if it exists but has expired and is abandoned (meaning its' lock-for-update
-            // has been held past its' lock wait timeout.
+            // Or if it exists but is abandoned (lock-for-update has been held > lock wait timeout).
             
             // If we're here, it probably means that a thread hit an exception while updating the old fragment and was never
             // able to unlock the fragment.  So, remove the old fragment, then create a new one starting with the old content

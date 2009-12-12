@@ -136,21 +136,20 @@ public class MemoryFragment implements Fragment, Cloneable {
      * @return true if the MemoryFragment is expired, locked, and the lockWait has passed,
      *         otherwise false.
      */
-    public synchronized boolean isExpiredAndAbandoned() {
-        final long now = System.currentTimeMillis();
-        return (now - updateTime) >= timeout &&                              // expired
-               (now - lockedTime ) >= MAX_LOCK_HOLD && updateLock.isLocked(); // Abandoned
+    public synchronized boolean isLockAbandoned() {
+        return updateLock.isLocked() && (System.currentTimeMillis() - lockedTime ) >= MAX_LOCK_HOLD;
     }
 
     /**
-     * @return true if the MemoryFragment is expired and unlocked, or if the fragment
-     *         abandoned (has been locked for > than lockWaitTimeout)
+     * @return true if the MemoryFragment is expired, or is locked and the lockWait has
+     *         passed, otherwise false
      */
-    public synchronized boolean isExpiredUnlockedOrAbandoned() {
-        final long now = System.currentTimeMillis();
-        final boolean isLocked = updateLock.isLocked();
-        return (!isLocked && (now - updateTime) >= timeout ) ||
-               ( isLocked && (now - lockedTime ) >= MAX_LOCK_HOLD);
+    protected synchronized boolean isExpiredOrLockAbandoned() {
+        long    now    = System.currentTimeMillis();
+        boolean locked = updateLock.isLocked();
+
+        return (locked && (now - lockedTime ) >= MAX_LOCK_HOLD) ||   // lockAbandoned()
+               (!locked && (now - updateTime) >= timeout);           // not locked and expired
     }
 
     /**
@@ -187,9 +186,9 @@ public class MemoryFragment implements Fragment, Cloneable {
         synchronized (this) {
             
             // Check the conditions for update
-            final boolean condChanged = this.condition != null && !this.condition.equals(curCondition);
+            boolean condChanged = this.condition != null && !this.condition.equals(curCondition);
 
-            final long now = System.currentTimeMillis();
+            long now = System.currentTimeMillis();
 
             // If the content is null, the condition has changed, or the MemoryFragment is expired,
             // try to acquire the lock

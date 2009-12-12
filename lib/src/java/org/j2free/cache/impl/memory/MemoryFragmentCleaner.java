@@ -37,12 +37,12 @@ public class MemoryFragmentCleaner implements Runnable {
 
     private static final Log log = LogFactory.getLog(MemoryFragmentCleaner.class);
 
-    private final FragmentCache cache;
+    private final FragmentCache<MemoryFragment> cache;
 
     @GuardedBy("this") private long lastCleanTimestamp;
     @GuardedBy("this") private int lastCleanCount;
 
-    public MemoryFragmentCleaner(FragmentCache cache) {
+    public MemoryFragmentCleaner(FragmentCache<MemoryFragment> cache) {
         super();
         this.cache = cache;
 
@@ -63,13 +63,14 @@ public class MemoryFragmentCleaner implements Runnable {
             lastCleanCount = 0;
 
             String key;
-            Fragment fragment;
+            MemoryFragment fragment;
             while (iterator.hasNext()) {
 
                 key      = iterator.next();
                 fragment = cache.get(key);
 
-                if (fragment != null && fragment.isExpiredUnlockedOrAbandoned()) {
+                // @TODO remove race-condition where fragment could be locked b/t calls to isExpiredOrLockAbandoned and evict
+                if (fragment != null && fragment.isExpiredOrLockAbandoned()) {
                     if (cache.evict(key, fragment))
                         lastCleanCount++;
                 }

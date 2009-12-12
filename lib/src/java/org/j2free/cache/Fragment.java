@@ -41,16 +41,9 @@ public interface Fragment {
     public String get(long waitFor, TimeUnit unit) throws InterruptedException;
 
     /**
-     * @return true if the Fragment is expired, locked, and the lockWait has passed,
-     *         otherwise false.
+     * @return true if the Fragment is locked and the lockWait has passed, otherwise false.
      */
-    public boolean isExpiredAndAbandoned();
-
-    /**
-     * @return true if the Fragment is expired and unlocked, or if the fragment
-     *         abandoned (has been locked for > than lockWaitTimeout)
-     */
-    public boolean isExpiredUnlockedOrAbandoned();
+    public boolean isLockAbandoned();
 
     /**
      * Atomic bundling of a few tasks:
