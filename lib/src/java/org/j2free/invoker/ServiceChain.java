@@ -114,8 +114,8 @@ final class ServiceChain {
                 // If the Servicable requires a Controller and we don't have one,
                 // then blow up loudly because all resources futher down the chain
                 // will be expecting a Controller and we can't provide that.
-                if (controller == null)
-                    throw new ServletException("Error provied required Controller to " + link.getName());
+                if (controller == null || !controller.isTransactionOpen())
+                    throw new ServletException("Error providing required Controller to " + link.getName());
                 else
                     request.setAttribute(Controller.ATTRIBUTE_KEY, controller); // But if we got it, set it as a req attribute
             }
