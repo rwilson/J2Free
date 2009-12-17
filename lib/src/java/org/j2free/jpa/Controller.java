@@ -1206,6 +1206,10 @@ public final class Controller {
         return getSession().createCriteria(entityClass);
     }
 
+    public <T> Criteria createCriteria(Class<T> entityClass, String alias) {
+        return getSession().createCriteria(entityClass, alias);
+    }
+
     public int update(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return update(query, parameters);
