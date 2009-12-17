@@ -1,7 +1,8 @@
 <%@page contentType="text/html"%>
 <%@page pageEncoding="UTF-8"%>
+
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@taglib uri="/WEB-INF/StandardExt" prefix="stdx" %>
+<%@taglib uri="http://tags.j2free.org/StandardExt" prefix="stdx" %>
 
 <div class="columnHeader" id="edit${simpleName}${entityId}header">${simpleName} - ${entityId}</div>
 <form name="entityForm">

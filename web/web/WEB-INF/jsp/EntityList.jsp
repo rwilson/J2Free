@@ -1,7 +1,9 @@
 <%@page contentType="text/html"%>
 <%@page pageEncoding="UTF-8"%>
+
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@taglib uri="/WEB-INF/CollectionsExt" prefix="cx" %>
+<%@taglib uri="http://tags.j2free.org/CollectionsExt" prefix="cx" %>
+
 <c:if test="${start == 0}">
     <div class="columnHeaderRight"><input type="button" value="New" onclick="admin.create('col2','col3','${simpleName}');" /></div>
     <div class="columnHeader">${simpleName} Instances</div>

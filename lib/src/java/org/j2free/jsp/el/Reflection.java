@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.Entity;
-import org.j2free.admin.Marshaller;
+import org.j2free.admin.ReflectionMarshaller;
 
 /**
  * @author Ryan Wilson 
@@ -43,7 +43,7 @@ public class Reflection {
         if (klass.getAnnotation(Entity.class) == null)
             return null;
         
-        Marshaller marshaller = Marshaller.getForClass(klass);
+        ReflectionMarshaller marshaller = ReflectionMarshaller.getForClass(klass);
         if (marshaller == null)
             return "unknown";
         else

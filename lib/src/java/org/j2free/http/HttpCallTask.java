@@ -14,6 +14,9 @@ import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.httpclient.Header;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.j2free.security.SecurityUtils;
 import org.j2free.util.KeyValuePair;
 import org.j2free.util.Priority;
 
@@ -26,20 +29,22 @@ import org.j2free.util.Priority;
 @ThreadSafe
 public class HttpCallTask implements Comparable<HttpCallTask> {
 
+    private static final Log log = LogFactory.getLog(HttpCallTask.class);
+
     public static enum Method {
         GET,
         POST
     };
 
-    public final Method method;
+    protected final Method method;
 
     private final List<KeyValuePair<String,String>> queryParams;
     private final List<Header> requestHeaders;
 
-    public final String url;
-    public final boolean followRedirects;
-    public final Priority priority;
-    public final long created;
+    protected final String url;
+    protected final boolean followRedirects;
+    protected final Priority priority;
+    protected final long created;
 
     /**
      * Equivalent to:
@@ -113,11 +118,41 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         queryParams.addAll(params);
     }
 
-    public synchronized List<KeyValuePair<String,String>> getQueryParams() {
+    /**
+     * "Signs" the request with a SHA1 hash of the parameters concatenated
+     * with the specified secret key.
+     *
+     * NOTE: This method must be called LAST, since it does not check to see
+     * if this instance was already signed, and will not automatically resign
+     * the request if new parameters are added later.
+     * 
+     * @param secretKey
+     */
+    public synchronized void signRequest(String secretKey) {
+        StringBuilder sb = new StringBuilder();
+
+        boolean first = true;
+        for (KeyValuePair param : queryParams) {
+            if (first) {
+                first = false;
+            } else {
+                sb.append("&");
+            }
+            sb.append(param.key + "=" + param.value);
+        }
+
+        sb.append(secretKey);
+
+        log.debug("Sig string: " + sb.toString());
+
+        addQueryParam("sig", SecurityUtils.SHA1(sb.toString()));
+    }
+
+    protected synchronized List<KeyValuePair<String,String>> getQueryParams() {
         return Collections.unmodifiableList(queryParams);
     }
 
-    public synchronized List<Header> getRequestHeaders() {
+    protected synchronized List<Header> getRequestHeaders() {
         return Collections.unmodifiableList(requestHeaders);
     }
 
@@ -140,5 +175,30 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
             return c;
 
         return Float.valueOf(Math.signum(other.created - this.created)).intValue();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder(url);
+
+        // Only append the params for GET requests
+        if (method == Method.GET) {
+            if (!queryParams.isEmpty()) {
+                b.append("?");
+                boolean first = true;
+                for (KeyValuePair param : queryParams) {
+                    if (first)
+                        first = false;
+                    else
+                        b.append("&");
+
+                    b.append(param.key);
+                    b.append("=");
+                    b.append(param.value);
+                }
+            }
+        }
+
+        return b.toString();
     }
 }

@@ -80,7 +80,7 @@ import static org.j2free.util.Constants.*;
  *  - <tt>StaticJspServlet</tt>
  *  - <tt>LogoutServlet</tt>
  *  - <tt>ProxyServlet</tt>
- *  - <tt>J2FreeAdminServlet</tt>
+ *  - <tt>EntityAdminServlet</tt>
  *  - <tt>Fragment Caching</tt>
  *  - <tt>Task ScheduledExecutorService</tt>
  *  - <tt>SimpleEmailService</tt>
@@ -302,7 +302,7 @@ public class ConfigurationListener implements ServletContextListener {
 
         // Admin Servlet
         if (config.getBoolean(PROP_SERVLET_ADMIN_ON, false))
-            addServletMapping(config, PROP_SERVLET_ADMIN_PATH, DEFAULT_ADMIN_PATH, J2FreeAdminServlet.class);
+            addServletMapping(config, PROP_SERVLET_ADMIN_PATH, DEFAULT_ADMIN_PATH, EntityAdminServlet.class);
 
         // Fragment Cache Configuration
         if (config.getBoolean(FragmentCache.Properties.ENABLED, false)) {

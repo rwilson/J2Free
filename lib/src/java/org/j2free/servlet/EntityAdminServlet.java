@@ -1,5 +1,5 @@
 /*
- * J2FreeAdminServlet.java
+ * EntityAdminServlet.java
  *
  * Created on April 3, 2008, 1:07 AM
  *
@@ -21,7 +21,10 @@
 package org.j2free.servlet;
 
 import java.io.*;
-import java.lang.reflect.Field;
+
+import java.lang.reflect.Constructor;
+
+import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +35,14 @@ import javax.servlet.http.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 
 import org.j2free.annotations.ServletConfig;
 import org.j2free.admin.Marshaller;
 import org.j2free.admin.MarshallingException;
+import org.j2free.admin.ReflectionMarshaller;
 import org.j2free.jpa.Controller;
 import org.j2free.util.CharArrayWrapper;
 import org.j2free.util.ServletUtils;
@@ -48,35 +53,34 @@ import org.j2free.util.ServletUtils;
  * @version
  */
 @ServletConfig
-public class J2FreeAdminServlet extends HttpServlet {
+public class EntityAdminServlet extends HttpServlet {
     
-    private static Log log = LogFactory.getLog(J2FreeAdminServlet.class);
+    private static Log log = LogFactory.getLog(EntityAdminServlet.class);
     
     private static TreeMap<String,Class> entityLookup;
-    
-    private static final String DISPATCH_ADMIN_JSP       = "/WEB-INF/j2free/jsp/Admin.jsp";
-    private static final String DISPATCH_ENTITY_LIST     = "/WEB-INF/j2free/jsp/EntityList.jsp";
-    private static final String DISPATCH_ENTITY_SELECTOR = "/WEB-INF/j2free/jsp/EntityBrowser.jsp";
-    private static final String DISPATCH_ENTITY_EDIT     = "/WEB-INF/j2free/jsp/EntityEdit.jsp";
-    private static final String DISPATCH_ENTITY_INSPECT  = "/WEB-INF/j2free/jsp/EntityInspect.jsp";
-    private static final String DISPATCH_ENTITY_CREATE   = "/WEB-INF/j2free/jsp/EntityCreate.jsp";
+
+    private static class Dispatch {
+        private static final String ADMIN_JSP       = "/WEB-INF/j2free/jsp/Admin.jsp";
+        
+        private static final String ENTITY_LIST     = "/WEB-INF/j2free/jsp/EntityList.jsp";
+        private static final String ENTITY_SELECTOR = "/WEB-INF/j2free/jsp/EntityBrowser.jsp";
+        private static final String ENTITY_EDIT     = "/WEB-INF/j2free/jsp/EntityEdit.jsp";
+        private static final String ENTITY_INSPECT  = "/WEB-INF/j2free/jsp/EntityInspect.jsp";
+        private static final String ENTITY_CREATE   = "/WEB-INF/j2free/jsp/EntityCreate.jsp";
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         
         String url = request.getRequestURL().toString();
-        if (!url.endsWith("/")) {
-            response.sendRedirect(url + "/");
-            return;
-        }
         
         if (entityLookup == null) {
             entityLookup = new TreeMap<String,Class>();
             snoopEntities();
         }
         
-        request.setAttribute("availableEntities",entityLookup.values());
+        request.setAttribute("availableEntities", entityLookup.values());
 /*
         if (action.equalsIgnoreCase("create")) {
             action = ACTION_CREATE;
@@ -119,7 +123,7 @@ public class J2FreeAdminServlet extends HttpServlet {
         } else { }
  */
         
-        request.getRequestDispatcher(DISPATCH_ADMIN_JSP).forward(request,response);
+        request.getRequestDispatcher(Dispatch.ADMIN_JSP).forward(request,response);
     }
 
     @Override
@@ -129,7 +133,7 @@ public class J2FreeAdminServlet extends HttpServlet {
         Controller controller = Controller.get(); // Get the controller associated with the current thread;
         
         String uri = request.getRequestURI();
-        uri = uri.replaceAll("/j2free/","");
+        uri = uri.replaceFirst(".*?/(list|find|inspect|create|save|update|delete)", "$1"); // chop off the part before what we care about
         String path[] = uri.split("/");
         
         log.debug(uri);
@@ -159,40 +163,33 @@ public class J2FreeAdminServlet extends HttpServlet {
                     return;
                 }
                 
-                Marshaller marshaller = Marshaller.getForClass(klass);
+                Marshaller marshaller = ReflectionMarshaller.getForClass(klass);
                 
                 int start = ServletUtils.getIntParameter(request,"start",0);
                 int limit = ServletUtils.getIntParameter(request,"limit",100);
-                
-                Field  entityIdField     = marshaller.getEntityIdField();
-                
-                if (entityIdField == null) {
-                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-                    return;
-                }
-                
-                String entityIdFieldName = entityIdField.getName();
                 
                 List entities;
                 if (path.length == 3) {
                     String[] stringIds = path[2].split(",");
                     Object[] ignoredIds = new Object[stringIds.length];
-                    
+
+                    Class idType = marshaller.getIdType();
+
                     // NOTE: this will only work with integer entityIds
-                    if (entityIdField.getType() == Integer.class) {
+                    if (idType == Integer.class) {
                         for (int i = 0; i < stringIds.length; i++)
                             ignoredIds[i] = Integer.parseInt(stringIds[i]);
-                    } else if (entityIdField.getType() == String.class) {
+                    } else if (idType == String.class) {
                         for (int i = 0; i < stringIds.length; i++)
                             ignoredIds[i] = stringIds[i];
-                    } else if (entityIdField.getType() == Long.class) {
+                    } else if (idType == Long.class) {
                         for (int i = 0; i < stringIds.length; i++)
                             ignoredIds[i] = Long.parseLong(stringIds[i]);
                     }
                     
-                    entities = controller.listByCriterions(klass,start,limit,Order.asc(entityIdFieldName),Restrictions.not(Restrictions.in(entityIdFieldName,ignoredIds)));
+                    entities = controller.listByCriterions(klass,start,limit,Order.asc(marshaller.getIdName()),Restrictions.not(Restrictions.in(marshaller.getIdName(),ignoredIds)));
                 } else
-                    entities = controller.listByCriterions(klass,start,limit,Order.asc(entityIdFieldName));
+                    entities = controller.listByCriterions(klass, start, limit, Order.asc(marshaller.getIdName()));
                 
                 TreeMap<String,Object> entityMap = new TreeMap<String,Object>();
                 for (Object obj : entities) {
@@ -209,9 +206,9 @@ public class J2FreeAdminServlet extends HttpServlet {
                 request.setAttribute("entities",entityMap);
                 
                 if (ServletUtils.getBooleanParameter(request,"selector",false))
-                    rd = request.getRequestDispatcher(DISPATCH_ENTITY_SELECTOR);
+                    rd = request.getRequestDispatcher(Dispatch.ENTITY_SELECTOR);
                 else
-                    rd = request.getRequestDispatcher(DISPATCH_ENTITY_LIST);
+                    rd = request.getRequestDispatcher(Dispatch.ENTITY_LIST);
                 
             } catch (Exception e) {
                 log.error("Error listing entities",e);
@@ -234,17 +231,17 @@ public class J2FreeAdminServlet extends HttpServlet {
                     return;
                 }
                 
-                Marshaller marshaller = Marshaller.getForClass(klass);
+                Marshaller marshaller = ReflectionMarshaller.getForClass(klass);
                 
-                Object entity = controller.findPrimaryKey(klass,marshaller.asEntityIdType(path[2]));
+                Object entity = controller.findPrimaryKey(klass, marshaller.asIdType(path[2]));
                 request.setAttribute("entity",entity);
                 request.setAttribute("entityId",marshaller.extractId(entity));
                 request.setAttribute("fields",marshaller.marshallOut(entity,true));
                 
                 if (path[0].equals("find"))
-                    rd = request.getRequestDispatcher(DISPATCH_ENTITY_EDIT);
+                    rd = request.getRequestDispatcher(Dispatch.ENTITY_EDIT);
                 else
-                    rd = request.getRequestDispatcher(DISPATCH_ENTITY_INSPECT);
+                    rd = request.getRequestDispatcher(Dispatch.ENTITY_INSPECT);
                 
             } catch (Exception e) {
                 log.error("error finding entity",e);
@@ -267,14 +264,17 @@ public class J2FreeAdminServlet extends HttpServlet {
                     return;
                 }
                                 
-                Marshaller marshaller = Marshaller.getForClass(klass);
+                Marshaller marshaller = ReflectionMarshaller.getForClass(klass);
+
+                Constructor zeroArgsConst = klass.getConstructor();
+                if (!zeroArgsConst.isAccessible()) zeroArgsConst.setAccessible(true);
+
+                Object entity = zeroArgsConst.newInstance();
+                request.setAttribute("simpleName", klass.getSimpleName());
+                request.setAttribute("package", klass.getPackage().getName() + ".");
+                request.setAttribute("fields", marshaller.marshallOut(entity,true));
                 
-                Object entity = klass.newInstance();
-                request.setAttribute("simpleName",klass.getSimpleName());
-                request.setAttribute("package",klass.getPackage().getName() + ".");
-                request.setAttribute("fields",marshaller.marshallOut(entity,true));
-                
-                rd = request.getRequestDispatcher(DISPATCH_ENTITY_CREATE);
+                rd = request.getRequestDispatcher(Dispatch.ENTITY_CREATE);
                 
             } catch (Exception e) {
                 log.error("error creating entity",e);
@@ -301,7 +301,7 @@ public class J2FreeAdminServlet extends HttpServlet {
                     return;
                 }
                 
-                marshaller = Marshaller.getForClass(klass);
+                marshaller = ReflectionMarshaller.getForClass(klass);
                 
                 Object entity = klass.newInstance();
                 
@@ -316,13 +316,13 @@ public class J2FreeAdminServlet extends HttpServlet {
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     
                     // need this to display dates in the DB stored format
-                    entity = controller.findPrimaryKey(klass,marshaller.extractId(entity));
+                    entity = controller.findPrimaryKey(klass, marshaller.extractId(entity));
                     
-                    request.setAttribute("entity",entity);
-                    request.setAttribute("entityId",marshaller.extractId(entity));
-                    request.setAttribute("fields",marshaller.marshallOut(entity,true));
+                    request.setAttribute("entity", entity);
+                    request.setAttribute("entityId", marshaller.extractId(entity));
+                    request.setAttribute("fields", marshaller.marshallOut(entity,true));
                     
-                    rd = request.getRequestDispatcher(DISPATCH_ENTITY_EDIT);
+                    rd = request.getRequestDispatcher(Dispatch.ENTITY_EDIT);
                 }
                 
             } catch (MarshallingException e) {
@@ -354,9 +354,9 @@ public class J2FreeAdminServlet extends HttpServlet {
                     return;
                 }
                 
-                Marshaller marshaller = Marshaller.getForClass(klass);
+                Marshaller marshaller = ReflectionMarshaller.getForClass(klass);
                 
-                Object entity = controller.findPrimaryKey(klass,marshaller.asEntityIdType(path[2]));
+                Object entity = controller.findPrimaryKey(klass,marshaller.asIdType(path[2]));
                 
                 entity = marshaller.marshallIn(entity,request.getParameterMap(),controller);
                 
@@ -375,7 +375,7 @@ public class J2FreeAdminServlet extends HttpServlet {
                     request.setAttribute("entityId",marshaller.extractId(entity));
                     request.setAttribute("fields",marshaller.marshallOut(entity,true));
                     
-                    rd = request.getRequestDispatcher(DISPATCH_ENTITY_EDIT);
+                    rd = request.getRequestDispatcher(Dispatch.ENTITY_EDIT);
                 }
                 
             } catch (MarshallingException e) {
@@ -408,9 +408,9 @@ public class J2FreeAdminServlet extends HttpServlet {
                     return;
                 }
                 
-                Marshaller marshaller = Marshaller.getForClass(klass);
+                Marshaller marshaller = ReflectionMarshaller.getForClass(klass);
                 
-                Object entity = controller.findPrimaryKey(klass,marshaller.asEntityIdType(path[2]));
+                Object entity = controller.findPrimaryKey(klass,marshaller.asIdType(path[2]));
                 
                 controller.remove(entity);
                 entity = null;
@@ -455,7 +455,7 @@ public class J2FreeAdminServlet extends HttpServlet {
          * you want.  It's not the best way for this process, but still pretty
          * fucking cool.
         try {
-            ClassLoader cl = J2FreeAdminServlet.class.getClassLoader();
+            ClassLoader cl = EntityAdminServlet.class.getClassLoader();
             Class clClass  = cl.getClass();
             while (clClass != java.lang.ClassLoader.class) {
                 clClass = clClass.getSuperclass();

@@ -24,13 +24,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.j2free.jpa.Controller;
 import org.j2free.security.SecurityUtils;
 
 import static org.j2free.util.Constants.*;
@@ -309,22 +307,21 @@ public class ServletUtils {
      * @param a request object
      * @param a secret key
      */
-    public static boolean isAuthenticatedRequest(HttpServletRequest request, String key) {
+    public static boolean isAuthenticatedRequest(HttpServletRequest request, String secret) {
+
         String query = request.getQueryString();
-        if (query != null) {
-            int pos = query.lastIndexOf("&sig=");
-            if (pos != -1) {
-                query = query.replaceFirst("&sig=.{40}", EMPTY);
-                query = query + key;
-                String sig = request.getParameter("sig");
-                try {
-                    return SecurityUtils.SHA1(query).equals(sig);
-                } catch (Exception ex) {
-                    return false;
-                }
-            }
-        }
-        return false;
+        String sig   = getStringParameter(request, "sig");
+
+        if (StringUtils.isBlank(query) || StringUtils.isBlank(sig))
+            return false;
+
+        query = query.replace("&sig=" + sig, EMPTY);
+        
+        return signQueryString(query, secret).equals(sig);
+    }
+
+    public static String signQueryString(String query, String secret) {
+        return SecurityUtils.SHA1(query + secret);
     }
 
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination)
@@ -699,6 +696,14 @@ public class ServletUtils {
         return String.format("%s%s%s", quote, toQuote.replace(Character.toString(quote), "\\" + quote), quote);
     }
 
+    public static String escapeSingleQuotes(String text) {
+        return text.replaceAll("'","\\\\'");
+    }
+
+    public static String escapeDoubleQuotes(String text) {
+        return text.replaceAll("\"","\\\\\"");
+    }
+
     /**
      * Appends a newline char to the end of the string and returns it.
      */
@@ -872,15 +877,16 @@ public class ServletUtils {
      * @param correctPassword
      * @return
      */
-    public static boolean basicAuthAuthentication(HttpServletRequest request, String correctUsername,
-                                                  String correctPassword) {
+    public static boolean basicAuthentication(HttpServletRequest req, String correctUsername, String correctPassword) {
+
         boolean valid = false;
+        
         String userID = null;
         String password = null;
 
         // Get the Authorization header, if one was supplied
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = req.getHeader("Authorization");
         if (authHeader != null) {
             StringTokenizer st = new StringTokenizer(authHeader);
             if (st.hasMoreTokens()) {

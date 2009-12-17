@@ -95,7 +95,7 @@ final class ServiceChain {
         // polymorphically referencable as a Servicable.
         final Servicable link = next == null ? endPoint : next;
 
-        boolean release = false;                            // Holds whether we need to release the Controller here
+        boolean release = false;                                // Holds whether we need to release the Controller here
 
         try {
 
@@ -114,10 +114,23 @@ final class ServiceChain {
                 // If the Servicable requires a Controller and we don't have one,
                 // then blow up loudly because all resources futher down the chain
                 // will be expecting a Controller and we can't provide that.
-                if (controller == null || !controller.isTransactionOpen())
-                    throw new ServletException("Error providing required Controller to " + link.getName());
-                else
+                if (controller == null) {
+                    throw new ServletException(
+                                String.format(
+                                    "Error providing required Controller to %s, [cause=NULL, release=%b]",
+                                    link.getName(), release
+                                )
+                            );
+                } else if (!controller.isTransactionOpen()) {
+                    throw new ServletException(
+                                String.format(
+                                    "Error providing required Controller to %s, [cause=NO TXL, release=%b]",
+                                    link.getName(), release
+                                )
+                            );
+                } else {
                     request.setAttribute(Controller.ATTRIBUTE_KEY, controller); // But if we got it, set it as a req attribute
+                }
             }
 
             if (log.isTraceEnabled()) {

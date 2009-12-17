@@ -18,7 +18,6 @@ import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
 
 import org.j2free.util.ServletUtils;
-import static org.j2free.util.ServletUtils.*;
 
 /**
  *
@@ -51,11 +50,11 @@ public class StandardExtensions {
     }
     
     public static String escapeSingleQuotes(String text) {
-        return text.replaceAll("'","\\\\'");
+        return ServletUtils.escapeSingleQuotes(text);
     }
 
     public static String escapeDoubleQuotes(String text) {
-        return text.replaceAll("\"","\\\\\"");
+        return ServletUtils.escapeDoubleQuotes(text);
     }
 
     public static String replaceAll(String text, String match, String replace) {

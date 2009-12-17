@@ -2,6 +2,55 @@
 Effect.Transitions.exponential = function(pos) {
     return 1 - Math.pow(1 - pos,2);
 }
+
+/* Version of move with patch for % positions */
+Effect.Move = Class.create(Effect.Base, {
+  initialize: function(element) {
+    this.element = $(element);
+    if (!this.element) throw(Effect._elementDoesNotExistError);
+    var options = Object.extend({
+      x:    0,
+      y:    0,
+      mode: 'relative'
+    }, arguments[1] || { });
+    this.start(options);
+  },
+  setup: function() {
+    this.element.makePositioned();
+
+    var dims = J2Free.getPageSize();
+
+    var orig = this.element.getStyle('left') || '0';
+    if (orig.match(/\d+%$/)) {
+        orig = orig.replace(/%/,"");
+        this.originalLeft = (parseFloat(orig) / 100) * dims.pageWidth;
+    } else {
+        this.originalLeft = parseFloat(this.element.getStyle('left') || '0');
+    }
+
+    orig = this.element.getStyle('top') || '0';
+    if (orig.match(/\d+%$/)) {
+        orig = orig.replace(/%/,"");
+        this.originalTop = (parseFloat(orig) / 100) * dims.pageHeight;
+    } else {
+        this.originalTop = parseFloat(this.element.getStyle('top')  || '0');
+    }
+
+    if (this.options.mode == 'absolute') {
+      this.options.x = this.options.x - this.originalLeft;
+      this.options.y = this.options.y - this.originalTop;
+    }
+  },
+  update: function(position) {
+    this.element.setStyle({
+      left: (this.options.x  * position + this.originalLeft).round() + 'px',
+      top:  (this.options.y  * position + this.originalTop).round()  + 'px'
+    });
+  }
+});
+
+
+/*  Not used right now ...
 Effect.Transitions.exponentialReverse = function(pos) {
     return Math.pow(pos,2);
 }
@@ -74,9 +123,13 @@ Effect.BlindRight = function(element) {
         scaleMode: {originalHeight: elementDimensions.height, originalWidth: elementDimensions.width},
         restoreAfterFinish: true,
         afterSetup: function(effect) {
-            effect.element.makeClipping().setStyle({width: '0px'}).show(); 
+            effect.element.makeClipping().setWidth('0px').show();
+            if (effect.options.hideContents) 
+                effect.element.childElements().invoke('hide');
         },  
         afterFinishInternal: function(effect) {
+            if (effect.options.hideContents) 
+                effect.element.childElements().invoke('show');
             effect.element.undoClipping();
         }
     }, arguments[1] || {}));
@@ -126,6 +179,8 @@ Effect.Bounce = function(element) {
             if (effect.options.repeat > 0) {
                 return new Effect.Bounce(effect.element,effect.options.repeat, effect.options);
             }
+
+            return null;
         }
     }, arguments[2] || { });
     return new Effect.BounceOnce(element,options);
@@ -171,12 +226,13 @@ BezierCurve = Class.create({
         }
     }
 });
-
+*/
 /* Curve Can accept any curve object that implements x(pos) and y(pos) methods
  * to return the next position to move to.
  */
 /* The responsibility for defining the curve lies on the user.
  */
+/* Not Used
 Effect.Curve = Class.create(Effect.Base, {
     initialize: function(element) {
         this.element = $(element);
@@ -201,29 +257,29 @@ Effect.Curve = Class.create(Effect.Base, {
         });
     }
 });
-
+*/
 /* CurveTo Can accept any curve object that implements x(pos) and y(pos) methods
  * to return the next position to move to.
- */
-/* This method handles the responsibility for creating the curve following the 
+ *
+ * This method handles the responsibility for creating the curve following the
  * rule of 'always curve toward the middle of the page'.  It accepts arguments
  * for the start and end positions as well as the desired radius.  The radius is
  * not really the radius so much as it is a measurement of the distance from a 
  * straight line that the curve should follow.
+ *
+ *  pps = pixels per second, used to auto-calculate duration based on the
+ *        desired speed of movement.  Also utilizes min/maxDuration for
+ *        constraining the auto-calculated duration to a reasonable range.
+ *
+ * points = number of points to form the shape of the curve (currently
+ *          supporting only 3 or 4 points)
  */
+/* Not Used
 Effect.CurveTo = Class.create(Effect.Base, {
     initialize: function(element) {
         this.element = $(element);
         if (!this.element) throw(Effect._elementDoesNotExistError);
         
-        /*  pps = pixels per second, used to auto-calculate duration based on the
-         *        desired speed of movement.  Also utilizes min/maxDuration for
-         *        constraining the auto-calculated duration to a reasonable range.
-         *
-         * points = number of points to form the shape of the curve (currently
-         *          supporting only 3 or 4 points)
-         */
-
         var options = Object.extend({
             // for curving
             scale: true,
@@ -286,21 +342,23 @@ Effect.CurveTo = Class.create(Effect.Base, {
 
         if (xOff < options.radius) xOff = options.radius;
         if (yOff < options.radius) yOff = options.radius;
-            
-        /* Create a rectangle where start and end are two points, and the other
-         * two points are generated to form a rectangle toward the middle of the 
-         * page.
-         */
+
+        var xOffset, yOfset;
+
+        // Create a rectangle where start and end are two points, and the other
+        // two points are generated to form a rectangle toward the middle of the
+        // page.
+        //
         // if the shape is too narrow, things look funny, so there's a min width
         if (Math.abs(start.x - end.x) < options.radius) {
-            var xOffset = (q0 || q2) ? xOff * -1 : xOff;
-            var yOffset = (q0 || q1) ? yOff * -1 : yOff;
+            xOffset = (q0 || q2) ? xOff * -1 : xOff;
+            yOffset = (q0 || q1) ? yOff * -1 : yOff;
 
             if (start.y == end.y) {
-                /* starting and ending in the same place, so a curve for this would actually
-                 * be a triangle, not a rectangle.  Maybe work on this another day...
-                 * For now, do nothing, get out.
-                 */
+                // starting and ending in the same place, so a curve for this would actually
+                // be a triangle, not a rectangle.  Maybe work on this another day...
+                // For now, do nothing, get out.
+                //
                  return;
             } else {
                 if (options.points == 4) {
@@ -313,8 +371,8 @@ Effect.CurveTo = Class.create(Effect.Base, {
                 }
             }
         } else {
-            var xOffset = (q0 || q2) ? xOff * -1 : xOff;
-            var yOffset = (q0 || q1) ? yOff : yOff * -1;
+            xOffset = (q0 || q2) ? xOff * -1 : xOff;
+            yOffset = (q0 || q1) ? yOff : yOff * -1;
 
             if (Math.abs(start.y - end.y) < options.radius) {
                 if (options.points == 4) {
@@ -348,7 +406,7 @@ Effect.CurveTo = Class.create(Effect.Base, {
         if (this.options.debug) {
             $$('._curveDebugPoint').invoke('remove');
             $A(this.options.curve.C).each(function(c) {
-                var d = Element.createElement('div');
+                var d = new Element('div');
                 d.setStyle({
                     width: '4px',
                     height: '4px',
@@ -426,7 +484,7 @@ Effect.Shoot = function(shooter,target) {
     shooter = $(shooter);
     target = $(target);
     
-    var particle = document.createElement('div');
+    var particle = new Element('div');
     Element.extend(particle);
     particle.setStyle({
         backgroundColor: '#444',
@@ -451,4 +509,5 @@ Effect.Shoot = function(shooter,target) {
             effect.element.remove();
         }
     });
-}
+};
+*/

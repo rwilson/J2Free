@@ -55,28 +55,15 @@ final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallR
 
         HttpMethod method;
         
-        List<KeyValuePair<String, String>> params = task.getQueryParams();
         if (task.method == HttpCallTask.Method.GET) {
 
-            method = new GetMethod(task.url);
-
-            StringBuilder query = new StringBuilder();
-            
-            boolean first = true;
-            for (KeyValuePair<String, String> param : params) {
-                if (first) {
-                    query.append("?");
-                    first = false;
-                } else {
-                    query.append("&");
-                }
-                query.append(param.key + "=" + param.value);
-            }
+            method = new GetMethod(task.toString());
 
         } else {
 
             method = new PostMethod(task.url);
 
+            List<KeyValuePair<String, String>> params = task.getQueryParams();
             NameValuePair[] data = new NameValuePair[params.size()];
             
             int i = 0;
@@ -85,7 +72,7 @@ final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallR
                 i++;
             }
             
-            ((PostMethod) method).setRequestBody(data);
+            ( (PostMethod)method ).setRequestBody(data);
         }
 
         for (Header header : task.getRequestHeaders()) {
@@ -97,7 +84,7 @@ final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallR
         try {
 
             if (log.isDebugEnabled()) {
-                log.debug("Making HTTP call [url=" + task.url + "]");
+                log.debug("Making HTTP call [url=" + task.toString() + "]");
             }
 
             client.executeMethod(method);

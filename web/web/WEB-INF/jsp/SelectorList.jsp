@@ -1,8 +1,10 @@
 <%@page contentType="text/html"%>
 <%@page pageEncoding="UTF-8"%>
+
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@taglib uri="/WEB-INF/CollectionsExt" prefix="cx" %>
-<%@taglib uri="/WEB-INF/StandardExt" prefix="stdx" %>
+<%@taglib uri="http://tags.j2free.org/CollectionsExt" prefix="cx" %>
+<%@taglib uri="http://tags.j2free.org/StandardExt" prefix="stdx" %>
+
 <c:if test="${start == 0}">
     <div class="columnHeader">Select a${stdx:startsWithVowel(simpleName) ? 'n' : ''} ${simpleName}</div>
 </c:if>

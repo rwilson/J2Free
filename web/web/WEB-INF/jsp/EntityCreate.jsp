@@ -1,7 +1,8 @@
 <%@page contentType="text/html"%>
 <%@page pageEncoding="UTF-8"%>
+
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@taglib uri="/WEB-INF/StandardExt" prefix="stdx" %>
+<%@taglib uri="http://tags.j2free.org/StandardExt" prefix="stdx" %>
 
 <div class="columnHeader">Create a new ${simpleName}</div>
 <form name="entityForm">
@@ -12,8 +13,8 @@
                 <td>${field.name}</td>
                 <td>
                     <c:choose>
-                        <c:when test="${not empty field.entityClass}">
-                            <a href="javascript:void(0);" onclick="admin.list('col3','col4','${field.entityClass.simpleName}',0,100,true);">Choose a ${field.entityClass.simpleName}</a>
+                        <c:when test="${field.entity}">
+                            <a href="javascript:void(0);" onclick="admin.list('col3','col4','${field.type}',0,100,true);">Choose a ${field.type}</a>
                         </c:when>
                         <c:when test="${field.readOnly}"> 
                             <span style="color:#777">[Generated Value]</span>
