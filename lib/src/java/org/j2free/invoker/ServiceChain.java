@@ -35,33 +35,14 @@ final class ServiceChain {
 
     private final Log log = LogFactory.getLog(getClass());
 
-    private final Iterator<FilterMapping> mappings;
+    private final Iterator<FilterMapping> filters;
     private final String path;
     private final ServletMapping endPoint;
 
     public ServiceChain(Iterator<FilterMapping> filters, String path, ServletMapping endPoint) {
-        this.mappings = filters;
+        this.filters = filters;
         this.path     = path;
         this.endPoint = endPoint;
-    }
-
-    /**
-     * Equivalent to:
-     * <pre>
-     *      chain.service(request, response, null);
-     * </pre>
-     *
-     * @param request a Servlet request
-     * @param response a Servlet response
-     *
-     * @throws IOException
-     * @throws ServletException
-     */
-    public void service(ServletRequest request, ServletResponse response) throws IOException, ServletException {
-        if (log.isTraceEnabled()) {
-            log.trace("ServiceChain [path=" + path +", endPoint=" + endPoint.getName() + "]");
-        }
-        service(request, response, null);
     }
 
     /**
@@ -75,19 +56,19 @@ final class ServiceChain {
      * @throws IOException
      * @throws ServletException
      */
-    protected void service(ServletRequest request, ServletResponse response, FilterMapping last)
+    protected void service(ServletRequest request, ServletResponse response)
             throws IOException, ServletException {
         
         // Try to get the next filter on the current depth (we're overwriting
         // the param, since we only need it in the call to mappings.ceiting(mapping).
-        FilterMapping next = mappings.hasNext() ? mappings.next() : null;
+        FilterMapping next = filters.hasNext() ? filters.next() : null;
 
         // If we found one, skip past any that don't apply to this path
         while (next != null && !next.appliesTo(path)) {
             if (log.isTraceEnabled()) {
                 log.trace("Skipping filter [name=" + next.getName() + ", path=" + path + "]");
             }
-            next = mappings.hasNext() ? mappings.next() : null;
+            next = filters.hasNext() ? filters.next() : null;
         }
 
         // Set the link to be either the found filter or the endPoint,

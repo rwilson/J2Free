@@ -38,9 +38,6 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
     private final boolean reqCont;
     private final int depth;
 
-    // Need a final reference to "this", to reference inside the inline FilterChain below.
-    private final FilterMapping self;
-
     protected FilterMapping(Filter filter, FilterConfig config) {
         this(filter, config.mapping(), config.requireController());
     }
@@ -50,12 +47,12 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
         this.path    = path.replace("*", Constants.EMPTY); // trim the "*" off the end
         this.reqCont = requireController;
         this.depth   = this.path.split("/").length;
-
-        this.self    = this;
     }
 
     /**
-     * Orders FilterMappings their "depth"
+     * Orders FilterMappings their "depth" first, and alphabetically
+     * by their path second.
+     * 
      * @param o
      * @return
      */
@@ -65,7 +62,7 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
         } else if (this.depth > o.depth) {
             return 1;
         } else {
-            return 0;
+            return this.path.compareTo(o.path);
         }
     }
 
@@ -115,8 +112,8 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
     private FilterChain wrapChain(final ServiceChain chain) {
         return new FilterChain() {
                 public void doFilter(final ServletRequest req, final ServletResponse resp)
-                        throws IOException, ServletException {
-                        chain.service(req, resp, self);
+                    throws IOException, ServletException {
+                    chain.service(req, resp);
                 }
             };
     }

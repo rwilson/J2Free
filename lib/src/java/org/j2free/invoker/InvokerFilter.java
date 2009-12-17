@@ -191,6 +191,9 @@ public final class InvokerFilter implements Filter {
             // This will block requests during configuration
             read.lock();
 
+            if (log.isTraceEnabled())
+                log.trace("InvokerFilter for path: " + path);
+
             // Try to get an explicit mapping from the whole URL to a class
             Class<? extends HttpServlet> klass = urlMap.get(path);
 
@@ -208,14 +211,10 @@ public final class InvokerFilter implements Filter {
              */
             if (klass == null && !path.matches(bypassPath.get())) {
 
-                if (log.isTraceEnabled())
-                    log.trace("InvokerFilter for path: " + path);
-
                 // (1) Look for *.ext wildcard matches
                 String partial;
 
-                // If the path contains a "." then check for the *.ext patterns
-                int index = path.lastIndexOf(".");
+                int index = path.lastIndexOf(".");          // If the path contains a "." then check for the *.ext patterns
                 if (index != -1) {
                     partial = "*" + path.substring(index); // gives us the *.<THE_EXTENSION>
                     klass = urlMap.get(partial);
@@ -335,6 +334,9 @@ public final class InvokerFilter implements Filter {
                     resolve = System.currentTimeMillis();
 
                     // Service the end-point on the chain
+                    if (log.isTraceEnabled()) {
+                        log.trace("ServiceChain [path=" + path +", endPoint=" + mapping.getName() + "]");
+                    }
                     new ServiceChain(filters.iterator(), path, mapping).service(request, response);
 
                     // Get the time after running
