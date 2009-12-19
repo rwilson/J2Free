@@ -141,14 +141,24 @@ public final class Controller {
 
         Controller controller = threadLocal.get();      // Get the controller associated with this Thread
 
-        if (controller == null && create) {             // If there wasn't one and the user requested one be created
-            // don't set the ThreadLocal until after we know the tx was opened successfully
-            try {
-                controller = new Controller();          // Try to create one...
-                controller.begin();                     // and start the transaction...
-                threadLocal.set(controller);            // and associate it with the current thread
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        if (create) {
+            if (controller == null) {                   // If there wasn't one and the user requested one be created
+                try {
+                    controller = new Controller();      // Try to create one...
+                    controller.begin();                 // and start the transaction...
+                    threadLocal.set(controller);        // and associate it with the current thread after we know the tx was opened successfully
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (!controller.isTransactionOpen()) {
+                try {
+                    threadLocal.remove();               // Remove the current Controller from the Thread (probably orphaned by a previous process)
+                    controller = new Controller();      // create a new one
+                    controller.begin();                 // start the transaction
+                    threadLocal.set(controller);        // and associate it with the current thread after we know the tx was opened successfully
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -210,7 +220,7 @@ public final class Controller {
         InitialContext ctx = new InitialContext();
         
         tx = (UserTransaction) ctx.lookup("UserTransaction");
-        em = (EntityManager) ctx.lookup("java:comp/env/persistence/EntityManager");
+        em = (EntityManager  ) ctx.lookup("java:comp/env/persistence/EntityManager");
 
         problem = null;
     }

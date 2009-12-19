@@ -105,7 +105,7 @@ final class ServiceChain {
                 } else if (!controller.isTransactionOpen()) {
                     throw new ServletException(
                                 String.format(
-                                    "Error providing required Controller to %s, [cause=NO TXL, release=%b]",
+                                    "Error providing required Controller to %s, [cause=NO TX, release=%b]",
                                     link.getName(), release
                                 )
                             );
