@@ -109,16 +109,29 @@ public final class Controller {
     /**
      * @param create if true, and there is not already a Controller associated
      *        with this <tt>Thread</tt>, a new Controller will be created. 
-     *        <tt>null</tt> will never be returned if create == <tt>true</tt>
      * 
-     * @return The <tt>Controller</tt> associated with the current <tt>Thread</tt>.
-     *         If there wasn't one, and <tt>create</tt> is true, then a new
-     *         <tt>Controller</tt> will be created and associated with the current
-     *         <tt>Thread</tt>.  If <tt>create</tt> is false, null will be returned
-     *         if there was not already a <tt>Controller</tt> associated with this
-     *         <tt>Thread</tt>.
+     * @return The <tt>Controller</tt> associated with the current <tt>Thread</tt>
+     *         with an active <tt>UserTransaction</tt> open. If there wasn't a
+     *         <tt>Controller</tt> with this thread and <tt>create</tt> is true, 
+     *         then a new <tt>Controller</tt> will be created and associated with 
+     *         the current <tt>Thread</tt>.  If <tt>create</tt> is false, 
+     *         <tt>null</tt> will be returned if there was not already a 
+     *         <tt>Controller</tt> associated with the current <tt>Thread</tt>.
      *
-     * @throws RuntimeException if there is an error creating the controller
+     *         On the whole, this function guarantees to do one of four things:
+     *         If <tt>create == false</tt>:
+     *             - return a <tt>Controller</tt> with an open transaction that was 
+     *               previously created and associated with the current thread.
+     *             - return null, if no code previously called <tt>get(true)</tt>
+     *         If <tt>create == true</tt>:
+     *             - return a <tt>Controller</tt> with an open transaction that was 
+     *               created as a result of this call to <tt>get(true)</tt>
+     *             - throw a <tt>RuntimeException</tt>, if a new <tt>Controller</tt>
+     *               could not be created, or if there was an exception thrown while
+     *               starting a transaction in the new <tt>Controller</tt>
+     *
+     * @throws RuntimeException if create is <tt>true</tt> and there is an error
+     *         creating the controller
      *
      * Exceptions normally thrown by beginning a UserTransaction are laundered
      * from checked exceptions to unchecked RuntimeExceptions so that code calling
@@ -139,26 +152,23 @@ public final class Controller {
      */
     public static Controller get(boolean create) {
 
-        Controller controller = threadLocal.get();      // Get the controller associated with this Thread
+        Controller controller = threadLocal.get();  // Get the controller associated with this Thread
 
-        if (create) {
-            if (controller == null) {                   // If there wasn't one and the user requested one be created
-                try {
-                    controller = new Controller();      // Try to create one...
-                    controller.begin();                 // and start the transaction...
-                    threadLocal.set(controller);        // and associate it with the current thread after we know the tx was opened successfully
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            } else if (!controller.isTransactionOpen()) {
-                try {
-                    threadLocal.remove();               // Remove the current Controller from the Thread (probably orphaned by a previous process)
-                    controller = new Controller();      // create a new one
-                    controller.begin();                 // start the transaction
-                    threadLocal.set(controller);        // and associate it with the current thread after we know the tx was opened successfully
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+        if (controller != null) {
+            if (controller.isTransactionOpen()) {
+                return controller;                  // short-circuit, saves a branch
+            } else {
+                threadLocal.remove();               // Sanity check, make sure an old controller isn't stuck on the Thread
+                controller = null;
+            }
+        }
+                                                    // At this point, controller == null
+        if (create) {                               // If the user requested one be created
+            try {
+                controller = new Controller(true);  // Try to create one... (specify true to start the TX)
+                threadLocal.set(controller);        // and associate it with the current thread after we know the tx was opened successfully
+            } catch (Exception e) {
+                throw new RuntimeException(e);      // Wrap any problems in a RuntimeException
             }
         }
 
@@ -175,9 +185,12 @@ public final class Controller {
      */
     public static Controller getIsolatedInstance() {
         try {
-            return new Controller();
-        } catch (NamingException ne) {
-            throw new RuntimeException("Error creating isolated Controller", ne);
+            // Only NamingException will be caught here, since the constructor
+            // does not throw the other exceptions unless true is specified as
+            // the argument.
+            return new Controller(false);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating isolated Controller", e);
         }
     }
 
@@ -215,7 +228,7 @@ public final class Controller {
     protected Throwable problem;
     protected InvalidValue[] errors;
 
-    private Controller() throws NamingException {
+    private Controller(boolean beginTX) throws NamingException, NotSupportedException, SystemException {
 
         InitialContext ctx = new InitialContext();
         
@@ -223,6 +236,10 @@ public final class Controller {
         em = (EntityManager  ) ctx.lookup("java:comp/env/persistence/EntityManager");
 
         problem = null;
+
+        if (beginTX) {
+            begin();
+        }
     }
 
     /**
@@ -237,6 +254,85 @@ public final class Controller {
      */
     public EntityManager getEntityManager() {
         return em;
+    }
+
+    /**
+     * Begins the container managed <tt>UserTransaction</tt> and clears fields used to
+     * store problems / errors.
+     *
+     * @throws NotSupportedException
+     * @throws SystemException
+     */
+    public void begin() throws NotSupportedException, SystemException {
+
+        // Make sure a transaction isn't already in progress
+        if (tx.getStatus() == Status.STATUS_ACTIVE)
+            return;
+
+        // Start the transaction
+        tx.begin();
+
+        // make sure the entity manager knows the transaction has begun
+        em.joinTransaction();
+
+        // make sure that a transaction always starts clean
+        problem = null;
+        errors  = null;
+    }
+
+    /**
+     * Ends the contatiner managed <tt>UserTransaction</tt>, committing
+     * or rolling back as necessary.
+     *
+     * @throws SystemException
+     * @throws RollbackException
+     * @throws HeuristicMixedException
+     * @throws HeuristicRollbackException
+     */
+    public void end() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
+        try {
+
+            switch (tx.getStatus()) {
+                case Status.STATUS_MARKED_ROLLBACK:
+                    tx.rollback();
+                    break;
+                case Status.STATUS_ACTIVE:
+                    tx.commit();
+                    break;
+                case Status.STATUS_COMMITTED:
+                    // somebody called end() twice
+                    break;
+                case Status.STATUS_COMMITTING:
+                    log.warn("uh oh, concurrency problem! end() called when transaction already committing");
+                    break;
+                case Status.STATUS_ROLLEDBACK:
+                    // somebody called end() twice
+                    break;
+                case Status.STATUS_ROLLING_BACK:
+                    log.warn("uh oh, concurrency problem! end() called when transaction already rolling back");
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown status in endTransaction: " + getTransactionStatus());
+            }
+
+            problem = null;
+            errors  = null;
+
+        } catch (InvalidStateException ise) {
+            problem = ise;
+            this.errors = ise.getInvalidValues();
+        }
+    }
+
+    /**
+     * @return true if <tt>begin</tt> has been called, otherwise false
+     */
+    public boolean isTransactionOpen() {
+        try {
+            return tx.getStatus() == Status.STATUS_ACTIVE;
+        } catch (SystemException ex) {
+            return false;
+        }
     }
 
     /**
@@ -309,85 +405,6 @@ public final class Controller {
             fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
         }
         return fullTextEntityManager;
-    }
-
-    /**
-     * Begins the container managed <tt>UserTransaction</tt> and clears fields used to
-     * store problems / errors.
-     *
-     * @throws NotSupportedException
-     * @throws SystemException
-     */
-    public void begin() throws NotSupportedException, SystemException {
-        
-        // Make sure a transaction isn't already in progress
-        if (tx.getStatus() == Status.STATUS_ACTIVE)
-            return;
-
-        // Start the transaction
-        tx.begin();
-
-        // make sure the entity manager knows the transaction has begun
-        em.joinTransaction();
-
-        // make sure that a transaction always starts clean
-        problem = null;
-        errors  = null;
-    }
-
-    /**
-     * Ends the contatiner managed <tt>UserTransaction</tt>, committing
-     * or rolling back as necessary.
-     *
-     * @throws SystemException
-     * @throws RollbackException
-     * @throws HeuristicMixedException
-     * @throws HeuristicRollbackException
-     */
-    public void end() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
-        try {
-
-            switch (tx.getStatus()) {
-                case Status.STATUS_MARKED_ROLLBACK:
-                    tx.rollback();
-                    break;
-                case Status.STATUS_ACTIVE:
-                    tx.commit();
-                    break;
-                case Status.STATUS_COMMITTED:
-                    // somebody called end() twice
-                    break;
-                case Status.STATUS_COMMITTING:
-                    log.warn("uh oh, concurrency problem! end() called when transaction already committing");
-                    break;
-                case Status.STATUS_ROLLEDBACK:
-                    // somebody called end() twice
-                    break;
-                case Status.STATUS_ROLLING_BACK:
-                    log.warn("uh oh, concurrency problem! end() called when transaction already rolling back");
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown status in endTransaction: " + getTransactionStatus());
-            }
-
-            problem = null;
-            errors  = null;
-            
-        } catch (InvalidStateException ise) {
-            problem = ise;
-            this.errors = ise.getInvalidValues();
-        }
-    }
-
-    /**
-     * @return true if <tt>begin</tt> has been called, otherwise false
-     */
-    public boolean isTransactionOpen() {
-        try {
-            return tx.getStatus() == Status.STATUS_ACTIVE;
-        } catch (SystemException ex) {
-            return false;
-        }
     }
 
     /**
