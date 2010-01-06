@@ -138,7 +138,9 @@ public class BatchInsert {
 
     private String wrapType(Object o, Class type) {
 
-        if (type == null || type.isPrimitive() || isNumberWrapperClass(type)) {
+        if (o == null)
+            return "NULL";
+        else if (type == null || type.isPrimitive() || isNumberWrapperClass(type)) {
             return o.toString();
         } else if (type.equals(Date.class)) {
             return String.format(
