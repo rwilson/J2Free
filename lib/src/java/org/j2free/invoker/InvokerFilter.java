@@ -178,7 +178,10 @@ public final class InvokerFilter implements Filter {
              finish  = 0;                           // finish time
 
         // Set cache-control based on content
-        if (path.matches(SHORT_CACHE_REGEX) && !path.contains(CAPTCHA_PATH)) {
+        if (Constants.RUN_MODE.compareTo(RunMode.PRODUCTION) == -1) { // dev mode
+            response.setHeader(HEADER_PRAGMA, "no-cache");
+            response.setHeader(HEADER_CACHE_CONTROL, "no-store");
+        } else if (path.matches(SHORT_CACHE_REGEX) && !path.contains(CAPTCHA_PATH)) {
             response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
             response.setHeader(HEADER_CACHE_CONTROL, SHORT_CACHE_VAL);
         } else if (path.matches(LONG_CACHE_REGEX)) {
