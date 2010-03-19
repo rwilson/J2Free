@@ -214,7 +214,7 @@ public class HoptoadNotifier
     }
 
     /**
-     * request/[url|component|action?|params/var?|session/var?|cgi-data/var@key?]?
+     * request/[url|component|action?|params/var?|session/var?|cgi-data/var?]?
      */
     private Element createRequestNode(Document d, HttpServletRequest request)
     {
@@ -222,36 +222,35 @@ public class HoptoadNotifier
 
         // <url>
         Element e = d.createElement("url");
-        e.appendChild( 
-            d.createTextNode(request.getRequestURL().toString())
-        );
+        e.appendChild(d.createTextNode(request.getRequestURL().toString()));
         node.appendChild(e);
 
         // <component>
         e = d.createElement("component");
-        e.appendChild( 
-            d.createTextNode(request.getRequestURI())
-        );
+        e.appendChild(d.createTextNode(request.getRequestURI()));
         node.appendChild(e);
 
         // <action>
 
         // <params>
-        e = d.createElement("params");
-        for (Map.Entry param : (Set<Map.Entry>)request.getParameterMap().entrySet())
+        Map params = request.getParameterMap();
+        if (params != null && !params.isEmpty())
         {
-            e.appendChild(
-                createVar(d, (String)param.getKey(), param.getValue().toString())
-            );
+            e = d.createElement("params");
+            for (Map.Entry param : (Set<Map.Entry>)params.entrySet())
+            {
+                e.appendChild(
+                    createVar(d, (String)param.getKey(), param.getValue().toString())
+                );
+            }
+            node.appendChild(e);
         }
-        node.appendChild(e);
 
         // <session>
-        e  = d.createElement("session");
-        
         HttpSession session = request.getSession();
         if (session != null)
         {
+            e = d.createElement("session");
             Enumeration attrNames = session.getAttributeNames();
             String name;
             while (attrNames.hasMoreElements())
@@ -261,25 +260,25 @@ public class HoptoadNotifier
                     createVar(d, name, session.getAttribute(name).toString())
                 );
             }
+            node.appendChild(e);
         }
-        node.appendChild(e);
 
         // <cgi-data>
         e = d.createElement("cgi-data");
         e.appendChild( 
-            createVar(d, "SERVER_NAME", request.getServerName())
+            createVar(d, "SERVER_NAME", request.getServerName() == null ? "null" : request.getServerName())
         );
         e.appendChild( 
-            createVar(d, "REMOTE_ADDR", request.getRemoteAddr())
+            createVar(d, "REMOTE_ADDR", request.getRemoteAddr() == null ? "null" : request.getRemoteAddr())
         );
         e.appendChild( 
-            createVar(d, "PATH_INFO", request.getPathInfo())
+            createVar(d, "PATH_INFO", request.getPathInfo() == null ? "null" : request.getPathInfo())
         );
         e.appendChild( 
-            createVar(d, "METHOD", request.getMethod())
+            createVar(d, "METHOD", request.getMethod() == null ? "null" : request.getMethod())
         );
         e.appendChild(
-            createVar(d, "USER-AGENT", request.getHeader("User-Agent"))
+            createVar(d, "USER-AGENT", request.getHeader("User-Agent") == null ? "null" : request.getHeader("User-Agent"))
         );
         node.appendChild(e);
 
