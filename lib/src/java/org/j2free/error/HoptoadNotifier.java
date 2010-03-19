@@ -1,5 +1,5 @@
 /*
- * HoptoadErrorReporter.java
+ * HoptoadNotifier.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
  */
@@ -40,7 +40,7 @@ import org.xml.sax.SAXException;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public class HoptoadErrorReporter
+public class HoptoadNotifier
 {
     private static final String NOTIFIER_VERSION = "0.1";
 
@@ -52,12 +52,12 @@ public class HoptoadErrorReporter
     private final String version;
     private final boolean validating;
 
-    public HoptoadErrorReporter(String token, String version)
+    public HoptoadNotifier(String token, String version)
     {
         this(token, version, false);
     }
 
-    public HoptoadErrorReporter(String token, String version, boolean validating)
+    public HoptoadNotifier(String token, String version, boolean validating)
     {
         this.token = token;
         this.version = version;

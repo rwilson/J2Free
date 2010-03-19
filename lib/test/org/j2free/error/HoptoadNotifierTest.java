@@ -13,11 +13,11 @@ import org.j2free.http.SimpleHttpService;
 /**
  * @author Ryan
  */
-public class HoptoadErrorReporterTest extends TestCase
+public class HoptoadNotifierTest extends TestCase
 {
-    private HoptoadErrorReporter instance;
+    private HoptoadNotifier instance;
 
-    public HoptoadErrorReporterTest(String testName)
+    public HoptoadNotifierTest(String testName)
     {
         super(testName);
     }
@@ -31,7 +31,7 @@ public class HoptoadErrorReporterTest extends TestCase
         ConsoleAppender appender = new ConsoleAppender(layout);
         BasicConfigurator.configure(appender);
 
-        instance = new HoptoadErrorReporter("c21f53900886af66b3d1de734bec7728", "2.0");
+        instance = new HoptoadNotifier("c21f53900886af66b3d1de734bec7728", "2.0");
 
         SimpleHttpService.init(1, 1, 60, 30, 30);
     }
@@ -45,7 +45,7 @@ public class HoptoadErrorReporterTest extends TestCase
     }
 
     /**
-     * Test of notify method, of class HoptoadErrorReporter.
+     * Test of notify method, of class HoptoadNotifier.
      */
     public void testNotify_Throwable()
     {
@@ -72,7 +72,7 @@ public class HoptoadErrorReporterTest extends TestCase
     }
 
     /**
-     * Test of notify method, of class HoptoadErrorReporter.
+     * Test of notify method, of class HoptoadNotifier.
      */
     public void testNotify_Throwable_String()
     {

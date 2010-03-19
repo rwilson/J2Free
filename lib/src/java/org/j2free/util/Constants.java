@@ -127,11 +127,6 @@ public class Constants {
     public static final String PROP_SERVLET_ADMIN_ON          = "servlet.admin.enabled";
     public static final String PROP_SERVLET_ADMIN_PATH        = "servlet.admin.path";
 
-    // hoptoad
-    public static final String PROP_HOPTOAD_ENABLED           = "hoptoad.enabled";
-    public static final String PROP_HOPTOAD_TOKEN             = "hoptoad.token";
-    public static final String PROP_HOPTOAD_APIVERSION        = "hoptoad.api.version";
-
     // Default config file location
     public static final String DEFAULT_CONFIG_PATH            = "config.xml";
 
