@@ -2,6 +2,18 @@
  * HttpCallTask.java
  *
  * Copyright (c) 2009 FooBrew, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.j2free.http;
 
@@ -27,11 +39,12 @@ import org.j2free.util.Priority;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public class HttpCallTask implements Comparable<HttpCallTask> {
-
+public class HttpCallTask implements Comparable<HttpCallTask>
+{
     private static final Log log = LogFactory.getLog(HttpCallTask.class);
 
-    public static enum Method {
+    public static enum Method
+    {
         GET,
         POST
     };
@@ -40,6 +53,8 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
 
     private final List<KeyValuePair<String,String>> queryParams;
     private final List<Header> requestHeaders;
+
+    private String postBody;
 
     protected final String url;
     protected final boolean followRedirects;
@@ -52,7 +67,8 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      *  HttpCallTask(HttpCallTask.Method.GET, url);
      * </pre>
      */
-    public HttpCallTask(String url) {
+    public HttpCallTask(String url)
+    {
         this(Method.GET, url);
     }
 
@@ -62,7 +78,8 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      *  HttpCallTask(HttpCallTask.Method.GET, url, false);
      * </pre>
      */
-    public HttpCallTask(Method method, String url) {
+    public HttpCallTask(Method method, String url)
+    {
         this(method, url, false);
     }
 
@@ -72,7 +89,8 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      *  HttpCallTask(HttpCallTask.Method.GET, url, false, Priority.DEFAULT);
      * </pre>
      */
-    public HttpCallTask(String url, Priority priority) {
+    public HttpCallTask(String url, Priority priority)
+    {
         this(Method.GET, url, false, priority);
     }
 
@@ -82,11 +100,13 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      *  HttpCallTask(HttpCallTask.Method.GET, url, false, Priority.DEFAULT);
      * </pre>
      */
-    public HttpCallTask(Method method, String url, boolean followRedirects) {
+    public HttpCallTask(Method method, String url, boolean followRedirects)
+    {
         this(method, url, followRedirects, Priority.DEFAULT);
     }
     
-    public HttpCallTask(Method method, String url, boolean followRedirects, Priority priority) {
+    public HttpCallTask(Method method, String url, boolean followRedirects, Priority priority)
+    {
         this.method          = method;
         this.url             = url;
         this.followRedirects = followRedirects;
@@ -95,26 +115,33 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
 
         this.queryParams     = new LinkedList<KeyValuePair<String,String>>();
         this.requestHeaders  = new LinkedList<Header>();
+
+        this.postBody        = null;
     }
 
-    public synchronized void addRequestHeader(Header header) {
+    public synchronized void addRequestHeader(Header header)
+    {
         requestHeaders.add(header);
     }
 
-    public synchronized void addQueryParam(String name, String value) {
+    public synchronized void addQueryParam(String name, String value)
+    {
         addQueryParam(new KeyValuePair<String, String>(name, value));
     }
 
-    public synchronized void addQueryParam(KeyValuePair<String,String> param) {
+    public synchronized void addQueryParam(KeyValuePair<String,String> param)
+    {
         queryParams.add(param);
     }
 
-    public synchronized void addQueryParams(Map<String, String> params) {
+    public synchronized void addQueryParams(Map<String, String> params)
+    {
         for (Map.Entry<String,String> entry : params.entrySet())
             addQueryParam(new KeyValuePair<String, String>(entry.getKey(), entry.getValue()));
     }
 
-    public synchronized void addQueryParams(List<KeyValuePair<String,String>> params) {
+    public synchronized void addQueryParams(List<KeyValuePair<String,String>> params)
+    {
         queryParams.addAll(params);
     }
 
@@ -128,16 +155,17 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      * 
      * @param secretKey
      */
-    public synchronized void signRequest(String secretKey) {
+    public synchronized void signRequest(String secretKey)
+    {
         StringBuilder sb = new StringBuilder();
 
         boolean first = true;
-        for (KeyValuePair param : queryParams) {
-            if (first) {
+        for (KeyValuePair param : queryParams)
+        {
+            if (first)
                 first = false;
-            } else {
+            else
                 sb.append("&");
-            }
             sb.append(param.key + "=" + param.value);
         }
 
@@ -148,12 +176,24 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
         addQueryParam("sig", SecurityUtils.SHA1(sb.toString()));
     }
 
-    protected synchronized List<KeyValuePair<String,String>> getQueryParams() {
+    protected synchronized List<KeyValuePair<String,String>> getQueryParams()
+    {
         return Collections.unmodifiableList(queryParams);
     }
 
-    protected synchronized List<Header> getRequestHeaders() {
+    protected synchronized List<Header> getRequestHeaders()
+    {
         return Collections.unmodifiableList(requestHeaders);
+    }
+
+    public synchronized void setExplicitPostBody(String body)
+    {
+        this.postBody = body;
+    }
+
+    public synchronized String getExplicitPostBody()
+    {
+        return postBody;
     }
 
     /**
@@ -164,8 +204,8 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
      * This method does not need to be synchronized because <tt>priority</tt>
      * is final.
      */
-    public int compareTo(HttpCallTask other) {
-
+    public int compareTo(HttpCallTask other)
+    {
         if (other == null)
             return 1;
 
@@ -178,15 +218,18 @@ public class HttpCallTask implements Comparable<HttpCallTask> {
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         StringBuilder b = new StringBuilder(url);
 
         // Only append the params for GET requests
         if (method == Method.GET) {
-            if (!queryParams.isEmpty()) {
+            if (!queryParams.isEmpty())
+            {
                 b.append("?");
                 boolean first = true;
-                for (KeyValuePair param : queryParams) {
+                for (KeyValuePair param : queryParams)
+                {
                     if (first)
                         first = false;
                     else

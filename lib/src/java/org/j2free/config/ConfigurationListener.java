@@ -47,9 +47,10 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServlet;
 
+import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.DefaultConfigurationBuilder;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -57,7 +58,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.j2free.cache.FragmentCache;
 import org.j2free.email.EmailService.ContentType;
-import org.j2free.email.ErrorReporter;
+import org.j2free.error.EmailErrorReporter;
 import org.j2free.email.SimpleEmailService;
 import org.j2free.email.Template;
 import org.j2free.http.SimpleHttpService;
@@ -85,7 +86,7 @@ import static org.j2free.util.Constants.*;
  *  - <tt>Task ScheduledExecutorService</tt>
  *  - <tt>SimpleEmailService</tt>
  *  - <tt>SimpleHttpService</tt>
- *  - <tt>ErrorReporter</tt>
+ *  - <tt>EmailErrorReporter</tt>
  *  - <tt>Spymemcached</tt>
  *  - <tt>Dynamic Reconfiguration</tt>
  *
@@ -100,8 +101,8 @@ import static org.j2free.util.Constants.*;
  *
  * @author Ryan Wilson
  */
-public class ConfigurationListener implements ServletContextListener {
-
+public class ConfigurationListener implements ServletContextListener
+{
     private final Log log = LogFactory.getLog(ConfigurationListener.class);
 
     private Runnable        reconfigTask;
@@ -113,8 +114,8 @@ public class ConfigurationListener implements ServletContextListener {
 
     protected ServletContext context;
 
-    public synchronized void contextInitialized(ServletContextEvent event) {
-
+    public synchronized void contextInitialized(ServletContextEvent event)
+    {
         context = event.getServletContext();
         
         // Get the configuration file
@@ -128,10 +129,13 @@ public class ConfigurationListener implements ServletContextListener {
         final String configPath = configPathTemp;
         context.setAttribute(CONTEXT_ATTR_CONFIG_PATH, configPath);
 
-        try {
+        try
+        {
             // Load the configuration
-            final PropertiesConfiguration config = new PropertiesConfiguration(configPath);
-            config.setAutoSave(false);
+            DefaultConfigurationBuilder configBuilder = new DefaultConfigurationBuilder();
+            configBuilder.setFileName(configPath);
+            
+            final CombinedConfiguration config = configBuilder.getConfiguration(true);
 
             // Save the config where we can get at it later
             context.setAttribute(CONTEXT_ATTR_CONFIG, config);
@@ -142,52 +146,64 @@ public class ConfigurationListener implements ServletContextListener {
 
             // Dynamic reconfiguration settings (only modifiable on initial load)
             /*
-            if (config.getBoolean(PROP_RECONFIG_ENABLED, false)) {
+            if (config.getBoolean(PROP_RECONFIG_ENABLED, false))
+             {
 
                 // Dynamic reconfig requires task-executor
                 ScheduledExecutorService executor = (ScheduledExecutorService)Global.get(CONTEXT_ATTR_TASK_MANAGER);
                 
-                if (executor == null) {
+                if (executor == null)
+                {
                     log.warn("Task execution must be enabled to use dynamic reconfiguration!");
-                } else {
-
+                } 
+                else
+                {
                     // Create a task for reconfiguring the app
-                    Runnable reconfigTask = new Runnable() {
-
+                    Runnable reconfigTask = new Runnable()
+                    {
                         private long lastModified = config.getFile().lastModified();
 
-                        public void run() {
-
+                        public void run()
+                        {
                             if (config.getFile().lastModified() > lastModified) {             // See if the file has changed
 
                                 log.info(configPath + " has changed, proceeding with reconfiguration.");
 
-                                try {
+                                try
+                                {
                                     config.save(configPath + ".bkp");       // Save a backup of the current config before loading the changes
-                                } catch (ConfigurationException ce) {
+                                } 
+                                catch (ConfigurationException ce)
+                                {
                                     log.error("Error backing up config file, cancelling reconfiguration", ce);
                                     return;
                                 }
 
-                                try {
-                                    
+                                try
+                                {
                                     config.load(configPath);                // load the changes
                                     reconfigure(config);                    // try to reconfigure the app
 
                                     lastModified = config.getFile().lastModified();
-                                    
-                                } catch (ConfigurationException ce) {
+                                } 
+                                catch (ConfigurationException ce)
+                                {
                                     log.error("Error reconfiguration app, reverting to old config...", ce);
-                                    try {
+                                    try
+                                    {
                                         config.load(configPath + ".bkp");   // reset the backup configuration
                                         reconfigure(config);                // reconfigure with the backup
-                                    } catch (ConfigurationException cee) {
+                                    } 
+                                    catch (ConfigurationException cee)
+                                    {
                                         log.fatal("Error loading backup configuration! Exiting...", cee);
                                         System.exit(1); // Don't have an active config right now, so gtfo
                                     }
                                 }
                                 
-                            } else if (log.isTraceEnabled()) {
+                            } 
+                            else if (log.isTraceEnabled())
+                            {
                                 log.trace("Config file has not changed.");
                             }
                         }
@@ -219,7 +235,9 @@ public class ConfigurationListener implements ServletContextListener {
              }
              */
 
-        } catch (ConfigurationException ce) {
+        }
+        catch (ConfigurationException ce)
+        {
             log.error("Error configuring app", ce);
         }
     }
@@ -227,15 +245,19 @@ public class ConfigurationListener implements ServletContextListener {
     /**
      * Configures a J2Free application
      */
-    private synchronized void configure(Configuration config) throws ConfigurationException {
-
+    private synchronized void configure(Configuration config) throws ConfigurationException
+    {
         // Anything with the value "localhost" will be set to the IP if possible
         String localhost = config.getString(PROP_LOCALHOST, "localhost");
-        if (localhost.equalsIgnoreCase("ip")) {
-            try {
+        if (localhost.equalsIgnoreCase("ip"))
+        {
+            try
+            {
                 localhost = InetAddress.getLocalHost().getHostAddress();
                 log.info("localhost = " + localhost);
-            } catch (Exception e) {
+            } 
+            catch (Exception e)
+            {
                 log.warn("Error determining localhost", e);
                 localhost = "localhost";
             }
@@ -247,8 +269,8 @@ public class ConfigurationListener implements ServletContextListener {
         // Set application context attributes for all config properties
         String prop, value;
         Iterator itr = config.getKeys();
-        while (itr.hasNext()) {
-
+        while (itr.hasNext())
+        {
             prop  = (String)itr.next();
             value = config.getString(prop);
             value = (value.equals("localhost") ? localhost : value);
@@ -260,9 +282,12 @@ public class ConfigurationListener implements ServletContextListener {
 
         // Run Mode configuration
         String runMode = config.getString(PROP_RUNMODE);
-        try {
+        try
+        {
             RUN_MODE = RunMode.valueOf(runMode);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             log.warn("Error setting runmode, invalid value: " + runMode);
         }
 
@@ -274,17 +299,20 @@ public class ConfigurationListener implements ServletContextListener {
         InvokerFilter.load(context);
 
         // StaticJspServlet
-        if (config.getBoolean(PROP_STATICJSP_ON, false)) {
-
+        if (config.getBoolean(PROP_STATICJSP_ON, false))
+        {
             String staticJspDir  = config == null ? DEFAULT_STATICJSP_DIR : config.getString(PROP_STATICJSP_DIR,DEFAULT_STATICJSP_DIR);
             String staticJspPath = config == null ? DEFAULT_STATICJSP_PATH : config.getString(PROP_STATICJSP_PATH,DEFAULT_STATICJSP_PATH);
 
             StaticJspServlet.directory.set(staticJspDir);
 
             Set<String> staticJsps = context.getResourcePaths(staticJspDir);
-            if (staticJsps != null && !staticJsps.isEmpty()) {
-                for (String jsp : staticJsps) {
-                    if (jsp.endsWith(".jsp")) {
+            if (staticJsps != null && !staticJsps.isEmpty())
+            {
+                for (String jsp : staticJsps)
+                {
+                    if (jsp.endsWith(".jsp"))
+                    {
                         jsp = staticJspPath + jsp.replace(staticJspDir, EMPTY).replaceAll("\\.jsp$", EMPTY);
                         InvokerFilter.addServletMapping(jsp, StaticJspServlet.class);
                     }
@@ -305,49 +333,57 @@ public class ConfigurationListener implements ServletContextListener {
             addServletMapping(config, PROP_SERVLET_ADMIN_PATH, DEFAULT_ADMIN_PATH, EntityAdminServlet.class);
 
         // Fragment Cache Configuration
-        if (config.getBoolean(FragmentCache.Properties.ENABLED, false)) {
-
+        if (config.getBoolean(FragmentCache.Properties.ENABLED, false))
+        {
             log.info("Enabling fragment caching...");
             FragmentCacheTag.enable();
 
             // This is expected to be in seconds
             long temp = config.getLong(FragmentCache.Properties.REQUEST_TIMEOUT, -1l);
-            if (temp != -1) {
+            if (temp != -1)
+            {
                 log.info("Setting FragmentCacheTag request timeout: " + temp);
                 FragmentCacheTag.setRequestTimeout(temp);
             }
 
             // The property is in seconds, but WARNING_COMPUTE_DURATION does NOT use a TimeUnit, so it's in ms
             temp = config.getLong(FragmentCache.Properties.WARNING_DURATION, -1l);
-            if (temp != -1) {
+            if (temp != -1)
+            {
                 log.info("Setting FragmentCacheTag warning duration: " + temp);
                 FragmentCacheTag.setWarningComputeDuration(temp * 1000);
             }
 
             // Get the fragment cache names
             String[] cacheNames = config.getStringArray(FragmentCache.Properties.ENGINE_NAMES);
-            for (String cacheName : cacheNames) {
-
+            for (String cacheName : cacheNames)
+            {
                 String cacheClassName = config.getString(
                                             String.format(FragmentCache.Properties.ENGINE_CLASS_TEMPLATE, cacheName)
                                         );
-                try {
-
+                try
+                {
                     // Load up the class
                     Class<? extends FragmentCache> cacheClass = (Class<? extends FragmentCache>)Class.forName(cacheClassName);
 
                     // Look for a constructor that takes a config
                     Constructor<? extends FragmentCache> constructor = null;
-                    try {
+                    try
+                    {
                         constructor = cacheClass.getConstructor(Configuration.class);
-                    } catch (Exception e) { }
+                    }
+                    catch (Exception e)
+                    { }
 
                     FragmentCache cache;
 
                     // If we found the configuration constructor, use it
-                    if (constructor != null) {
+                    if (constructor != null)
+                    {
                         cache = constructor.newInstance(config);
-                    } else {
+                    } 
+                    else
+                    {
                         // otherwise use a default no-args constructor
                         log.warn("Could not find a " + cacheClass.getSimpleName() + " constructor that takes a Configuration, defaulting to no-args constructor");
                         cache = cacheClass.newInstance();
@@ -357,13 +393,16 @@ public class ConfigurationListener implements ServletContextListener {
                     // if a strategy-name is not specified
                     log.info("Registering FragmentCache strategy: [name=" + cacheName + ", class=" + cacheClass.getName() + "]");
                     FragmentCacheTag.registerStrategy(cacheName, cache);
-
-                } catch (Exception e) {
+                } 
+                catch (Exception e)
+                {
                     log.error("Error enabling FragmentCache engine: " + cacheName, e);
                 }
             }
             
-        } else {
+        } 
+        else
+        {
             // Have to call this here, because reconfiguration could turn
             // the cache off after it was previously enabled.
             FragmentCacheTag.disable();
@@ -372,8 +411,8 @@ public class ConfigurationListener implements ServletContextListener {
         // For Task execution
         ScheduledExecutorService taskExecutor;
         
-        if (config.getBoolean(PROP_TASK_EXECUTOR_ON, false)) {
-
+        if (config.getBoolean(PROP_TASK_EXECUTOR_ON, false))
+        {
             int threads = config.getInt(PROP_TASK_EXECUTOR_THREADS,DEFAULT_TASK_EXECUTOR_THREADS);
 
             if (threads == 1)
@@ -385,11 +424,12 @@ public class ConfigurationListener implements ServletContextListener {
             loadedConfigPropKeys.add(CONTEXT_ATTR_TASK_MANAGER);
             
             Global.put(CONTEXT_ATTR_TASK_MANAGER, taskExecutor);
-            
-        } else {
-
+        } 
+        else
+        {
             // Not allowed to shutdown the taskExecutor if dynamic reconfig is enabled
-            if (reconfigTask == null) {
+            if (reconfigTask == null)
+            {
                 // Shutdown and remove references to the taskManager previously created
                 taskExecutor = (ScheduledExecutorService)Global.get(CONTEXT_ATTR_TASK_MANAGER);
                 if (taskExecutor != null) {
@@ -397,7 +437,9 @@ public class ConfigurationListener implements ServletContextListener {
                     taskExecutor = null;
                     Global.remove(CONTEXT_ATTR_TASK_MANAGER);
                 }
-            } else {
+            } 
+            else
+            {
                 // We could just log a warning that you can't do this, but the user
                 // might not see that, so we're going to refuse to reset a configuration
                 // that cannot be loaded in whole successfully.
@@ -406,9 +448,10 @@ public class ConfigurationListener implements ServletContextListener {
         }
 
         // Email Service
-        if (config.getBoolean(PROP_MAIL_SERVICE_ON, false)) {
-
-            if (!SimpleEmailService.isEnabled()) {
+        if (config.getBoolean(PROP_MAIL_SERVICE_ON, false))
+        {
+            if (!SimpleEmailService.isEnabled())
+            {
                 // Get the SMTP properties
                 Properties props = System.getProperties();
                 props.put(PROP_SMTP_HOST, config.getString(PROP_SMTP_HOST));
@@ -417,20 +460,24 @@ public class ConfigurationListener implements ServletContextListener {
 
                 Session session;
 
-                if (config.getBoolean(PROP_SMTP_AUTH)) {
-
+                if (config.getBoolean(PROP_SMTP_AUTH))
+                {
                     final String user = config.getString(PROP_SMTP_USER);
                     final String pass = config.getString(PROP_SMTP_PASS);
 
-                    Authenticator auth = new Authenticator() {
+                    Authenticator auth = new Authenticator()
+                    {
                         @Override
-                        public PasswordAuthentication getPasswordAuthentication() {
+                        public PasswordAuthentication getPasswordAuthentication()
+                        {
                             return new PasswordAuthentication(user,pass);
                         }
                     };
                     session = Session.getInstance(props,auth);
 
-                } else {
+                }
+                else
+                {
                     session = Session.getInstance(props);
                 }
 
@@ -439,7 +486,8 @@ public class ConfigurationListener implements ServletContextListener {
                 List<KeyValuePair<String,String>> headers = new LinkedList<KeyValuePair<String,String>>();
 
                 String headerName;
-                while (headerNames.hasNext()) {
+                while (headerNames.hasNext())
+                {
                     headerName = (String)headerNames.next();
                     headers.add( new KeyValuePair<String,String>(headerName, config.getString(headerName)) );
                 }
@@ -455,26 +503,28 @@ public class ConfigurationListener implements ServletContextListener {
 
                 // Set the failure policy
                 String policy = config.getString(PROP_MAIL_ERROR_POLICY);
-                if (policy != null) {
-
-                    if (policy.equals(VALUE_MAIL_POLICY_DISCARD)) {
-
+                if (policy != null)
+                {
+                    if (policy.equals(VALUE_MAIL_POLICY_DISCARD))
+                    {
                         SimpleEmailService.setErrorPolicy(new SimpleEmailService.DiscardPolicy());
-
-                    } else if (policy.equals(VALUE_MAIL_POLICY_REQUEUE)) {
-
+                    } 
+                    else if (policy.equals(VALUE_MAIL_POLICY_REQUEUE))
+                    {
                         Priority priority = null;
-                        try {
+                        try
+                        {
                             priority = Priority.valueOf(config.getString(PROP_MAIL_REQUEUE_PRIORITY));
-                        } catch (Exception e) {
+                        } 
+                        catch (Exception e)
+                        {
                             log.warn("Error reading requeue policy priority: " + config.getString(PROP_MAIL_REQUEUE_PRIORITY,"") + ", using default");
                         }
 
-                        if (priority == null) {
+                        if (priority == null)
                             SimpleEmailService.setErrorPolicy(new SimpleEmailService.RequeuePolicy());
-                        } else {
+                        else
                             SimpleEmailService.setErrorPolicy(new SimpleEmailService.RequeuePolicy(priority));
-                        }
                     }
                 }
 
@@ -489,8 +539,8 @@ public class ConfigurationListener implements ServletContextListener {
                 Set<String> templates = context.getResourcePaths(emailTemplateDir);
 
                 // E-mail templates
-                if (templates != null && !templates.isEmpty()) {
-
+                if (templates != null && !templates.isEmpty())
+                {
                     log.info("Found " + templates.size() + " templates");
 
                     String key;
@@ -500,31 +550,34 @@ public class ConfigurationListener implements ServletContextListener {
                     StringBuilder builder;
                     Scanner scanner;
 
-                    try {
-
+                    try
+                    {
                         Template template;
                         String[] parts;
 
                         ContentType contentType;
 
-                        for (String path : templates) {
-
+                        for (String path : templates)
+                        {
                             path  = path.trim();
                             parts = path.split("\\.");
 
                             contentType = ContentType.valueOfExt(parts[1]);
 
-                            try {
+                            try
+                            {
                                 in = context.getResourceAsStream(path.trim());
 
-                                if (in != null && in.available() > 0) {
-
+                                if (in != null && in.available() > 0)
+                                {
                                     scanner = new Scanner(in);
                                     builder = new StringBuilder();
 
-                                    while (scanner.hasNextLine()) {
+                                    while (scanner.hasNextLine())
+                                    {
                                         builder.append(scanner.nextLine());
-                                        if (contentType == ContentType.PLAIN) {
+                                        if (contentType == ContentType.PLAIN)
+                                        {
                                             builder.append("\n");
                                         }
                                     }
@@ -534,43 +587,41 @@ public class ConfigurationListener implements ServletContextListener {
                                     key = parts[0].replace(emailTemplateDir, EMPTY);
                                     SimpleEmailService.registerTemplate(key, template, key.equals(defaultTemplate));
                                 }
-
-                            } catch (IOException ioe) {
+                            } 
+                            catch (IOException ioe)
+                            {
                                 log.error("Error loading e-mail template: " + path,ioe);
                             }
                         }
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         log.error("Error loading e-mail templates",e);
                     }
                 }
             }
-        } else if (SimpleEmailService.isEnabled()) {
+        }
+        else if (SimpleEmailService.isEnabled())
+        {
             boolean shutdown = false;
-            try {
+            try
+            {
                 shutdown = SimpleEmailService.shutdown(30, TimeUnit.SECONDS);
-            } catch (InterruptedException ie) {
+            } 
+            catch (InterruptedException ie)
+            {
                 log.warn("Interrupted while shutting down SimpleEmailService");
             }
-            if (!shutdown) {
+            
+            if (!shutdown)
                 SimpleEmailService.shutdownNow();
-            }
-        }
-
-        // ErrorReporter
-        if (config.getBoolean(PROP_ERROR_REPORTER_ENABLED, false)) {
-            // Initialize the error reporting service
-            ErrorReporter.configure(
-                    config.getString(PROP_ERROR_REPORTER_TO),
-                    new KeyValuePair<String,String>(config.getString(PROP_ERROR_REPORTER_FROM), "J2Free ErrorReporter")
-                );
-        } else {
-            // Setting the TO and FROM to null essentially disables it
-            ErrorReporter.configure(null, null);
         }
 
         // QueuedHttpCallService
-        if (config.getBoolean(PROP_HTTP_SRVC_ON, false)) {
-            if (!SimpleHttpService.isEnabled()) { // Don't double init...
+        if (config.getBoolean(PROP_HTTP_SRVC_ON, false))
+        {
+            if (!SimpleHttpService.isEnabled()) // Don't double init...
+            { 
                 int defaultThreadCount = Runtime.getRuntime().availableProcessors() + 1;  // threads to use if unspecified
                 SimpleHttpService.init(
                         config.getInt(PROP_HTTP_SRVC_CORE_POOL, defaultThreadCount),
@@ -580,16 +631,21 @@ public class ConfigurationListener implements ServletContextListener {
                         config.getInt(PROP_HTTP_SRVE_SOCKET_TOUT, DEFAULT_HTTP_SRVE_SOCKET_TOUT)
                     );
             }
-        } else if (SimpleHttpService.isEnabled()) {
-            
+        } 
+        else if (SimpleHttpService.isEnabled())
+        {
             boolean shutdown = false;
-            try {
+            try
+            {
                 // Try to shutdown the service while letting currently waiting tasks complete
                 shutdown = SimpleHttpService.shutdown(30, TimeUnit.SECONDS);
-            } catch (InterruptedException ie) {
+            } 
+            catch (InterruptedException ie)
+            {
                 log.warn("Interrupted while waiting for SimpleHttpService to shutdown");
             }
-            if (!shutdown) {
+            if (!shutdown)
+            {
                 // But if that doesn't finish in 60 seconds, just cut it off
                 int count = SimpleHttpService.shutdownNow().size();
                 log.warn("SimpleHttpService failed to shutdown in 60 seconds, so it was terminated with " + count + " tasks waiting");
@@ -597,13 +653,17 @@ public class ConfigurationListener implements ServletContextListener {
         }
 
         // Spymemcached Client
-        if (config.getBoolean(PROP_SPYMEMCACHED_ON,false)) {
+        if (config.getBoolean(PROP_SPYMEMCACHED_ON,false))
+        {
             String addresses = config.getString(PROP_SPYMEMCACHED_ADDRESSES);
-            if (addresses == null) {
+            if (addresses == null)
+            {
                 log.error("Error configuring spymemcached; enabled but no addresses!");
-            } else {
-
-                try {
+            } 
+            else
+            {
+                try
+                {
                     // Reflect our way to the constructor, this is all so that the
                     // spymemcached jar does not need to be included in a J2Free app
                     // unless it is actually to be used.
@@ -622,17 +682,21 @@ public class ConfigurationListener implements ServletContextListener {
 
                     log.info("Spymemcached client created, connected to " + addresses);
 
-                } catch (Exception e) {
+                } 
+                catch (Exception e)
+                {
                     log.error("Error creating memcached client [addresses=" + addresses + "]", e);
                 }
             }
-        } else {
-
+        } 
+        else
+        {
             // If a spymemcached client was previous created
             Object client = Global.get(CONTEXT_ATTR_SPYMEMCACHED);
-            if (client != null) {
-
-                try {
+            if (client != null)
+            {
+                try
+                {
                     // Reflect our way to the shutdown method
                     Class klass   = Class.forName("net.spy.memcached.MemcachedClient");
                     Method method = klass.getMethod("shutdown");
@@ -640,8 +704,9 @@ public class ConfigurationListener implements ServletContextListener {
                     method.invoke(null, client); // and shut it down
 
                     log.info("Spymemcached client shutdown");
-
-                } catch (Exception e) {
+                } 
+                catch (Exception e)
+                {
                     log.error("Error shutting down spymemcached client", e);
                 }
                 
@@ -652,20 +717,22 @@ public class ConfigurationListener implements ServletContextListener {
         }
     }
 
-    public synchronized void contextDestroyed(ServletContextEvent event) {
+    public synchronized void contextDestroyed(ServletContextEvent event)
+    {
         clearConfiguration();
     }
 
     /**
      * Configures a J2Free application
      */
-    private synchronized void reconfigure(Configuration config) throws ConfigurationException {
+    private synchronized void reconfigure(Configuration config) throws ConfigurationException
+    {
         clearConfiguration();
         configure(config);
     }
 
-    private synchronized void clearConfiguration() {
-
+    private synchronized void clearConfiguration()
+    {
         // Remove all properties from the ServletContext that were set in the
         // previous configuration.
         for (String key : loadedConfigPropKeys) {
@@ -685,8 +752,8 @@ public class ConfigurationListener implements ServletContextListener {
      * @param defaultPath
      * @param servletClass
      */
-    private synchronized void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass) {
-
+    private synchronized void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass)
+    {
         String path;
         Class  oldKlass;
 
@@ -694,13 +761,17 @@ public class ConfigurationListener implements ServletContextListener {
 
         List paths = config.getList(pathProp);
 
-        if (paths == null) {
+        if (paths == null)
+        {
             oldKlass = InvokerFilter.addServletMapping(defaultPath, servletClass);
             if (oldKlass != null)
                 log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + defaultPath);
-        } else {
+        } 
+        else
+        {
             itr = paths.iterator();
-            while (itr.hasNext()) {
+            while (itr.hasNext())
+            {
                 path = (String)itr.next();
                 oldKlass = InvokerFilter.addServletMapping(path, servletClass);
                 if (oldKlass != null)
@@ -708,5 +779,4 @@ public class ConfigurationListener implements ServletContextListener {
             }
         }
     }
-    
 }

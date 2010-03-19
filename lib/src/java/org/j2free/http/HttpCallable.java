@@ -27,6 +27,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -38,64 +39,73 @@ import org.j2free.util.KeyValuePair;
  *
  * This class is should never be access outside of <tt>QueuedHttpCallService</tt>
  */
-final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallResult> {
-
+final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallResult>
+{
     private static final Log log = LogFactory.getLog(HttpCallable.class);
 
     private final HttpCallTask task;
     private final HttpClient client;
 
-    protected HttpCallable(HttpCallTask task, HttpClient client) {
+    protected HttpCallable(HttpCallTask task, HttpClient client)
+    {
         super();
         this.task = task;
         this.client = client;
     }
 
-    public HttpCallResult call() throws IOException {
-
+    public HttpCallResult call() throws IOException
+    {
         HttpMethod method;
         
-        if (task.method == HttpCallTask.Method.GET) {
-
+        if (task.method == HttpCallTask.Method.GET)
             method = new GetMethod(task.toString());
-
-        } else {
-
+        else
+        {
             method = new PostMethod(task.url);
 
-            List<KeyValuePair<String, String>> params = task.getQueryParams();
-            NameValuePair[] data = new NameValuePair[params.size()];
-            
-            int i = 0;
-            for (KeyValuePair<String, String> param : params) {
-                data[i] = new NameValuePair(param.key, param.value);
-                i++;
+            String postBody = task.getExplicitPostBody();
+            if (postBody != null)
+            {
+                
+                ( (PostMethod)method ).setRequestEntity( new StringRequestEntity(postBody, "text/xml", null) );
             }
-            
-            ( (PostMethod)method ).setRequestBody(data);
+            else
+            {
+                List<KeyValuePair<String, String>> params = task.getQueryParams();
+                NameValuePair[] data = new NameValuePair[params.size()];
+
+                int i = 0;
+                for (KeyValuePair<String, String> param : params)
+                {
+                    data[i] = new NameValuePair(param.key, param.value);
+                    i++;
+                }
+
+                ( (PostMethod)method ).setRequestBody(data);
+            }
         }
 
-        for (Header header : task.getRequestHeaders()) {
+        for (Header header : task.getRequestHeaders())
+        {
             method.setRequestHeader(header);
         }
 
         method.setFollowRedirects(task.followRedirects);
         
-        try {
-
-            if (log.isDebugEnabled()) {
+        try
+        {
+            if (log.isDebugEnabled())
                 log.debug("Making HTTP call [url=" + task.toString() + "]");
-            }
 
             client.executeMethod(method);
 
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Call returned [status=" + method.getStatusCode() + "]");
-            }
 
             return new HttpCallResult(method);
-            
-        } finally {
+        } 
+        finally
+        {
             // ALWAYS release the connection!!!
             method.releaseConnection();
         }
@@ -106,7 +116,8 @@ final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallR
      * @param other
      * @return
      */
-    public int compareTo(HttpCallable other) {
+    public int compareTo(HttpCallable other)
+    {
         return this.task.compareTo(other.task);
     }
 }

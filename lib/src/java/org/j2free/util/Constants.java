@@ -31,6 +31,8 @@ public class Constants {
         DEVELOPMENT, // Enables network access
         PRODUCTION;
 
+        // TODO Add Staging
+
         public int getOrdinal() {
             return ordinal();
         }
@@ -90,7 +92,6 @@ public class Constants {
     public static final String PROP_RUNMODE                = "run-mode";
 
     // ErrorReporter config
-    public static final String PROP_ERROR_REPORTER_ENABLED = "error.reporter.enabled";
     public static final String PROP_ERROR_REPORTER_TO      = "error.reporter.to";
     public static final String PROP_ERROR_REPORTER_FROM    = "error.reporter.from";
 
@@ -126,8 +127,13 @@ public class Constants {
     public static final String PROP_SERVLET_ADMIN_ON          = "servlet.admin.enabled";
     public static final String PROP_SERVLET_ADMIN_PATH        = "servlet.admin.path";
 
+    // hoptoad
+    public static final String PROP_HOPTOAD_ENABLED           = "hoptoad.enabled";
+    public static final String PROP_HOPTOAD_TOKEN             = "hoptoad.token";
+    public static final String PROP_HOPTOAD_APIVERSION        = "hoptoad.api.version";
+
     // Default config file location
-    public static final String DEFAULT_CONFIG_PATH            = "j2free.properties";
+    public static final String DEFAULT_CONFIG_PATH            = "config.xml";
 
     // Dynamic reconfig default interval
     public static final int DEFAULT_RECONFIG_INTERVAL         = 300;

@@ -18,10 +18,10 @@ public class FilterMappingTest extends TestCase {
      */
     public void testCompareTo() {
 
-        FilterMapping m0 = new FilterMapping(null, "/*");
-        FilterMapping m1 = new FilterMapping(null, "/test/*");
-        FilterMapping m2 = new FilterMapping(null, "/blah/*");
-        FilterMapping m3 = new FilterMapping(null, "/test/blah/*");
+        FilterMapping m0 = new FilterMapping(null, "/*", false);
+        FilterMapping m1 = new FilterMapping(null, "/test/*", false);
+        FilterMapping m2 = new FilterMapping(null, "/blah/*", false);
+        FilterMapping m3 = new FilterMapping(null, "/test/blah/*", false);
 
         assertEquals(m0.compareTo(m1), -1);
         assertEquals(m0.compareTo(m2), -1);
@@ -45,9 +45,9 @@ public class FilterMappingTest extends TestCase {
      */
     public void testAppliesTo() {
 
-        FilterMapping m0 = new FilterMapping(null, "/*");
-        FilterMapping m1 = new FilterMapping(null, "/test/*");
-        FilterMapping m2 = new FilterMapping(null, "/test/blah/*");
+        FilterMapping m0 = new FilterMapping(null, "/*", false);
+        FilterMapping m1 = new FilterMapping(null, "/test/*", false);
+        FilterMapping m2 = new FilterMapping(null, "/test/blah/*", false);
 
         assertNotNull(m0);
         assertNotNull(m1);
