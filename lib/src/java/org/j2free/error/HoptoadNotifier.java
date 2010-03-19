@@ -278,6 +278,9 @@ public class HoptoadNotifier
         e.appendChild( 
             createVar(d, "METHOD", request.getMethod())
         );
+        e.appendChild(
+            createVar(d, "USER-AGENT", request.getHeader("User-Agent"))
+        );
         node.appendChild(e);
 
         return node;
