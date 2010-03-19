@@ -227,7 +227,9 @@ public class DateTimeUtils {
         Calendar spec = Calendar.getInstance();
         spec.setTime(date);
 
-        long diff = now.get(Calendar.DAY_OF_YEAR) - spec.get(Calendar.DAY_OF_YEAR);
+        long diff = ((now.get(Calendar.YEAR) - 1970)*365 + now.get(Calendar.DAY_OF_YEAR))
+                    - ((spec.get(Calendar.YEAR) - 1970)*365 + spec.get(Calendar.DAY_OF_YEAR));
+        
         if (diff == 0)
             return "Today";
         else if (diff == 1)
@@ -244,7 +246,9 @@ public class DateTimeUtils {
         Calendar spec = Calendar.getInstance();
         spec.setTime(date);
 
-        long diff = now.get(Calendar.DAY_OF_YEAR) - spec.get(Calendar.DAY_OF_YEAR);
+        long diff = ((now.get(Calendar.YEAR) - 1970)*365 + now.get(Calendar.DAY_OF_YEAR))
+                    - ((spec.get(Calendar.YEAR) - 1970)*365 + spec.get(Calendar.DAY_OF_YEAR));
+
         if (diff == 0)
             return "Today";
         else if (diff == 1)
