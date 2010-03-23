@@ -5,7 +5,6 @@
  */
 package org.j2free.error;
 
-import com.sun.org.apache.xerces.internal.dom.DocumentImpl;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.sql.SQLException;
@@ -13,6 +12,7 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.xml.parsers.DocumentBuilder;
@@ -22,32 +22,37 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+
 import net.jcip.annotations.ThreadSafe;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.j2free.http.HttpCallResult;
 import org.j2free.http.HttpCallTask;
-import org.j2free.http.HttpCallTask.Method;
 import org.j2free.http.SimpleHttpService;
+import org.j2free.http.HttpCallTask.Method;
 import org.j2free.util.Constants;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
+import com.sun.org.apache.xerces.internal.dom.DocumentImpl;
+
 /**
+ * Implements Appender so it can be used directly,
+ * or indirectly via logging.
  *
  * @author Ryan Wilson
  */
 @ThreadSafe
-public class HoptoadNotifier
+public final class HoptoadNotifier
 {
     private static final String NOTIFIER_VERSION = "0.1";
 
     private static final String API_URL = "http://hoptoadapp.com/notifier_api/v2/notices";
 
     private final Log log = LogFactory.getLog(getClass());
-    
+
     private final String token;
     private final String version;
     private final boolean validating;
@@ -64,67 +69,142 @@ public class HoptoadNotifier
         this.validating = validating;
     }
 
-    public Future<HttpCallResult> notify(Throwable t)
-    {
-        return notify(t, null);
-    }
+    /* --- SET OF notify FUNCTIONS THAT REQUIRE A NON-NULL Throwable --- */
 
-    public Future<HttpCallResult> notify(Throwable t, String message)
+    /**
+     * @param thrown A non-null Throwable
+     * @throws IllegalArgumentException is thrown is null
+     */
+    public Future<HttpCallResult> notify(Throwable thrown)
     {
-        return notify(null, t, message);
-    }
-
-    public Future<HttpCallResult> notify(HttpServletRequest request, Throwable t)
-    {
-        return notify(request, t, null);
+        return notify(null, thrown, null);
     }
 
     /**
-     * 
-     * @param request
-     * @param t
-     * @param message A message; if null and the specified Throwable is not, then the
-     *                message included with the throwable will be used.
+     * @param thrown A non-null Throwable
+     * @param message A optional string message; if null, the message from thrown will be used
+     * @throws IllegalArgumentException is thrown is null
      */
-    public Future<HttpCallResult> notify(HttpServletRequest request, Throwable t, String message)
+    public Future<HttpCallResult> notify(Throwable thrown, String message)
     {
-        Element e = null;
-        Node    n = null;
-        Document d = new DocumentImpl();
+        return notify(null, thrown, message);
+    }
+
+    /**
+     * @param request
+     * @param thrown
+     * @throws IllegalArgumentException is thrown is null
+     */
+    public Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown)
+    {
+        return notify(request, thrown, null);
+    }
+
+    /**
+     * @param request
+     * @param thrown A non-null Throwable
+     * @param message A optional string message; if null, the message from thrown will be used
+     * @throws IllegalArgumentException is thrown is null
+     */
+    public Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown, String message)
+    {
+        if (thrown == null)
+            throw new IllegalArgumentException("A non-null Throwable is required when not specifying an explicit StackTraceElement!");
+        
+        return notify(request, thrown, null, message);
+    }
+
+    /* --- SET OF notify FUNCTIONS THAT REQUIRE A NON-NULL StackTraceElement --- */
+
+    /**
+     * @param frame A non-null StackTraceElement
+     * @throws IllegalArgumentException is frame is null
+     */
+    public Future<HttpCallResult> notify(StackTraceElement frame)
+    {
+        return notify(null, frame, null);
+    }
+    
+    /**
+     * @param frame A non-null StackTraceElement
+     * @param message A optional string message
+     * @throws IllegalArgumentException is frame is null
+     */
+    public Future<HttpCallResult> notify(StackTraceElement frame, String message)
+    {
+        return notify(null, frame, message);
+    }
+
+    /**
+     * @param request
+     * @param frame A non-null StackTraceElement
+     * @param message A optional string message
+     * @throws IllegalArgumentException is frame is null
+     */
+    public Future<HttpCallResult> notify(HttpServletRequest request, StackTraceElement frame, String message)
+    {
+        if (frame == null)
+            throw new IllegalArgumentException("A non-null StackTraceElement is required when not specifying a non-null Throwable!");
+
+        return notify(request, null, frame, message);
+    }
+
+    /* --- PRIVATE IMPL OF notify --- */
+
+    private Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown, StackTraceElement frame, String message)
+    {
+        if (thrown == null && frame == null)
+            throw new IllegalArgumentException("notify requires either a non-null Throwable or non-null StackTraceElement!");
+
+        Document doc = new DocumentImpl();
 
         // create the doc
-        Element notice = d.createElement("notice");
+        log.trace("Creating Hoptoad Notice");
+        Element notice = doc.createElement("notice");
         notice.setAttribute("version", version);
 
         // Add the <api-key>
-        notice.appendChild( createAPIKeyNode(d) );
+        log.trace("adding APIKeyNode");
+        notice.appendChild( createAPIKeyNode(doc) );
 
         // Describe notifier: notifier/[name|version|url]
-        notice.appendChild( createNotifierNode(d) );
+        log.trace("adding notifier node");
+        notice.appendChild( createNotifierNode(doc) );
 
         // Describe the error: error/[class|message?|backtrace/line+]
-        notice.appendChild( createErrorNode(d, t, message) );
+        log.trace("adding error node");
+        notice.appendChild( createErrorNode(doc, thrown, message, frame) );
 
         // Describe the request: request/[url|component|action?|params/var?|session/var?|cgi-data/var@key?]?
         if (request != null)
-            notice.appendChild( createRequestNode(d, request) );
+        {
+            log.trace("adding request node");
+            notice.appendChild( createRequestNode(doc, request) );
+        }
+        else
+            log.trace("request null, skipping node");
 
         // Describe the server environment: server-environment/[project-root?|environment-name]
-        notice.appendChild( createServerEnvironmentNode(d, request) );
+        log.trace("adding server-env node");
+        notice.appendChild( createServerEnvironmentNode(doc, request) );
 
         // wrap it up
-        d.appendChild(notice);
+        doc.appendChild(notice);
 
         String xml;
         try
         {
-            DOMSource domSource = new DOMSource(d);
+            log.trace("Serializing XML");
+            DOMSource domSource = new DOMSource(doc);
             StringWriter xmlWriter = new StringWriter();
             StreamResult result = new StreamResult(xmlWriter);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer transformer = tf.newTransformer();
             transformer.transform(domSource, result);
             xml = xmlWriter.toString();
+
+            if (log.isDebugEnabled())
+                log.debug(xml);
         }
         catch (Exception ex)
         {
@@ -133,36 +213,38 @@ public class HoptoadNotifier
         }
 
         if (!validating || validateXML(xml))
+        {
+            log.trace("sending to hoptoad");
             return sendToHoptoad(xml);
+        }
         else
         {
-            System.out.println("validation failed.");
             log.error("Validation failed!");
             return null;
         }
     }
 
-    private Element createAPIKeyNode(Document d)
+    private Element createAPIKeyNode(Document doc)
     {
-        Element node = d.createElement("api-key");
-        node.appendChild( d.createTextNode(token) );
+        Element node = doc.createElement("api-key");
+        node.appendChild( doc.createTextNode(token) );
         return node;
     }
 
-    private Element createNotifierNode(Document d)
+    private Element createNotifierNode(Document doc)
     {
-        Element node = d.createElement("notifier");
+        Element node = doc.createElement("notifier");
 
-        Element e = d.createElement("name");
-        e.appendChild( d.createTextNode("J2Free Notifier") );
+        Element e = doc.createElement("name");
+        e.appendChild( doc.createTextNode("J2Free Notifier") );
         node.appendChild(e);
 
-        e = d.createElement("version");
-        e.appendChild( d.createTextNode(NOTIFIER_VERSION) );
+        e = doc.createElement("version");
+        e.appendChild( doc.createTextNode(NOTIFIER_VERSION) );
         node.appendChild(e);
 
-        e = d.createElement("url");
-        e.appendChild( d.createTextNode("http://j2free.org") );
+        e = doc.createElement("url");
+        e.appendChild( doc.createTextNode("http://j2free.org") );
         node.appendChild(e);
 
         return node;
@@ -171,44 +253,59 @@ public class HoptoadNotifier
     /**
      * error/[class|message?|backtrace/line+]
      */
-    private Element createErrorNode(Document d, Throwable t, String message)
+    private Element createErrorNode(Document doc, Throwable thrown, String message, StackTraceElement lastFrame)
     {
-        Element node = d.createElement("error");
+        Element node = doc.createElement("error");
 
         // <class>
-        Element e = d.createElement("class");
-        if (t != null)
-            e.appendChild( d.createTextNode( t.getClass().getSimpleName() ) );
+        Element e = doc.createElement("class");
+        if (thrown != null)
+            e.appendChild( doc.createTextNode( thrown.getClass().getSimpleName() ) );
         node.appendChild(e);
 
         // <message>
-        e = d.createElement("message");
+        e = doc.createElement("message");
         if (message != null)
-            e.appendChild( d.createTextNode(message) );
-        else if (t != null)
-            e.appendChild(d.createTextNode(t.getMessage()));
+            e.appendChild( doc.createTextNode(message) );
+        else if (thrown != null)
+            e.appendChild(doc.createTextNode(thrown.getMessage()));
         node.appendChild(e);
 
         // <backtrace>
-        node.appendChild( createBacktraceNode(d, t) );
+        node.appendChild( createBacktraceNode(doc, thrown, lastFrame) );
 
         return node;
     }
 
-    private Element createBacktraceNode(Document d, Throwable t)
+    private Element createBacktraceNode(Document doc, Throwable thrown, StackTraceElement lastFrame)
     {
-        Element node = d.createElement("backtrace");
-        if (t != null)
+        Element node = doc.createElement("backtrace"),  e;
+        if (thrown != null)
         {
-            Element e;
-            for (StackTraceElement frame : t.getStackTrace())
+            for (StackTraceElement frame : thrown.getStackTrace())
             {
-                e = d.createElement("line");
+                e = doc.createElement("line");
                 e.setAttribute("file", frame.getFileName());
                 e.setAttribute("number", String.valueOf(frame.getLineNumber()));
                 e.setAttribute("method", frame.getMethodName());
                 node.appendChild(e);
             }
+        }
+        else if (lastFrame != null)
+        {
+            e = doc.createElement("line");
+            e.setAttribute("file", lastFrame.getFileName());
+            e.setAttribute("number", String.valueOf(lastFrame.getLineNumber()));
+            e.setAttribute("method", lastFrame.getMethodName());
+            node.appendChild(e);
+        }
+        else
+        {
+            e = doc.createElement("line");
+            e.setAttribute("file", "unknown");
+            e.setAttribute("number", "0");
+            e.setAttribute("method", "unknown");
+            node.appendChild(e);
         }
         return node;
     }
@@ -216,86 +313,90 @@ public class HoptoadNotifier
     /**
      * request/[url|component|action?|params/var?|session/var?|cgi-data/var?]?
      */
-    private Element createRequestNode(Document d, HttpServletRequest request)
+    @SuppressWarnings("unchecked")
+    private Element createRequestNode(Document doc, HttpServletRequest req)
     {
-        Element node = d.createElement("request");
+        Element node = doc.createElement("request");
 
         // <url>
-        Element e = d.createElement("url");
-        e.appendChild(d.createTextNode(request.getRequestURL().toString()));
+        Element e = doc.createElement("url");
+        e.appendChild(doc.createTextNode(req.getRequestURL().toString()));
         node.appendChild(e);
 
         // <component>
-        e = d.createElement("component");
-        e.appendChild(d.createTextNode(request.getRequestURI()));
+        e = doc.createElement("component");
+        e.appendChild(doc.createTextNode(req.getRequestURI()));
         node.appendChild(e);
 
         // <action>
 
         // <params>
-        Map params = request.getParameterMap();
+        Map params = req.getParameterMap();
         if (params != null && !params.isEmpty())
         {
-            e = d.createElement("params");
+            e = doc.createElement("params");
             for (Map.Entry param : (Set<Map.Entry>)params.entrySet())
             {
                 e.appendChild(
-                    createVar(d, (String)param.getKey(), param.getValue().toString())
+                    createVar(doc, (String)param.getKey(), param.getValue().toString())
                 );
             }
             node.appendChild(e);
         }
 
         // <session>
-        HttpSession session = request.getSession();
+        HttpSession session = req.getSession();
         if (session != null)
         {
-            e = d.createElement("session");
             Enumeration attrNames = session.getAttributeNames();
-            String name;
-            while (attrNames.hasMoreElements())
+            if (attrNames.hasMoreElements())
             {
-                name = (String)attrNames.nextElement();
-                e.appendChild(
-                    createVar(d, name, session.getAttribute(name).toString())
-                );
+                e = doc.createElement("session");
+                String name;
+                while (attrNames.hasMoreElements())
+                {
+                    name = (String)attrNames.nextElement();
+                    e.appendChild(
+                        createVar(doc, name, session.getAttribute(name).toString())
+                    );
+                }
+                node.appendChild(e);
             }
-            node.appendChild(e);
         }
 
         // <cgi-data>
-        e = d.createElement("cgi-data");
-        e.appendChild( 
-            createVar(d, "SERVER_NAME", request.getServerName() == null ? "null" : request.getServerName())
-        );
-        e.appendChild( 
-            createVar(d, "REMOTE_ADDR", request.getRemoteAddr() == null ? "null" : request.getRemoteAddr())
-        );
-        e.appendChild( 
-            createVar(d, "PATH_INFO", request.getPathInfo() == null ? "null" : request.getPathInfo())
-        );
-        e.appendChild( 
-            createVar(d, "METHOD", request.getMethod() == null ? "null" : request.getMethod())
+        e = doc.createElement("cgi-data");
+        e.appendChild(
+            createVar(doc, "SERVER_NAME", req.getServerName() == null ? "null" : req.getServerName())
         );
         e.appendChild(
-            createVar(d, "USER-AGENT", request.getHeader("User-Agent") == null ? "null" : request.getHeader("User-Agent"))
+            createVar(doc, "REMOTE_ADDR", req.getRemoteAddr() == null ? "null" : req.getRemoteAddr())
+        );
+        e.appendChild(
+            createVar(doc, "PATH_INFO", req.getPathInfo() == null ? "null" : req.getPathInfo())
+        );
+        e.appendChild(
+            createVar(doc, "METHOD", req.getMethod() == null ? "null" : req.getMethod())
+        );
+        e.appendChild(
+            createVar(doc, "USER-AGENT", req.getHeader("User-Agent") == null ? "null" : req.getHeader("User-Agent"))
         );
         node.appendChild(e);
 
         return node;
     }
 
-    private Element createVar(Document d, String key, String value)
+    private Element createVar(Document doc, String key, String value)
     {
-        Element var = d.createElement("var");
+        Element var = doc.createElement("var");
         var.setAttribute("key", key);
-        var.appendChild( d.createTextNode(value) );
+        var.appendChild( doc.createTextNode(value) );
         return var;
     }
 
-    private Element createServerEnvironmentNode(Document d, HttpServletRequest request)
+    private Element createServerEnvironmentNode(Document doc, HttpServletRequest req)
     {
-        Element node = d.createElement("server-environment"), e;
+        Element node = doc.createElement("server-environment"), e;
 
 //        e = d.createElement("project-root");
 //        e.appendChild(
@@ -303,9 +404,9 @@ public class HoptoadNotifier
 //        );
 //        node.appendChild(e);
 
-        e = d.createElement("environment-name");
-        e.appendChild( 
-            d.createTextNode(Constants.RUN_MODE.name())
+        e = doc.createElement("environment-name");
+        e.appendChild(
+            doc.createTextNode(Constants.RUN_MODE.name())
         );
         node.appendChild(e);
 
@@ -325,26 +426,29 @@ public class HoptoadNotifier
      * supplied Throwable object unchanged. If root is found, recursively "unwraps" it,
      * and returns the result to the user.
      */
-    private Throwable unwindException(Throwable t)
+    private Throwable unwindException(Throwable thrown)
     {
-        if (t instanceof SAXException)
+        if (thrown instanceof SAXException)
         {
-            SAXException saxe = (SAXException) t;
+            SAXException saxe = (SAXException) thrown;
             if (saxe.getException() != null)
                 return unwindException(saxe.getException());
         }
-        else if (t instanceof SQLException)
+        else if (thrown instanceof SQLException)
         {
-            SQLException sqle = (SQLException) t;
+            SQLException sqle = (SQLException) thrown;
             if (sqle.getNextException() != null)
                 return unwindException(sqle.getNextException());
         }
-        else if (t.getCause() != null)
-            return unwindException(t.getCause());
+        else if (thrown.getCause() != null)
+            return unwindException(thrown.getCause());
 
-        return t;
+        return thrown;
     }
 
+    /**
+     * Unsure if this function even works...
+     */
     private boolean validateXML(String xml)
     {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -359,15 +463,15 @@ public class HoptoadNotifier
         }
         catch (ParserConfigurationException pce)
         {
-            log.error("Parse error A", pce);
+            log.error("Vaidation error A", pce);
         }
         catch (SAXException saxe)
         {
-            log.error("Parse error B", saxe);
+            log.error("Vaidation error B", saxe);
         }
         catch (IOException ioe)
         {
-            log.error("Parse error C", ioe);
+            log.error("Vaidation error C", ioe);
         }
         return false;
     }

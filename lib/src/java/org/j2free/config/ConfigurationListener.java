@@ -58,7 +58,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.j2free.cache.FragmentCache;
 import org.j2free.email.EmailService.ContentType;
-import org.j2free.error.EmailErrorReporter;
 import org.j2free.email.SimpleEmailService;
 import org.j2free.email.Template;
 import org.j2free.http.SimpleHttpService;
@@ -103,7 +102,7 @@ import static org.j2free.util.Constants.*;
  */
 public class ConfigurationListener implements ServletContextListener
 {
-    private final Log log = LogFactory.getLog(ConfigurationListener.class);
+    private final Log log = LogFactory.getLog(getClass());
 
     private Runnable        reconfigTask;
     private ScheduledFuture reconfigFuture;
@@ -254,7 +253,7 @@ public class ConfigurationListener implements ServletContextListener
             try
             {
                 localhost = InetAddress.getLocalHost().getHostAddress();
-                log.info("localhost = " + localhost);
+                log.debug("localhost = " + localhost);
             } 
             catch (Exception e)
             {
@@ -275,7 +274,7 @@ public class ConfigurationListener implements ServletContextListener
             value = config.getString(prop);
             value = (value.equals("localhost") ? localhost : value);
 
-            log.info("Setting application context attribute: [name=" + prop + ",value=" + value + "]");
+            log.debug("Config: " + prop + " = " + value);
             context.setAttribute(prop,value);
             loadedConfigPropKeys.add(prop);
         }
@@ -535,13 +534,13 @@ public class ConfigurationListener implements ServletContextListener
                 if (StringUtils.isBlank(emailTemplateDir))
                     emailTemplateDir = DEFAULT_EMAIL_TEMPLATE_DIR;
 
-                log.info("Looking for e-mail templates in: " + emailTemplateDir);
+                log.debug("Looking for e-mail templates in: " + emailTemplateDir);
                 Set<String> templates = context.getResourcePaths(emailTemplateDir);
 
                 // E-mail templates
                 if (templates != null && !templates.isEmpty())
                 {
-                    log.info("Found " + templates.size() + " templates");
+                    log.debug("Found " + templates.size() + " templates");
 
                     String key;
                     String defaultTemplate = config.getString(PROP_MAIL_DEFAULT_TEMPLATE,EMPTY);
@@ -599,6 +598,8 @@ public class ConfigurationListener implements ServletContextListener
                         log.error("Error loading e-mail templates",e);
                     }
                 }
+                else
+                    log.debug("No e-mail templates found.");
             }
         }
         else if (SimpleEmailService.isEnabled())
