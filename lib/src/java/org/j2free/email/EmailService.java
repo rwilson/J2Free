@@ -21,6 +21,7 @@ package org.j2free.email;
 import java.io.UnsupportedEncodingException;
 
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -71,21 +74,22 @@ import org.j2free.util.ServletUtils;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public final class EmailService {
-    
-    private static Log log = LogFactory.getLog(EmailService.class);
-    
-    public static enum ContentType {
+public final class EmailService
+{
+    public static enum ContentType
+    {
         PLAIN("text/plain"),
         HTML("text/html");
 
         private final String v;
         
-        private ContentType(String v) {
+        private ContentType(String v)
+        {
             this.v = v;
         }
 
-        public static ContentType valueOfExt(String ext) {
+        public static ContentType valueOfExt(String ext)
+        {
             if (ext.equals("txt")) {
                 return PLAIN;
             } else if (ext.matches("htm?")) {
@@ -96,11 +100,14 @@ public final class EmailService {
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return v;
         }
     };
     
+    private final Log log;
+
     private final boolean NO_CC = false;
 
     private final ExecutorService executor
@@ -126,12 +133,14 @@ public final class EmailService {
      * 
      * @param session The session to use
      */
-    public EmailService(Session session) {
-
+    public EmailService(Session session)
+    {
         if (session == null)
             throw new IllegalArgumentException("Error initializing EmailService, null session!");
 
         this.session = session;
+
+        this.log = LogFactory.getLog(getClass());
     }
 
     /**
@@ -140,7 +149,8 @@ public final class EmailService {
      * @param policy The error policy to use
      * @see {@link ErrorPolicy}
      */
-    public void setErrorPolicy(ErrorPolicy policy) {
+    public void setErrorPolicy(ErrorPolicy policy)
+    {
         log.info("EmailService configured to use error-policy: " + policy);
         errorPolicy.set(policy);
     }
@@ -150,11 +160,12 @@ public final class EmailService {
      *
      * @param globalHseaders Message headers to be applied to each e-mail
      */
-    public void setGlobalHeaders(List<KeyValuePair<String,String>> globalHeaders) {
-        if (globalHeaders != null) {
-            for (KeyValuePair<String,String> header : globalHeaders) {
+    public void setGlobalHeaders(List<KeyValuePair<String,String>> globalHeaders)
+    {
+        if (globalHeaders != null)
+        {
+            for (KeyValuePair<String,String> header : globalHeaders)
                 headers.put(header.key, header.value);
-            }
         }
     }
 
@@ -163,7 +174,8 @@ public final class EmailService {
      * 
      * @param isDummy
      */
-    public void setDummyMode(boolean isDummy) {
+    public void setDummyMode(boolean isDummy)
+    {
         log.info(String.format("Dummy mode %s...", isDummy ? "enabled" : "disabled"));
         dummy.set(isDummy);
     }
@@ -172,7 +184,8 @@ public final class EmailService {
      * @return true if "dummy" mode is enabled (meaning that e-mails will be accepted
      *         but not sent), otheriwse false
      */
-    public boolean isDummy() {
+    public boolean isDummy()
+    {
         return dummy.get();
     }
 
@@ -186,7 +199,8 @@ public final class EmailService {
      * @return
      * @throws InterruptedException
      */
-    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException
+    {
         log.info("EmailService shutting down...");
         executor.shutdown();
         return executor.awaitTermination(timeout, unit);
@@ -195,10 +209,18 @@ public final class EmailService {
     /**
      * Shutdown the service immediately, cancelling remaining tasks
      */
-    public void shutdownNow() {
+    public void shutdownNow()
+    {
         log.info("EmailService shutting down...");
         executor.shutdownNow();
     }
+
+
+    // -------------------------------------------------------------------------- //
+    //                                                                            //
+    //                          TEMPLATE MANAGEMENT                               //
+    //                                                                            //
+    // -------------------------------------------------------------------------- //
 
     /**
      * This will register templates that are NOT the default
@@ -206,7 +228,8 @@ public final class EmailService {
      * @param key The key to store the template under
      * @param template The template for an e-mail
      */
-    public void registerTemplate(String key, Template template) {
+    public void registerTemplate(String key, Template template)
+    {
         registerTemplate(key,template,false);
     }
 
@@ -217,13 +240,21 @@ public final class EmailService {
      * @param isDefault Whether this should be the default template when sendTemplate
      *        is called using the version without a template parameter
      */
-    public void registerTemplate(String key, Template template, boolean isDefault) {
+    public void registerTemplate(String key, Template template, boolean isDefault)
+    {
         log.info("Registering template: " + key + (isDefault ? " [DEFAULT]" : ""));
         templates.put(key, template);
 
         if (isDefault)
             defaultTemplate.set(key);
     }
+
+
+    // -------------------------------------------------------------------------- //
+    //                                                                            //
+    //                          PLAIN TEXT MESSAGING                              //
+    //                                                                            //
+    // -------------------------------------------------------------------------- //
 
     /**
      * Sends a plain text e-mail at the default priority
@@ -236,11 +267,27 @@ public final class EmailService {
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendPlain(KeyValuePair<String,String> from, String to, String subject, String body)
-            throws AddressException, MessagingException, RejectedExecutionException {
-        
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
         sendPlain(from,to,subject,body,Priority.DEFAULT,NO_CC);
     }
     
+    /**
+     * Sends a plain text e-mail at the default priority
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param body The body of the message
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendPlain(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String body)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        sendPlain(from,recipients,subject,body,Priority.DEFAULT,NO_CC);
+    }
+
     /**
      * Sends a plain text e-mail
      *
@@ -253,8 +300,26 @@ public final class EmailService {
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendPlain(KeyValuePair<String,String> from, String to, String subject, String body, Priority priority)
-            throws AddressException, MessagingException, RejectedExecutionException {
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
         sendPlain(from,to,subject,body,priority,NO_CC);
+    }
+
+    /**
+     * Sends a plain text e-mail
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param body The body of the message
+     * @param priority The priority this message should take if there are other queued messages
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendPlain(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String body, Priority priority)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        sendPlain(from,recipients,subject,body,priority,NO_CC);
     }
 
     /**
@@ -270,14 +335,50 @@ public final class EmailService {
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendPlain(KeyValuePair<String,String> from, String to, String subject, String body, Priority priority, boolean ccSender)
-            throws AddressException, MessagingException, RejectedExecutionException {
-        try {
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        try
+        {
             send(new InternetAddress(from.key,from.value),to,subject,body,ContentType.PLAIN,priority,ccSender);
-        } catch (UnsupportedEncodingException uee) {
+        } 
+        catch (UnsupportedEncodingException uee)
+        {
             send(new InternetAddress(from.key),to,subject,body,ContentType.PLAIN,priority,ccSender);
         }
     }
     
+    /**
+     * Sends a plain text e-mail
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param body The body of the message
+     * @param priority The priority this message should take if there are other queued messages
+     * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendPlain(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String body, Priority priority, boolean ccSender)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        try
+        {
+            send(new InternetAddress(from.key,from.value),recipients,subject,body,ContentType.PLAIN,priority,ccSender);
+        }
+        catch (UnsupportedEncodingException uee)
+        {
+            send(new InternetAddress(from.key),recipients,subject,body,ContentType.PLAIN,priority,ccSender);
+        }
+    }
+
+    
+    // -------------------------------------------------------------------------- //
+    //                                                                            //
+    //                              HTML MESSAGING                                //
+    //                                                                            //
+    // -------------------------------------------------------------------------- //
+
     /**
      * Sends a HTML e-mail (note, there is no text equivalent, this is not multipart e-mail) at the default priority
      *
@@ -289,8 +390,25 @@ public final class EmailService {
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendHTML(KeyValuePair<String,String> from, String to, String subject, String body)
-            throws AddressException, MessagingException, RejectedExecutionException {
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
         sendHTML(from,to,subject,body,Priority.DEFAULT,NO_CC);
+    }
+
+    /**
+     * Sends a HTML e-mail (note, there is no text equivalent, this is not multipart e-mail) at the default priority
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param body The body of the message
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendHTML(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String body)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        sendHTML(from,recipients,subject,body,Priority.DEFAULT,NO_CC);
     }
 
     /**
@@ -305,8 +423,26 @@ public final class EmailService {
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendHTML(KeyValuePair<String,String> from, String to, String subject, String body, Priority priority)
-            throws AddressException, MessagingException, RejectedExecutionException {
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
         sendHTML(from,to,subject,body,priority,NO_CC);
+    }
+
+    /**
+     * Sends a HTML e-mail (note, there is no text equivalent, this is not multipart e-mail)
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param body The body of the message
+     * @param priority The priority this message should take if there are other queued messages
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendHTML(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String body, Priority priority)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        sendHTML(from,recipients,subject,body,priority,NO_CC);
     }
 
     /**
@@ -322,13 +458,49 @@ public final class EmailService {
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendHTML(KeyValuePair<String,String> from, String to, String subject, String body, Priority priority, boolean ccSender)
-            throws AddressException, MessagingException, RejectedExecutionException {
-        try {
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        try
+        {
             send(new InternetAddress(from.key,from.value),to,subject,body,ContentType.HTML,priority,ccSender);
-        } catch (UnsupportedEncodingException uee) {
+        } 
+        catch (UnsupportedEncodingException uee)
+        {
             send(new InternetAddress(from.key),to,subject,body,ContentType.HTML,priority,ccSender);
         }
     }
+
+    /**
+     * Sends a HTML e-mail (note, there is no text equivalent, this is not multipart e-mail)
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param body The body of the message
+     * @param priority The priority this message should take if there are other queued messages
+     * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendHTML(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String body, Priority priority, boolean ccSender)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        try
+        {
+            send(new InternetAddress(from.key,from.value),recipients,subject,body,ContentType.HTML,priority,ccSender);
+        }
+        catch (UnsupportedEncodingException uee)
+        {
+            send(new InternetAddress(from.key),recipients,subject,body,ContentType.HTML,priority,ccSender);
+        }
+    }
+
+    
+    // -------------------------------------------------------------------------- //
+    //                                                                            //
+    //                          TEMPLATE MESSAGING                                //
+    //                                                                            //
+    // -------------------------------------------------------------------------- //
 
     /**
      * Sends a HTML e-mail based on the default template at the default priority
@@ -338,12 +510,30 @@ public final class EmailService {
      * @param subject The subject of the e-mail
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
-     * @throws javax.mail.IllegalArgumentException if the default template has not been set
+     * @throws TemplateException if the default template has not been set, or there are unreplaced tokens
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(KeyValuePair<String,String> from, String to, String subject, KeyValuePair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
         sendTemplate(from,to,subject,null,Priority.DEFAULT,NO_CC,params);
+    }
+
+    /**
+     * Sends a HTML e-mail based on the default template at the default priority
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws TemplateException if the default template has not been set, or there are unreplaced tokens
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendTemplate(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, KeyValuePair<String,String> ... params)
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
+        sendTemplate(from,recipients,subject,null,Priority.DEFAULT,NO_CC,params);
     }
 
     /**
@@ -355,12 +545,31 @@ public final class EmailService {
      * @param priority The priority this message should take if there are other queued messages
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
-     * @throws javax.mail.IllegalArgumentException if the default template has not been set
+     * @throws TemplateException if the default template has not been set, or there are unreplaced tokens
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(KeyValuePair<String,String> from, String to, String subject, Priority priority, KeyValuePair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
         sendTemplate(from,to,subject,null,priority,NO_CC,params);
+    }
+
+    /**
+     * Sends a HTML e-mail based on the default template
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param priority The priority this message should take if there are other queued messages
+     * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws TemplateException if the default template has not been set, or there are unreplaced tokens
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendTemplate(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, Priority priority, KeyValuePair<String,String> ... params)
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
+        sendTemplate(from,recipients,subject,null,priority,NO_CC,params);
     }
 
     /**
@@ -372,12 +581,31 @@ public final class EmailService {
      * @param templateKey The key to look up the e-mail template
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
-     * @throws javax.mail.IllegalArgumentException if the template does not exist
+     * @throws TemplateException if the specified template has not been registered, or there are unreplaced tokens
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(KeyValuePair<String,String> from, String to, String subject, String templateKey, KeyValuePair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
         sendTemplate(from,to,subject,templateKey,Priority.DEFAULT,NO_CC,params);
+    }
+
+    /**
+     * Sends a HTML e-mail based on a template at the defualt priority
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param templateKey The key to look up the e-mail template
+     * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws TemplateException if the specified template has not been registered, or there are unreplaced tokens
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendTemplate(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String templateKey, KeyValuePair<String,String> ... params)
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
+        sendTemplate(from,recipients,subject,templateKey,Priority.DEFAULT,NO_CC,params);
     }
 
     /**
@@ -390,12 +618,32 @@ public final class EmailService {
      * @param priority The priority this message should take if there are other queued messages
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
-     * @throws javax.mail.IllegalArgumentException if the template does not exist
+     * @throws TemplateException if the specified template has not been registered, or there are unreplaced tokens
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(KeyValuePair<String,String> from, String to, String subject, String templateKey, Priority priority, KeyValuePair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
         sendTemplate(from,to,subject,templateKey,priority,NO_CC,params);
+    }
+
+    /**
+     * Sends a HTML e-mail based on a template
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param templateKey The key to look up the e-mail template
+     * @param priority The priority this message should take if there are other queued messages
+     * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws TemplateException if the specified template has not been registered, or there are unreplaced tokens
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendTemplate(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String templateKey, Priority priority, KeyValuePair<String,String> ... params)
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
+        sendTemplate(from,recipients,subject,templateKey,priority,NO_CC,params);
     }
 
     /**
@@ -408,12 +656,32 @@ public final class EmailService {
      * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
-     * @throws javax.mail.IllegalArgumentException if the default template has not been set
+     * @throws TemplateException if the default template has not been set, or there are unreplaced tokens
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(KeyValuePair<String,String> from, String to, String subject, Priority priority, boolean ccSender, KeyValuePair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
         sendTemplate(from,to,subject,null,priority, ccSender,params);
+    }
+
+    /**
+     * Sends a HTML e-mail based on the default template
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param priority The priority this message should take if there are other queued messages
+     * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
+     * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws TemplateException if the default template has not been set, or there are unreplaced tokens
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendTemplate(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, Priority priority, boolean ccSender, KeyValuePair<String,String> ... params)
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
+        sendTemplate(from,recipients,subject,null,priority, ccSender,params);
     }
 
     /**
@@ -427,46 +695,95 @@ public final class EmailService {
      * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
      * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
      * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
-     * @throws javax.mail.IllegalArgumentException if the template does not exist
+     * @throws TemplateException if the specified template has not been registered, or there are unreplaced tokens
      * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
      */
     public void sendTemplate(KeyValuePair<String,String> from, String to, String subject, String templateKey, Priority priority, boolean ccSender, KeyValuePair<String,String> ... params)
-            throws AddressException, MessagingException, IllegalArgumentException, RejectedExecutionException {
+            throws AddressException, MessagingException, TemplateException, RejectedExecutionException
+    {
+        sendTemplate(from, InternetAddress.parse(to, false), subject, templateKey, priority, ccSender, params);
+    }
 
+    /**
+     * Sends a HTML e-mail based on a template
+     *
+     * @param from The "from" e-mail address
+     * @param recipients the message recipients
+     * @param subject The subject of the e-mail
+     * @param templateKey The key to look up the e-mail template
+     * @param priority The priority this message should take if there are other queued messages
+     * @param ccSender If true, cc's the from address on the e-mail sent, otherwise does not.
+     * @param params An array of pairs of dynamic attributes for the template; i.e. for a template with dynamic section "body", <code>new KeyValuePair&lt;String,String&gt;("body",body);</code>
+     * @throws javax.mail.internet.AddressException if the FROM or TO address is invalid
+     * @throws TemplateException if the specified template has not been registered, or there are unreplaced tokens
+     * @throws RejectedExecutionException if <tt>EmailService</tt> has already been shutdown
+     */
+    public void sendTemplate(KeyValuePair<String,String> from, InternetAddress[] recipients, String subject, String templateKey, Priority priority, boolean ccSender, KeyValuePair<String,String> ... params)
+            throws AddressException, MessagingException, RejectedExecutionException, TemplateException
+    {
         if (templateKey == null)
             templateKey = defaultTemplate.get();
 
         if (templateKey == null)
-            throw new IllegalArgumentException("Template argument null but no default template is set!");
+            throw new TemplateException("Template argument null but no default template is set!");
 
         Template template = templates.get(templateKey);
 
         if (template == null)
-            throw new IllegalArgumentException("template: " + templateKey + " not found");
+            throw new TemplateException("template: " + templateKey + " not found");
         
         String body = template.templateText;
 
         for (KeyValuePair<String,String> param : params)
             body = body.replace("${" + param.key + "}", param.value);
 
-        try {
-            send(new InternetAddress(from.key, from.value),to,subject,body,template.contentType,priority,ccSender);
-        } catch (UnsupportedEncodingException uee) {
-            send(new InternetAddress(from.key),to,subject,body,template.contentType,priority,ccSender);
+        Pattern pat = Pattern.compile("\\$\\{[-a-z_][-a-z0-9_]*?\\}", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pat.matcher(body);
+        if (matcher.find())
+        {
+            TemplateException te = new TemplateException("Message contains unreplaced tokens");
+            do
+            {
+                te.addToken(matcher.group());
+            }
+            while (matcher.find());
+            throw te;
+        }
+
+        try
+        {
+            send(new InternetAddress(from.key, from.value),recipients,subject,body,template.contentType,priority,ccSender);
+        } 
+        catch (UnsupportedEncodingException uee)
+        {
+            send(new InternetAddress(from.key),recipients,subject,body,template.contentType,priority,ccSender);
         }
     }
 
-    private void send(InternetAddress from, String recipients, String subject, String body, ContentType contentType, Priority priority, boolean ccSender)
-            throws AddressException, MessagingException, RejectedExecutionException {
+    
+    // -------------------------------------------------------------------------- //
+    //                                                                            //
+    //                          INTENRAL MESSAGING                                //
+    //                                                                            //
+    // -------------------------------------------------------------------------- //
 
+    private void send(InternetAddress from, String recipients, String subject, String body, ContentType contentType, Priority priority, boolean ccSender)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
+        send(from, InternetAddress.parse(recipients, false), subject, body, contentType, priority, ccSender);
+    }
+
+    private void send(InternetAddress from, InternetAddress[] recipients, String subject, String body, ContentType contentType, Priority priority, boolean ccSender)
+            throws AddressException, MessagingException, RejectedExecutionException
+    {
         MimeMessage message = new MimeMessage(session);
         message.setFrom(from);
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients, false));
+        message.setRecipients(Message.RecipientType.TO, recipients);
 
-        for(Map.Entry<String,String> header : headers.entrySet())
+        for (Map.Entry<String,String> header : headers.entrySet())
             message.setHeader(header.getKey(), header.getValue());
 
-        // CC the sender if they want, never CC the default from address
+        // CC the sender if they want
         if (ccSender)
             message.addRecipient(Message.RecipientType.CC,from);
 
@@ -475,13 +792,13 @@ public final class EmailService {
         message.setSubject(subject);
         message.setSentDate(new Date());
 
-        if (contentType == ContentType.PLAIN) {
-
+        if (contentType == ContentType.PLAIN)
+        {
             // Just set the body as plain text
             message.setText(body, "UTF-8");
-
-        } else {
-
+        } 
+        else
+        {
             MimeMultipart multipart = new MimeMultipart("alternative");
 
             // Create the text part
@@ -500,13 +817,12 @@ public final class EmailService {
 
             // set the message content
             message.setContent(multipart);
-
         }
-
         enqueue(message, priority);
     }
 
-    protected void enqueue(MimeMessage message, Priority priority) {
+    protected void enqueue(MimeMessage message, Priority priority)
+    {
         executor.execute(
                 new EmailSendTask(
                     new PriorityReference<MimeMessage>(message, priority)
@@ -519,23 +835,27 @@ public final class EmailService {
      *  EmailSendTask definition
      *
      */
-    private class EmailSendTask implements Runnable, Comparable<EmailSendTask> {
-
+    private class EmailSendTask implements Runnable, Comparable<EmailSendTask>
+    {
         private final long created;
         private final PriorityReference<MimeMessage> message;
 
-        public EmailSendTask(PriorityReference<MimeMessage> message) {
+        public EmailSendTask(PriorityReference<MimeMessage> message)
+        {
             this.message = message;
             this.created = System.currentTimeMillis();
         }
 
-        public void run() {
-            try {
-
+        public void run()
+        {
+            try
+            {
                 MimeMessage mime = message.get();
 
-                if (dummy.get()) {
-                    try {
+                if (dummy.get())
+                {
+                    try
+                    {
                         log.info(
                             String.format(
                                 "Skipping send [dummy=true, priority=%s, recipients=%s, subject=%s]",
@@ -545,22 +865,26 @@ public final class EmailService {
                             )
                         );
                         return;
-                    } catch(Exception e) { }
+                    }
+                    catch (Exception e) { }
                 }
-
-                Transport.send(mime);
-
-            } catch (Exception e) {
+                else
+                {
+                    Transport.send(mime);
+                }
+            } 
+            catch (Exception e)
+            {
                 ErrorPolicy policy = errorPolicy.get();
-                if (policy != null) {
+                if (policy != null)
                     policy.handleException(message, e);
-                } else {
+                else
                     throw new RuntimeException("Error sending e-mail", e);
-                }
             }
         }
 
-        public int compareTo(EmailSendTask other) {
+        public int compareTo(EmailSendTask other)
+        {
             if (other == null)
                 return 1;
 
@@ -575,9 +899,8 @@ public final class EmailService {
     /***************************************************************************
      * Policy for when a send fails
      */
-    public static interface ErrorPolicy {
-
+    public static interface ErrorPolicy
+    {
         public void handleException(PriorityReference<MimeMessage> message, Throwable t);
-
     }
 }

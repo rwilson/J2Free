@@ -9,14 +9,14 @@ import net.jcip.annotations.Immutable;
  * @author Ryan Wilson
  */
 @Immutable
-public class Template {
-
+public class Template
+{
     public final String templateText;
     public final EmailService.ContentType contentType;
 
-    public Template(String templateText, EmailService.ContentType contentType) {
+    public Template(String templateText, EmailService.ContentType contentType)
+    {
         this.templateText = templateText;
         this.contentType = contentType;
     }
-    
 }

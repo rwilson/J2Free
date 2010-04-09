@@ -290,6 +290,26 @@ public final class HoptoadNotifier
                 e.setAttribute("method", frame.getMethodName());
                 node.appendChild(e);
             }
+
+            Throwable rootCause = unwindException(thrown);
+            if (rootCause != null && rootCause != thrown)
+            {
+                // DIVIDER --- 
+                e = doc.createElement("line");
+                e.setAttribute("file", "--------------------");
+                e.setAttribute("number", "0");
+                e.setAttribute("method", "--------------------");
+                node.appendChild(e);
+
+                for (StackTraceElement frame : rootCause.getStackTrace())
+                {
+                    e = doc.createElement("line");
+                    e.setAttribute("file", frame.getFileName());
+                    e.setAttribute("number", String.valueOf(frame.getLineNumber()));
+                    e.setAttribute("method", frame.getMethodName());
+                    node.appendChild(e);
+                }
+            }
         }
         else if (lastFrame != null)
         {
