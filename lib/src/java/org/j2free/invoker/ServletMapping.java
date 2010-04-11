@@ -17,7 +17,7 @@ package org.j2free.invoker;
 
 import java.io.IOException;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -25,26 +25,29 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 
 import org.j2free.annotations.ServletConfig;
+import org.j2free.jpa.Controller;
 
 /**
  *
  * @author Ryan Wilson
  */
-final class ServletMapping implements Servicable {
-
+final class ServletMapping implements Servicable
+{
     protected final HttpServlet servlet;
     protected final ServletConfig config;
     
-    private final AtomicInteger uses;
+    private final AtomicLong uses;
 
-    protected ServletMapping(HttpServlet servlet, ServletConfig config) {
+    protected ServletMapping(HttpServlet servlet, ServletConfig config)
+    {
         this.servlet = servlet;
         this.config = config;
         
-        this.uses = new AtomicInteger(0);
+        this.uses = new AtomicLong(0);
     }
 
-    public int incrementUses() {
+    public long incrementUses()
+    {
         return uses.incrementAndGet();
     }
 
@@ -53,14 +56,16 @@ final class ServletMapping implements Servicable {
      *         requested a {@link Controller} be present when it is
      *         called, otherwise <tt>false</tt>.
      */
-    public boolean requiresController() {
+    public boolean requiresController()
+    {
         return config.requireController();
     }
 
     /**
      * @return A name for this ServletMapping
      */
-    public String getName() {
+    public String getName()
+    {
         return servlet.getClass().getName();
     }
 
@@ -69,8 +74,8 @@ final class ServletMapping implements Servicable {
      * @see {@link Servicable}.service
      */
     public void service(ServletRequest req, ServletResponse resp, ServiceChain chain) 
-            throws IOException, ServletException {
+            throws IOException, ServletException
+    {
         servlet.service(req, resp);
     }
-
 }

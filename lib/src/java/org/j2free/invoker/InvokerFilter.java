@@ -83,15 +83,16 @@ import org.scannotation.WarUrlFinder;
  *
  * @author  Ryan Wilson
  */
-public final class InvokerFilter implements Filter {
-
+public final class InvokerFilter implements Filter
+{
     private static final Log log = LogFactory.getLog(InvokerFilter.class);
 
     // Convenience class for referencing static resources
     private static final class StaticResource extends HttpServlet { }
 
     // Properties
-    public static class Property {
+    public static class Property
+    {
         public static final String BENCHMARK_REQS   = "filter.invoker.benchmark.enabled";
         public static final String BYPASS_PATH      = "filter.invoker.bypass.path";
         public static final String MAX_SERVLET_USES = "filter.invoker.servlet-max-uses";
@@ -149,8 +150,11 @@ public final class InvokerFilter implements Filter {
     /**
      * Required impls
      */
-    public void init(javax.servlet.FilterConfig fc) { }
-    public void destroy() { }
+    public void init(javax.servlet.FilterConfig fc)
+    { }
+    
+    public void destroy()
+    { }
 
     /**
      *
@@ -162,8 +166,8 @@ public final class InvokerFilter implements Filter {
      * @exception ServletException if a servlet error occurs
      */
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
-            throws IOException, ServletException {
-
+            throws IOException, ServletException
+    {
         HttpServletRequest  request  = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
 
@@ -178,19 +182,24 @@ public final class InvokerFilter implements Filter {
              finish  = 0;                           // finish time
 
         // Set cache-control based on content
-        if (Constants.RUN_MODE.compareTo(RunMode.PRODUCTION) == -1) { // dev mode
+        if (Constants.RUN_MODE.compareTo(RunMode.PRODUCTION) == -1) // dev mode
+        {
             response.setHeader(HEADER_PRAGMA, "no-cache");
             response.setHeader(HEADER_CACHE_CONTROL, "no-store");
-        } else if (path.matches(SHORT_CACHE_REGEX) && !path.contains(CAPTCHA_PATH)) {
+        } 
+        else if (path.matches(SHORT_CACHE_REGEX) && !path.contains(CAPTCHA_PATH))
+        {
             response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
             response.setHeader(HEADER_CACHE_CONTROL, SHORT_CACHE_VAL);
-        } else if (path.matches(LONG_CACHE_REGEX)) {
+        } 
+        else if (path.matches(LONG_CACHE_REGEX))
+        {
             response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
             response.setHeader(HEADER_CACHE_CONTROL, LONG_CACHE_VAL);
         }
 
-        try {
-            
+        try
+        {
             // This will block requests during configuration
             read.lock();
 
@@ -212,33 +221,35 @@ public final class InvokerFilter implements Filter {
              * were discovered earlier to be static content, so don't
              * process those.
              */
-            if (klass == null && !path.matches(bypassPath.get())) {
-
+            if (klass == null && !path.matches(bypassPath.get()))
+            {
                 // (1) Look for *.ext wildcard matches
                 String partial;
 
                 int index = path.lastIndexOf(".");          // If the path contains a "." then check for the *.ext patterns
-                if (index != -1) {
+                if (index != -1)
+                {
                     partial = "*" + path.substring(index); // gives us the *.<THE_EXTENSION>
                     klass = urlMap.get(partial);
                 }
 
                 // (2) Check any regex mapping against the path
-                if (klass == null) {
-
+                if (klass == null)
+                {
                     // @TODO this iteration could be coslty... perhaps it would be more efficient to have
                     //       constructed one long regex of all the possible regex mapping with
                     String regex;
                     Iterator<String> itr = regexMap.keySet().iterator();
-                    while (itr.hasNext()) {
-
+                    while (itr.hasNext())
+                    {
                         regex = itr.next();
-
-                        if (path.matches(regex)) {
+                        if (path.matches(regex))
+                        {
                             // Sweet, we have a match, but make sure we actually get the klass
                             // since it could have been altered since we got the iterator (though, unlikely)
                             klass = regexMap.get(regex);
-                            if (klass != null) {
+                            if (klass != null)
+                            {
                                 // Even better, we got the klass, so move on
                                 break;
                             }
@@ -247,14 +258,14 @@ public final class InvokerFilter implements Filter {
                 }
 
                 // (3) Check for possible /something/* patterns
-                if (klass == null) {
-
+                if (klass == null)
+                {
                     // start with the full path
                     partial = path; 
 
                     // Start with most specific and move down to just /*
-                    while ((index = partial.lastIndexOf("/")) > 0) {
-
+                    while ((index = partial.lastIndexOf("/")) > 0)
+                    {
                         // Chop off everything past the last "/" and add the "*"
                         partial = partial.substring(0, index + 1) + "*"; // if we had /first/second, we'd get /first/*
 
@@ -278,20 +289,21 @@ public final class InvokerFilter implements Filter {
                 //     with millions of users could increase the size of urlMap well beyond what is optimal, so
                 //     if a servlet knows that is a possibility, it can specify to not save direct mapping when
                 //     the servlet was found via a partial mapping)
-                if (klass != null) {
-
+                if (klass != null)
+                {
                     if (log.isTraceEnabled()) log.trace("Matched path " + path + " to " + klass.getName());
                     
                     // Make sure the ServletConfig supports direct lookups before storing the resolved path
-                    if (servletMap.get(klass).config.preferDirectLookups()) {
+                    if (servletMap.get(klass).config.preferDirectLookups())
+                    {
                         partialsMap.putIfAbsent(path, klass);
                     }
                 }
             }
 
             // If we didn't find it, then just pass it on
-            if (klass == null) {
-
+            if (klass == null)
+            {
                 if (log.isTraceEnabled()) log.trace("Dynamic resource not found for path: " + path);
 
                 // Save this path in the staticSet so we don't have to look it up next time
@@ -300,9 +312,9 @@ public final class InvokerFilter implements Filter {
                 resolve = System.currentTimeMillis();
                 chain.doFilter(req, resp);
                 process  = System.currentTimeMillis();
-
-            } else if (klass == StaticResource.class) {
-
+            } 
+            else if (klass == StaticResource.class)
+            {
                 // If it's known to be static, then pass it on
                 if (log.isTraceEnabled())
                     log.trace("Processing known static path: " + path);
@@ -310,85 +322,106 @@ public final class InvokerFilter implements Filter {
                 resolve = System.currentTimeMillis();
                 chain.doFilter(req, resp);
                 process  = System.currentTimeMillis();
-
-            } else {
-
+            } 
+            else
+            {
                 ServletMapping mapping = servletMap.get(klass);
 
                 // If the klass requires SSL, make sure we're on an SSL connection
                 SSLOption sslOpt = mapping.config.ssl();
                 boolean   isSsl  = request.isSecure();
                 
-                if (sslOpt == SSLOption.REQUIRE && !isSsl) {
+                if (sslOpt == SSLOption.REQUIRE && !isSsl)
+                {
                     if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path);
                     redirectOverSSL(request, response, sslRedirectPort.get());
                     return;
-                } else if (sslOpt == SSLOption.DENY && isSsl) {
+                } 
+                else if (sslOpt == SSLOption.DENY && isSsl)
+                {
                     if (log.isDebugEnabled()) log.debug("Redirecting off SSL: " + path);
                     redirectOverNonSSL(request, response, nonSslRedirectPort.get());
                     return;
                 }
 
-                try {
-
+                try
+                {
                     if (log.isTraceEnabled()) log.trace("Dynamic resource found, servicing with " + klass.getName());
 
                     // Get the time after finding the resource
                     resolve = System.currentTimeMillis();
 
                     // Service the end-point on the chain
-                    if (log.isTraceEnabled()) {
+                    if (log.isTraceEnabled())
+                    {
                         log.trace("ServiceChain [path=" + path +", endPoint=" + mapping.getName() + "]");
                     }
+                    
                     new ServiceChain(filters.iterator(), path, mapping).service(request, response);
 
                     // Get the time after running
                     process = System.currentTimeMillis();
 
-                    if (request.getParameter("benchmark") != null) {
+                    if (request.getParameter("benchmark") != null)
+                    {
                         log.info(klass.getName() + " execution time: " + (process - start));
                     }
-
-                } catch (Exception e) {
-
+                } 
+                catch (Exception e)
+                {
                     process = System.currentTimeMillis();
 
                     UncaughtServletExceptionHandler uceh = exceptionHandler.get();
-                    if (uceh != null) {
+                    if (uceh != null)
+                    {
                         uceh.handleException(req, resp, e);
-                    } else throw new ServletException(e);
+                    }
+                    else
+                        throw new ServletException(e);
+                } 
+                finally
+                {
+                    int maxUses = mapping.config.maxUses() < 0 ? maxServletUses.get() : mapping.config.maxUses();
+                    if (maxUses > 0)
+                    {
+                        long instanceUses = mapping.incrementUses(); // only increment if servlet reloading is enabled
+                        if (instanceUses >= maxUses)
+                        {
+                            try
+                            {
+                                HttpServlet newInstance = klass.newInstance();          // Create a new instance
+                                newInstance.init(mapping.servlet.getServletConfig());   // Copy over the javax.servlet.ServletConfig
 
-                } finally {
+                                ServletMapping newMapping = new ServletMapping(newInstance, mapping.config);  // new instance but old config
 
-                    int instanceUses = mapping.incrementUses();
-                    if (instanceUses >= maxServletUses.get()) {
-                        try {
-
-                            HttpServlet newInstance = klass.newInstance();          // Create a new instance
-                            newInstance.init(mapping.servlet.getServletConfig());   // Copy over the javax.servlet.ServletConfig
-
-                            ServletMapping newMapping = new ServletMapping(newInstance, mapping.config);  // new instance but old config
-
-                            if (log.isTraceEnabled()) {
-                                if (servletMap.replace(klass, mapping, newMapping)) {
-                                    log.trace("Successfully replaced old " + klass.getSimpleName() + " with a new instance");
-                                } else {
-                                    log.trace("Failed to replace old " + klass.getSimpleName() + " with a new instance");
+                                if (log.isTraceEnabled())
+                                {
+                                    if (servletMap.replace(klass, mapping, newMapping))
+                                    {
+                                        log.trace("Successfully replaced old " + klass.getSimpleName() + " with a new instance");
+                                    }
+                                    else
+                                    {
+                                        log.trace("Failed to replace old " + klass.getSimpleName() + " with a new instance");
+                                    }
                                 }
-                            } else {
-                                // if we're not tracing, don't bother checking the result, because
-                                // either (a) it succeeded and the new servlet is in place, or
-                                // (b) it failed meaning another thread beat us to it.
-                                servletMap.replace(klass, mapping, newMapping);
+                                else
+                                {
+                                    // if we're not tracing, don't bother checking the result, because
+                                    // either (a) it succeeded and the new servlet is in place, or
+                                    // (b) it failed meaning another thread beat us to it.
+                                    servletMap.replace(klass, mapping, newMapping);
+                                }
+
+                                // In either case, the old serlvet is no longer in use, but DON'T
+                                // destroy it yet, since it may be in the process of serving other
+                                // requests. By removing the mapping to it, it should be garbage
+                                // collected.
                             }
-
-                            // In either case, the old serlvet is no longer in use, but DON'T
-                            // destroy it yet, since it may be in the process of serving other
-                            // requests. By removing the mapping to it, it should be garbage
-                            // collected.
-
-                        } catch (Exception e) {
-                            log.error("Error replacing " + klass.getSimpleName() + " instance after " + instanceUses + " uses!", e);
+                            catch (Exception e)
+                            {
+                                log.error("Error replacing " + klass.getSimpleName() + " instance after " + instanceUses + " uses!", e);
+                            }
                         }
                     }
                 }
@@ -396,7 +429,8 @@ public final class InvokerFilter implements Filter {
 
             finish = System.currentTimeMillis();
 
-            if (benchmark.get()) {
+            if (benchmark.get())
+            {
                 log.info(
                     String.format(
                         "[path=%s, find=%d, run=%d, finish=%d]",
@@ -404,8 +438,9 @@ public final class InvokerFilter implements Filter {
                     )
                 );
             }
-            
-        } finally {
+        } 
+        finally
+        {
             read.unlock(); // Make sure to release the read lock
         }
     }
@@ -419,11 +454,11 @@ public final class InvokerFilter implements Filter {
      *
      * @param context an active ServletContext
      */
-    public static void load(final ServletContext context) {
-        
+    public static void load(final ServletContext context)
+    {
         log.debug("Scanning resources...");
-
-        try {
+        try
+        {
             write.lock();
 
             LinkedList<URL> urlList = new LinkedList<URL>();
@@ -441,62 +476,74 @@ public final class InvokerFilter implements Filter {
             annoDB.scanArchives(urls);
 
             HashMap<String, Set<String>> annotationIndex = (HashMap<String, Set<String>>) annoDB.getAnnotationIndex();
-            if (annotationIndex != null && !annotationIndex.isEmpty()) {
-
+            if (annotationIndex != null && !annotationIndex.isEmpty())
+            {
                 //-----------------------------------------------------------
                 // Look for any classes annotated with @ServletConfig
                 Set<String> classNames = annotationIndex.get(ServletConfig.class.getName());
                 
-                if (classNames != null) {
-                    for (String c : classNames) {
-                        try {
-                            
+                if (classNames != null)
+                {
+                    for (String c : classNames)
+                    {
+                        try
+                        {
                             final Class<? extends HttpServlet> klass = (Class<? extends HttpServlet>)Class.forName(c);
                             
-                            if (klass.isAnnotationPresent(ServletConfig.class)) {
-
+                            if (klass.isAnnotationPresent(ServletConfig.class))
+                            {
                                 final ServletConfig config = (ServletConfig)klass.getAnnotation(ServletConfig.class);
 
                                 // If the config specifies String mapppings...
-                                if (config.mappings() != null) {
-                                    for (String url : config.mappings()) {
-
+                                if (config.mappings() != null)
+                                {
+                                    for (String url : config.mappings())
+                                    {
                                         // Leave the asterisk, we'll add it when matching...
                                         //if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
                                         //    url = url.replace("*", EMPTY);
 
-                                        if (urlMap.putIfAbsent(url, klass) == null) {
+                                        if (urlMap.putIfAbsent(url, klass) == null)
+                                        {
                                             if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to path " + url);
-                                        } else {
+                                        } 
+                                        else
+                                        {
                                             log.error("Unable to map servlet  " + klass.getName() + " to path " + url + ", path already mapped to " + urlMap.get(url).getName());
                                         }
                                     }
                                 }
 
                                 // If the config specifies a regex mapping...
-                                if (!empty(config.regex())) {
+                                if (!empty(config.regex()))
+                                {
                                     regexMap.putIfAbsent(config.regex(), klass);
-                                    if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to regex path " + config.regex());
+                                    if (log.isDebugEnabled())
+                                        log.debug("Mapping servlet " + klass.getName() + " to regex path " + config.regex());
                                 }
 
                                 // Create an instance of the servlet and init it
                                 HttpServlet servlet = klass.newInstance();
                                 servlet.init(
-                                        new javax.servlet.ServletConfig() {
-
-                                            public String getServletName() {
+                                        new javax.servlet.ServletConfig()
+                                        {
+                                            public String getServletName()
+                                            {
                                                 return klass.getName();
                                             }
 
-                                            public ServletContext getServletContext() {
+                                            public ServletContext getServletContext()
+                                            {
                                                 return context;
                                             }
 
-                                            public String getInitParameter(String name) {
+                                            public String getInitParameter(String name)
+                                            {
                                                 return null;
                                             }
 
-                                            public Enumeration getInitParameterNames() {
+                                            public Enumeration getInitParameterNames()
+                                            {
                                                 return null;
                                             }
                                         }
@@ -506,7 +553,9 @@ public final class InvokerFilter implements Filter {
                                 servletMap.put(klass, new ServletMapping(servlet, config));
                             }
 
-                        } catch (Exception e) {
+                        } 
+                        catch (Exception e)
+                        {
                             log.error("Error registering servlet [name=" + c + "]", e);
                         }
                     }
@@ -515,56 +564,66 @@ public final class InvokerFilter implements Filter {
                 //-----------------------------------------------------------
                 // Look for any classes annotated with @FiltersConfig
                 classNames = annotationIndex.get(FilterConfig.class.getName());
-                if (classNames != null) {
-
-                    for (String c : classNames) {
-                        try {
-
+                if (classNames != null)
+                {
+                    for (String c : classNames)
+                    {
+                        try
+                        {
                             final Class<? extends Filter> klass = (Class<? extends Filter>)Class.forName(c);
 
-                            if (klass.isAnnotationPresent(FilterConfig.class)) {
-
+                            if (klass.isAnnotationPresent(FilterConfig.class))
+                            {
                                 final FilterConfig config = (FilterConfig)klass.getAnnotation(FilterConfig.class);
 
                                 // Create an instance of the servlet and init it
                                 Filter filter = klass.newInstance();
                                 filter.init(
-                                        new javax.servlet.FilterConfig() {
-
-                                            public String getFilterName() {
+                                        new javax.servlet.FilterConfig()
+                                        {
+                                            public String getFilterName()
+                                            {
                                                 return klass.getName();
                                             }
 
-                                            public ServletContext getServletContext() {
+                                            public ServletContext getServletContext()
+                                            {
                                                 return context;
                                             }
 
-                                            public String getInitParameter(String namw) {
+                                            public String getInitParameter(String namw)
+                                            {
                                                 return null;
                                             }
 
-                                            public Enumeration getInitParameterNames() {
+                                            public Enumeration getInitParameterNames()
+                                            {
                                                 return null;
                                             }
                                         }
                                     );
 
-                                if (log.isDebugEnabled()) log.debug("Mapping filter " + klass.getName() + " to path " + config.mapping());
+                                if (log.isDebugEnabled())
+                                    log.debug("Mapping filter " + klass.getName() + " to path " + config.mapping());
                                     
                                 // Store a reference
                                 filters.add( new FilterMapping(filter, config) );
                             }
-                            
-                        } catch (Exception e) {
+                        }
+                        catch (Exception e)
+                        {
                             log.error("Error registering servlet [name=" + c + "]", e);
                         }
                     }
                 }
             }
-            
-        } catch (IOException e) {
+        } 
+        catch (IOException e)
+        {
             log.error("Error loading urlMappings", e);
-        } finally {
+        }
+        finally
+        {
             write.unlock(); // ALWAYS Release the configure lock
         }
     }
@@ -573,13 +632,15 @@ public final class InvokerFilter implements Filter {
      * Clears loaded configuration, used for dynamic reconfiguation.
      * Locks to prevent request processing while modifications are made.
      */
-    public static void reset() {
-
-        try {
+    public static void reset()
+    {
+        try
+        {
             write.lock();
 
             // Destroy the servlets used in the mapping
-            for (ServletMapping mapping : servletMap.values()) {
+            for (ServletMapping mapping : servletMap.values())
+            {
                 mapping.servlet.destroy();
             }
 
@@ -589,7 +650,9 @@ public final class InvokerFilter implements Filter {
             servletMap.clear();
             filters.clear();
 
-        } finally {
+        } 
+        finally
+        {
             write.unlock(); // ALWAYS unlock
         }
     }
@@ -601,23 +664,26 @@ public final class InvokerFilter implements Filter {
      * @param klass The Servlet to map
      * @return null if the servlet was mapped to the path, or a class if another servlet was already mapped to that path
      */
-    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass) {
-
-        try {
+    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass)
+    {
+        try
+        {
             write.lock();
 
             if (servletMap.get(klass) == null)
                 throw new IllegalStateException("Illegal attempt to create a mapping to an unregistered servlet!");
 
-            if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to path " + path);
+            if (log.isDebugEnabled())
+                log.debug("Mapping servlet " + klass.getName() + " to path " + path);
 
             // Leave the asterisk, we'll add it when matching...
             //if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
             //    path = path.replace("*", EMPTY);
 
             return urlMap.putIfAbsent(path, klass);
-
-        } finally {
+        } 
+        finally
+        {
             write.unlock(); // ALWAYS unlock
         }
     }
@@ -631,29 +697,33 @@ public final class InvokerFilter implements Filter {
      * @param nonSslPort Port to be used for non-SSL requests
      * @param sslPort Port to be used for SSL-requests
      */
-    public static void configure(Configuration config) {
-
-        try {
+    public static void configure(Configuration config)
+    {
+        try
+        {
             write.lock();
 
             // In case the user has let us know about paths that are guaranteed static
-            bypassPath.set(config.getString(Property.BYPASS_PATH, EMPTY));
+            bypassPath.set( config.getString(Property.BYPASS_PATH, EMPTY) );
 
             // Can enable benchmarking globally
-            benchmark.set(config.getBoolean(Property.BENCHMARK_REQS, false));
+            benchmark.set( config.getBoolean(Property.BENCHMARK_REQS, false) );
 
             // Set the SSL redirect port
             int val = config.getInt(Constants.PROP_LOCALPORT_SSL, -1);
-            if (val > 0) sslRedirectPort.set(val);
+            if (val > 0)
+                sslRedirectPort.set(val);
 
             // Set the SSL redirect port
             val = config.getInt(Constants.PROP_LOCALPORT, -1);
-            if (val > 0) nonSslRedirectPort.set(val);
+            if (val > 0)
+                nonSslRedirectPort.set(val);
 
-            val = config.getInt(Property.MAX_SERVLET_USES, 1000);
-            if (val > 0) maxServletUses.set(val);
-
-        } finally {
+            // Set the reload threshold for servlets
+            maxServletUses.set( config.getInt(Property.MAX_SERVLET_USES, 1000) );
+        } 
+        finally
+        {
             write.unlock(); // ALWAYS unlock
         }
     }
@@ -664,7 +734,8 @@ public final class InvokerFilter implements Filter {
      *
      * @param useh A defined UncaughtServletExceptionHandler
      */
-    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler handler) {
+    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler handler)
+    {
         log.info("UncaughtExceptionHandler registered.");
         exceptionHandler.set(handler);
     }

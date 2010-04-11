@@ -46,7 +46,16 @@ public @interface ServletConfig {
      * a direct mapping to the resolved servlet will be stored,
      * enabling O(1) lookups on future requests to the same path.
      *
-     * It is not recommended that Servlets modify this value.
+     * It is not recommended that Servlets modify this value but,
+     * if memory is a concern, it could be disabled for servlets
+     * that match to a large number of URLs.
      */
     public boolean preferDirectLookups() default true;
+
+    /**
+     * Overrides the global value of filter.invoker.servlet-max-uses
+     * for this servlet only.  Useful for disabling servlet reloading
+     * for a particular servlet.
+     */
+    public int maxUses() default -1;
 }
