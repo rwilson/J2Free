@@ -64,6 +64,11 @@ public final class HoptoadNotifier
 
     public HoptoadNotifier(String token, String version, boolean validating)
     {
+        if (token == null || token.equals(""))
+            throw new IllegalArgumentException("Null or blank hoptoad token!");
+        if (version == null || version.equals(""))
+            throw new IllegalArgumentException("Null or blank hoptoad api version!");
+
         this.token = token;
         this.version = version;
         this.validating = validating;
@@ -77,7 +82,7 @@ public final class HoptoadNotifier
      */
     public Future<HttpCallResult> notify(Throwable thrown)
     {
-        return notify(null, thrown, null);
+        return notify(null, thrown, thrown.getMessage());
     }
 
     /**
@@ -97,7 +102,12 @@ public final class HoptoadNotifier
      */
     public Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown)
     {
-        return notify(request, thrown, null);
+        return notify(HoptoadContext.parseRequest(request), thrown);
+    }
+
+    public Future<HttpCallResult> notify(HoptoadContext context, Throwable thrown)
+    {
+        return notify(context, thrown, null);
     }
 
     /**
@@ -106,12 +116,12 @@ public final class HoptoadNotifier
      * @param message A optional string message; if null, the message from thrown will be used
      * @throws IllegalArgumentException is thrown is null
      */
-    public Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown, String message)
+    public Future<HttpCallResult> notify(HoptoadContext context, Throwable thrown, String message)
     {
         if (thrown == null)
             throw new IllegalArgumentException("A non-null Throwable is required when not specifying an explicit StackTraceElement!");
         
-        return notify(request, thrown, null, message);
+        return notify(context, thrown, null, message);
     }
 
     /* --- SET OF notify FUNCTIONS THAT REQUIRE A NON-NULL StackTraceElement --- */
@@ -122,7 +132,7 @@ public final class HoptoadNotifier
      */
     public Future<HttpCallResult> notify(StackTraceElement frame)
     {
-        return notify(null, frame, null);
+        return notify(frame, null);
     }
     
     /**
@@ -132,7 +142,7 @@ public final class HoptoadNotifier
      */
     public Future<HttpCallResult> notify(StackTraceElement frame, String message)
     {
-        return notify(null, frame, message);
+        return notify(null, null, frame, message);
     }
 
     /**
@@ -143,15 +153,20 @@ public final class HoptoadNotifier
      */
     public Future<HttpCallResult> notify(HttpServletRequest request, StackTraceElement frame, String message)
     {
+        return notify(HoptoadContext.parseRequest(request), frame, message);
+    }
+
+    public Future<HttpCallResult> notify(HoptoadContext context, StackTraceElement frame, String message)
+    {
         if (frame == null)
             throw new IllegalArgumentException("A non-null StackTraceElement is required when not specifying a non-null Throwable!");
 
-        return notify(request, null, frame, message);
+        return notify(context, null, frame, message);
     }
 
     /* --- PRIVATE IMPL OF notify --- */
 
-    private Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown, StackTraceElement frame, String message)
+    private Future<HttpCallResult> notify(HoptoadContext context, Throwable thrown, StackTraceElement frame, String message)
     {
         if (thrown == null && frame == null)
             throw new IllegalArgumentException("notify requires either a non-null Throwable or non-null StackTraceElement!");
@@ -176,17 +191,17 @@ public final class HoptoadNotifier
         notice.appendChild( createErrorNode(doc, thrown, message, frame) );
 
         // Describe the request: request/[url|component|action?|params/var?|session/var?|cgi-data/var@key?]?
-        if (request != null)
+        if (context != null)
         {
             log.trace("adding request node");
-            notice.appendChild( createRequestNode(doc, request) );
+            notice.appendChild( createRequestNode(doc, context) );
         }
         else
             log.trace("request null, skipping node");
 
         // Describe the server environment: server-environment/[project-root?|environment-name]
         log.trace("adding server-env node");
-        notice.appendChild( createServerEnvironmentNode(doc, request) );
+        notice.appendChild( createServerEnvironmentNode(doc) );
 
         // wrap it up
         doc.appendChild(notice);
@@ -334,72 +349,66 @@ public final class HoptoadNotifier
      * request/[url|component|action?|params/var?|session/var?|cgi-data/var?]?
      */
     @SuppressWarnings("unchecked")
-    private Element createRequestNode(Document doc, HttpServletRequest req)
+    private Element createRequestNode(Document doc, HoptoadContext context)
     {
         Element node = doc.createElement("request");
 
         // <url>
         Element e = doc.createElement("url");
-        e.appendChild(doc.createTextNode(req.getRequestURL().toString()));
+        e.appendChild(doc.createTextNode(context.getUrl()));
         node.appendChild(e);
 
         // <component>
         e = doc.createElement("component");
-        e.appendChild(doc.createTextNode(req.getRequestURI()));
+        e.appendChild(doc.createTextNode(context.getComponent()));
         node.appendChild(e);
 
         // <action>
 
         // <params>
-        Map params = req.getParameterMap();
+        Map<String,String> params = context.getQueryParams();
         if (params != null && !params.isEmpty())
         {
             e = doc.createElement("params");
-            for (Map.Entry param : (Set<Map.Entry>)params.entrySet())
+            for (String key : params.keySet())
             {
                 e.appendChild(
-                    createVar(doc, (String)param.getKey(), param.getValue().toString())
+                    createVar(doc, key, params.get(key))
                 );
             }
             node.appendChild(e);
         }
 
         // <session>
-        HttpSession session = req.getSession();
-        if (session != null)
+        Map<String, Object> attrs = context.getSessionAttrs();
+        if (attrs != null && !attrs.isEmpty())
         {
-            Enumeration attrNames = session.getAttributeNames();
-            if (attrNames.hasMoreElements())
+            e = doc.createElement("session");
+            for (String key : params.keySet())
             {
-                e = doc.createElement("session");
-                String name;
-                while (attrNames.hasMoreElements())
-                {
-                    name = (String)attrNames.nextElement();
-                    e.appendChild(
-                        createVar(doc, name, session.getAttribute(name).toString())
-                    );
-                }
-                node.appendChild(e);
+                e.appendChild(
+                    createVar(doc, key, attrs.get(key).toString())
+                );
             }
+            node.appendChild(e);
         }
 
         // <cgi-data>
         e = doc.createElement("cgi-data");
         e.appendChild(
-            createVar(doc, "SERVER_NAME", req.getServerName() == null ? "null" : req.getServerName())
+            createVar(doc, "SERVER_NAME", context.getServerName())
         );
         e.appendChild(
-            createVar(doc, "REMOTE_ADDR", req.getRemoteAddr() == null ? "null" : req.getRemoteAddr())
+            createVar(doc, "REMOTE_ADDR", context.getRemoteAddr())
         );
         e.appendChild(
-            createVar(doc, "PATH_INFO", req.getPathInfo() == null ? "null" : req.getPathInfo())
+            createVar(doc, "PATH_INFO", context.getPathInfo())
         );
         e.appendChild(
-            createVar(doc, "METHOD", req.getMethod() == null ? "null" : req.getMethod())
+            createVar(doc, "METHOD", context.getMethod())
         );
         e.appendChild(
-            createVar(doc, "USER-AGENT", req.getHeader("User-Agent") == null ? "null" : req.getHeader("User-Agent"))
+            createVar(doc, "USER-AGENT", context.getUserAgent())
         );
         node.appendChild(e);
 
@@ -414,15 +423,9 @@ public final class HoptoadNotifier
         return var;
     }
 
-    private Element createServerEnvironmentNode(Document doc, HttpServletRequest req)
+    private Element createServerEnvironmentNode(Document doc)
     {
         Element node = doc.createElement("server-environment"), e;
-
-//        e = d.createElement("project-root");
-//        e.appendChild(
-//            d.createTextNode(request.getContextPath())
-//        );
-//        node.appendChild(e);
 
         e = doc.createElement("environment-name");
         e.appendChild(

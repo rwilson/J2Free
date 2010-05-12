@@ -381,6 +381,8 @@ public final class InvokerFilter implements Filter
                 } 
                 finally
                 {
+                    // maxUses values less than 0 indicate the value is not set and the default should be used
+                    // maxUses == 0 indicates the servlet should NOT be reloaded
                     int maxUses = mapping.config.maxUses() < 0 ? maxServletUses.get() : mapping.config.maxUses();
                     if (maxUses > 0)
                     {

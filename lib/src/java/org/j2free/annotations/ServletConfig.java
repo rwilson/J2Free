@@ -56,6 +56,9 @@ public @interface ServletConfig {
      * Overrides the global value of filter.invoker.servlet-max-uses
      * for this servlet only.  Useful for disabling servlet reloading
      * for a particular servlet.
+     *
+     * -1 indicates that the value is not set and the default should be
+     * used.  To disable servlet reloading, specify 0.
      */
     public int maxUses() default -1;
 }
