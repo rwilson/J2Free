@@ -47,6 +47,7 @@ public class Constants {
 
     // Context attributes
     public static final String CONTEXT_ATTR_CONFIG       = "j2free-config";
+    public static final String CONTEXT_ATTR_LOCALHOST    = "localhost";
     public static final String CONTEXT_ATTR_TASK_MANAGER = "j2free-task-manager";
     public static final String CONTEXT_ATTR_SPYMEMCACHED = "j2free-spymemcached-client";
 

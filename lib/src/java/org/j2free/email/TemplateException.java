@@ -5,10 +5,8 @@
  */
 package org.j2free.email;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -32,8 +30,8 @@ public class TemplateException extends Exception
     /**
      * @return an unmodifiable list of tokens that were not replaced.
      */
-    public List<String> getUnreplacedTokens()
+    public Set<String> getUnreplacedTokens()
     {
-        return Collections.unmodifiableList(Arrays.asList(tokens.toArray(new String[tokens.size()])));
+        return Collections.unmodifiableSet(tokens);
     }
 }

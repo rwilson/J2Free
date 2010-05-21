@@ -617,7 +617,7 @@ public class SimpleEmailService
     /**
      * Implements {@link ErrorPolicy} to discard failed messages writing only a message to the log.
      */
-    public static final class DiscardPolicy implements ErrorPolicy
+    public static class DiscardPolicy implements ErrorPolicy
     {
         public void handleException(PriorityReference<MimeMessage> message, Throwable t)
         {
@@ -641,7 +641,7 @@ public class SimpleEmailService
      * WARNING: this policy does NOT take into account a max tries, so messages will be retried
      *          infinitely. Yes, that is a flaw.
      */
-    public static final class RequeuePolicy implements ErrorPolicy
+    public static class RequeuePolicy implements ErrorPolicy
     {
         private final Priority priority;
 

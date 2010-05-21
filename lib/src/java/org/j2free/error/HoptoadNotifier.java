@@ -366,15 +366,28 @@ public final class HoptoadNotifier
         // <action>
 
         // <params>
-        Map<String,String> params = context.getQueryParams();
+        Map params = context.getQueryParams();
         if (params != null && !params.isEmpty())
         {
             e = doc.createElement("params");
-            for (String key : params.keySet())
+            for (Object key : params.keySet())
             {
-                e.appendChild(
-                    createVar(doc, key, params.get(key))
-                );
+                if (params.get(key) instanceof String)
+                {
+                    e.appendChild(
+                        createVar(doc, key.toString(), params.get(key).toString())
+                    );
+                }
+                else if (params.get(key) instanceof String[])
+                {
+                    String[] values = (String[])params.get(key);
+                    for (String value : values)
+                    {
+                        e.appendChild(
+                            createVar(doc, key.toString(), value)
+                        );
+                    }
+                }
             }
             node.appendChild(e);
         }
@@ -384,7 +397,7 @@ public final class HoptoadNotifier
         if (attrs != null && !attrs.isEmpty())
         {
             e = doc.createElement("session");
-            for (String key : params.keySet())
+            for (String key : attrs.keySet())
             {
                 e.appendChild(
                     createVar(doc, key, attrs.get(key).toString())

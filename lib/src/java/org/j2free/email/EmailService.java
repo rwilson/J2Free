@@ -21,7 +21,6 @@ package org.j2free.email;
 import java.io.UnsupportedEncodingException;
 
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -737,7 +736,7 @@ public final class EmailService
         for (KeyValuePair<String,String> param : params)
             body = body.replace("${" + param.key + "}", param.value);
 
-        Pattern pat = Pattern.compile("\\$\\{[-a-z_][-a-z0-9_]*?\\}", Pattern.CASE_INSENSITIVE);
+        Pattern pat = Pattern.compile("\\$\\{[-a-z_0-9/]+?\\}", Pattern.CASE_INSENSITIVE);
         Matcher matcher = pat.matcher(body);
         if (matcher.find())
         {
@@ -752,11 +751,11 @@ public final class EmailService
 
         try
         {
-            send(new InternetAddress(from.key, from.value),recipients,subject,body,template.contentType,priority,ccSender);
+            send(new InternetAddress(from.key, from.value), recipients, subject, body, template.contentType, priority, ccSender);
         } 
         catch (UnsupportedEncodingException uee)
         {
-            send(new InternetAddress(from.key),recipients,subject,body,template.contentType,priority,ccSender);
+            send(new InternetAddress(from.key), recipients, subject, body, template.contentType, priority, ccSender);
         }
     }
 

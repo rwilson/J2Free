@@ -246,14 +246,14 @@ public class ConfigurationListener implements ServletContextListener
      */
     private synchronized void configure(Configuration config) throws ConfigurationException
     {
-        // Anything with the value "localhost" will be set to the IP if possible
-        String localhost = config.getString(PROP_LOCALHOST, "localhost");
+        // Determine the localhost
+        String localhost = config.getString(PROP_LOCALHOST, "ip");
         if (localhost.equalsIgnoreCase("ip"))
         {
             try
             {
                 localhost = InetAddress.getLocalHost().getHostAddress();
-                log.debug("localhost = " + localhost);
+                log.info("Using localhost: " + localhost);
             } 
             catch (Exception e)
             {
@@ -262,8 +262,9 @@ public class ConfigurationListener implements ServletContextListener
             }
         }
 
-        context.setAttribute("localhost", localhost);
-        loadedConfigPropKeys.add("localhost");
+        context.setAttribute(CONTEXT_ATTR_LOCALHOST, localhost);
+        Global.put(CONTEXT_ATTR_LOCALHOST, localhost);
+        loadedConfigPropKeys.add(CONTEXT_ATTR_LOCALHOST);
 
         // Set application context attributes for all config properties
         String prop, value;
@@ -272,6 +273,8 @@ public class ConfigurationListener implements ServletContextListener
         {
             prop  = (String)itr.next();
             value = config.getString(prop);
+
+            // Anything with the value "localhost" will be set to the IP if possible
             value = (value.equals("localhost") ? localhost : value);
 
             log.debug("Config: " + prop + " = " + value);

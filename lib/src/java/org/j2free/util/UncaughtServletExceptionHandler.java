@@ -18,9 +18,8 @@ import javax.servlet.ServletResponse;
  *
  * @author Ryan
  */
-public interface UncaughtServletExceptionHandler {
-
+public interface UncaughtServletExceptionHandler
+{
     public void handleException(ServletRequest request, ServletResponse response, Throwable e)
             throws ServletException, IOException;
-
 }
