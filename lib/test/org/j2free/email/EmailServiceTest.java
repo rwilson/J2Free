@@ -3,6 +3,7 @@ package org.j2free.email;
 import java.util.List;
 import java.util.Properties;
 
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.mail.Session;
@@ -78,7 +79,7 @@ public class EmailServiceTest extends TestCase
         }
         catch (TemplateException te)
         {
-            List<String> tokens = te.getUnreplacedTokens();
+            Set<String> tokens = te.getUnreplacedTokens();
             assertEquals(tokens.size(), 0);
         }
         catch (Exception e)
@@ -97,9 +98,9 @@ public class EmailServiceTest extends TestCase
         }
         catch (TemplateException te)
         {
-            List<String> tokens = te.getUnreplacedTokens();
+            Set<String> tokens = te.getUnreplacedTokens();
             assertEquals(tokens.size(), 1);
-            assertEquals(tokens.get(0), "${b}");
+            assertEquals(tokens.iterator().next(), "${b}");
         }
         catch (Exception e)
         {

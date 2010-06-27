@@ -16,8 +16,8 @@ import net.jcip.annotations.ThreadSafe;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public class Global {
-
+public class Global
+{
     private static final ConcurrentHashMap<String,Object> map =
             new ConcurrentHashMap<String,Object>();
 
@@ -26,7 +26,8 @@ public class Global {
      * @return an object previously stored with the specified key, or
      *         null if there wasn't one
      */
-    public static Object get(String key) {
+    public static Object get(String key)
+    {
         return map.get(key);
     }
 
@@ -42,11 +43,17 @@ public class Global {
      * @param value the value.
      * @return the previous value of the specified key in this table,
      * or <tt>null</tt> if it did not have one.
-     * @throws NullPointerException if the key or value is
+     * @throws IllegalArgumentException if the key or value is
      * <tt>null</tt>.
      */
-    public static Object put(String key, Object value) {
-        return map.put(key, value);
+    public static Object put(String key, Object value)
+    {
+        if (key == null)
+            throw new IllegalArgumentException("Cannot put a null key! [value=" + value + "]");
+        else if(value == null)
+            throw new IllegalArgumentException("Cannot put a null value! [key=" + key + "]");
+        else
+            return map.put(key, value);
     }
 
     /**
@@ -64,17 +71,24 @@ public class Global {
      * @param value value to be associated with the specified key.
      * @return previous value associated with specified key, or <tt>null</tt>
      * if there was no mapping for key.
-     * @throws NullPointerException if the specified key or value is
+     * @throws IllegalArgumentException if the specified key or value is
      * <tt>null</tt>.
      */
-    public static Object putIfAbsent(String key, Object value) {
-        return map.putIfAbsent(key, value);
+    public static Object putIfAbsent(String key, Object value)
+    {
+        if (key == null)
+            throw new IllegalArgumentException("Cannot putIfAbsent a null key! [value=" + value + "]");
+        else if(value == null)
+            throw new IllegalArgumentException("Cannot putIfAbsent a null value! [key=" + key + "]");
+        else
+            return map.putIfAbsent(key, value);
     }
 
     /**
      * Removes all mappings
      */
-    public static void clear() {
+    public static void clear()
+    {
         map.clear();
     }
     
@@ -85,11 +99,15 @@ public class Global {
      * @param key the key that needs to be removed.
      * @return the value to which the key had been mapped in this table,
      * or <tt>null</tt> if the key did not have a mapping.
-     * @throws NullPointerException if the key is
+     * @throws IllegalArgumentException if the key is
      * <tt>null</tt>.
      */
-    public static Object remove(String key) {
-        return map.remove(key);
+    public static Object remove(String key)
+    {
+        if (key == null)
+            throw new IllegalArgumentException("Cannot remove a null key!");
+        else
+            return map.remove(key);
     }
 
     /**
@@ -106,10 +124,14 @@ public class Global {
      * @param key key with which the specified value is associated.
      * @param value value associated with the specified key.
      * @return true if the value was removed
-     * @throws NullPointerException if the specified key is <tt>null</tt>.
+     * @throws IllegalArgumentException if the specified key is <tt>null</tt>.
      */
-    public static boolean remove(String key, Object value) {
-        return map.remove(key, value);
+    public static boolean remove(String key, Object value)
+    {
+        if (key == null)
+            throw new IllegalArgumentException("Cannot remove a null key! [value=" + value + "]");
+        else
+            return map.remove(key, value);
     }
 
     /**
@@ -125,11 +147,17 @@ public class Global {
      * @param value value to be associated with the specified key.
      * @return previous value associated with specified key, or <tt>null</tt>
      * if there was no mapping for key.
-     * @throws NullPointerException if the specified key or value is
+     * @throws IllegalArgumentException if the specified key or value is
      * <tt>null</tt>.
      */
-    public static Object replace(String key, Object value) {
-        return map.replace(key, value);
+    public static Object replace(String key, Object value)
+    {
+        if (key == null)
+            throw new IllegalArgumentException("Cannot replace a null key! [value=" + value + "]");
+        else if(value == null)
+            throw new IllegalArgumentException("Cannot replace a null value! [key=" + key + "]");
+        else
+            return map.replace(key, value);
     }
 
     /**
@@ -147,9 +175,17 @@ public class Global {
      * @param oldValue value expected to be associated with the specified key.
      * @param newValue value to be associated with the specified key.
      * @return true if the value was replaced
-     * @throws NullPointerException if the specified key or values are <tt>null</tt>.
+     * @throws IllegalArgumentException if the specified key or values are <tt>null</tt>.
      */
-    public static boolean replace(String key, Object oldValue, Object newValue) {
-        return map.replace(key, oldValue, newValue);
+    public static boolean replace(String key, Object oldValue, Object newValue)
+    {
+        if (key == null)
+            throw new IllegalArgumentException("Cannot replace a null key! [oldValue=" + oldValue + ", newValue=" + newValue + "]");
+        else if(oldValue == null)
+            throw new IllegalArgumentException("Cannot replace a null key! [key=" + key + ", newValue=" + newValue + "]");
+        else if(newValue == null)
+            throw new IllegalArgumentException("Cannot replace a null key! [key=" + key + ", oldValue=" + oldValue + "]");
+        else
+            return map.replace(key, oldValue, newValue);
     }
 }
