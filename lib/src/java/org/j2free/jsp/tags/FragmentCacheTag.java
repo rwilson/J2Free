@@ -230,7 +230,7 @@ public class FragmentCacheTag extends BodyTagSupport {
         // is the additional parameter
         if (!empty(unit)) {
             try {
-                TimeUnit timeUnit = TimeUnit.valueOf(unit);
+                TimeUnit timeUnit = TimeUnit.valueOf(unit.toUpperCase());
                 if (timeUnit != TimeUnit.MILLISECONDS) {
                     log.trace(key + ": Converting " + timeout + " " + timeUnit.name() + " to ms");
                     timeout = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
