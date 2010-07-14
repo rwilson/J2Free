@@ -9,6 +9,7 @@ package org.j2free.jsp.el;
 import java.io.UnsupportedEncodingException;
 
 import java.net.URLEncoder;
+import java.security.MessageDigest;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -153,5 +154,9 @@ public class StandardExtensions {
 
     public static boolean isSecureRequest(HttpServletRequest request) {
         return request.isSecure();
+    }
+
+    public static String sha1Hash(String str) {
+        return org.j2free.security.SecurityUtils.SHA1(str);
     }
 }
