@@ -268,4 +268,10 @@
             java.lang.String sha1Hash(java.lang.String)
         </function-signature>
     </function>
+        <name>addProtocol</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String addProtocol(javax.servlet.http.HttpServletRequest, java.lang.String)
+        </function-signature>
+    </function>
 </taglib>
