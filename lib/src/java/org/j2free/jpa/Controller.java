@@ -1256,34 +1256,34 @@ public final class Controller {
         return query.executeUpdate();
     }
 
-    public <T> T filterSingle(Collection<T> collection, String filterString) {
-        List<T> list = filter(collection, filterString, 0, 1);
+    public <T> Object filterSingle(Collection<T> collection, String filterString) {
+        List<Object> list = filter(collection, filterString, 0, 1);
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T> T filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
-        List<T> list = filter(collection, filterString, 0, 1, params);
+    public <T> Object filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
+        List<Object> list = filter(collection, filterString, 0, 1, params);
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T> List<T> filter(Collection<T> collection, String filterString) {
+    public <T> List filter(Collection<T> collection, String filterString) {
         return filter(collection, filterString, 0, -1);
     }
 
-    public <T> List<T> filter(Collection<T> collection, String filterString, int start, int limit) {
+    public <T> List filter(Collection<T> collection, String filterString, int start, int limit) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
             query.setMaxResults(limit);
         }
 
-        return (List<T>) query.list();
+        return query.list();
     }
 
-    public <T> List<T> filter(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
+    public <T> List filter(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
         return filter(collection, filterString, 0, -1, params);
     }
 
-    public <T> List<T> filter(Collection<T> collection, String filterString, int start, int limit,
+    public <T> List filter(Collection<T> collection, String filterString, int start, int limit,
                                              KeyValuePair<String, ? extends Object>... params) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
@@ -1294,7 +1294,7 @@ public final class Controller {
             query.setParameter(param.key, param.value);
         }
 
-        return (List<T>) query.list();
+        return query.list();
     }
 
     public String getTransactionStatus() throws SystemException {

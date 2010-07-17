@@ -15,15 +15,22 @@ import net.jcip.annotations.ThreadSafe;
  * @author ryan
  */
 @ThreadSafe
-public class AlphaNumericSequencer {
-
+public class AlphaNumericSequencer
+{
     private final AtomicLong number;
 
-    public AlphaNumericSequencer() {
-        number = new AtomicLong(0);
+    public AlphaNumericSequencer()
+    {
+        this(0l);
     }
 
-    public String next() {
+    public AlphaNumericSequencer(long seed)
+    {
+        number = new AtomicLong(seed);
+    }
+
+    public String next()
+    {
         return Long.toString(number.incrementAndGet(), Character.MAX_RADIX);
     }
 }

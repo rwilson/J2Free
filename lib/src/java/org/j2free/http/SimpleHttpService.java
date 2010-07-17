@@ -31,8 +31,8 @@ import net.jcip.annotations.ThreadSafe;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public class SimpleHttpService {
-
+public class SimpleHttpService
+{
     // Static convenience IMPL
     public static AtomicReference<HttpCallService> instance = new AtomicReference(null);
 
@@ -45,15 +45,18 @@ public class SimpleHttpService {
      * @param socketTimeout How long to wait for an operation
      * @throws IllegalStateException if called when the instance is already running
      */
-    public static void init(int corePoolSize, int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout) {
+    public static void init(int corePoolSize, int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout)
+    {
         instance.set(new QueuedHttpCallService(corePoolSize, maxPoolSize, threadIdle, connectTimeout, socketTimeout));
     }
 
-    public static boolean isEnabled() {
+    public static boolean isEnabled()
+    {
         return instance.get() != null;
     }
 
-    public static void ensureEnabled() {
+    public static void ensureEnabled()
+    {
         if (!isEnabled())
             throw new IllegalStateException("SimpleHttpService has not been initialized!");
     }
@@ -61,7 +64,8 @@ public class SimpleHttpService {
     /**
      * @return The status of this instance
      */
-    public static HttpServiceReport reportStatus() {
+    public static HttpServiceReport reportStatus()
+    {
         ensureEnabled();
         return instance.get().reportStatus();
     }
@@ -76,13 +80,13 @@ public class SimpleHttpService {
      * @throws InterruptedException if the current thread is interrupted while waiting
      * for the executor to shutdown.
      */
-    public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+    public static boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException
+    {
         ensureEnabled();
         HttpCallService service = instance.get();
         boolean success = service.shutdown(timeout, unit);
-        if (success) {
+        if (success)
             instance.compareAndSet(service, null); // so it shows up as not enabled after shutdown
-        }
         return success;
     }
 
@@ -90,7 +94,8 @@ public class SimpleHttpService {
      * Shuts down the instance immediately, terminating any running tasks
      * @return a list of tasks running or waiting to be run
      */
-    public static List<Runnable> shutdownNow() {
+    public static List<Runnable> shutdownNow()
+    {
         ensureEnabled();
         HttpCallService service = instance.get();
         List<Runnable> queue = service.shutdownNow();
@@ -98,9 +103,9 @@ public class SimpleHttpService {
         return queue;
     }
 
-    public static Future<HttpCallResult> submit(final HttpCallTask task) {
+    public static Future<HttpCallResult> submit(final HttpCallTask task)
+    {
         ensureEnabled();
         return instance.get().submit(task);
     }
-
 }

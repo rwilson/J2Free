@@ -15,17 +15,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Ryan Wilson
  */
-public class NumericSequencer {
-
+public class NumericSequencer
+{
     private final AtomicInteger number;
     private final ConcurrentLinkedQueue<Integer> returned;
 
-    public NumericSequencer() {
+    public NumericSequencer()
+    {
         number   = new AtomicInteger(0);
         returned = new ConcurrentLinkedQueue<Integer>();
     }
 
-    public int next() {
+    public int next()
+    {
         Integer n = returned.poll();
         return n == null ? number.getAndIncrement() : n;
     }
