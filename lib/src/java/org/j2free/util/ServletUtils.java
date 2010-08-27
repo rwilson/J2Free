@@ -6,6 +6,7 @@
  */
 package org.j2free.util;
 
+import java.util.Map;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -15,6 +16,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -303,19 +305,44 @@ public class ServletUtils {
     }
 
     /**
-     * Returns true if the parameter string prior to the "sig" parameter match the "sig" parameter when combined with the key and hashed
+     * Returns true if the parameter string prior to the "sig" parameter match the "sig"
+     * parameter when combined with the key and hashed.  For post requests, the parameter
+     * order is not guaranteed and so is assumed to be sorted alphabetically by key.
+     *
      * @param a request object
      * @param a secret key
      */
-    public static boolean isAuthenticatedRequest(HttpServletRequest request, String secret) {
+    public static boolean isAuthenticatedRequest(HttpServletRequest req, String secret)
+    {
+        String query, sig = getStringParameter(req, "sig"), method = req.getMethod();
+        if (method.equalsIgnoreCase("GET"))
+        {
+            query = req.getQueryString();
 
-        String query = request.getQueryString();
-        String sig   = getStringParameter(request, "sig");
+            if (StringUtils.isBlank(query) || StringUtils.isBlank(sig))
+                return false;
 
-        if (StringUtils.isBlank(query) || StringUtils.isBlank(sig))
+            query = query.replace("&sig=" + sig, EMPTY);
+        }
+        else if (method.equalsIgnoreCase("POST"))
+        {
+            TreeMap<String, String> params = new TreeMap(req.getParameterMap());
+            params.remove("sig"); // remove the signature
+
+            StringBuilder buf = new StringBuilder();
+            for (Map.Entry<String, String> entry : params.entrySet())
+            {
+                if (buf.length() > 0)
+                    buf.append("&");
+                
+                buf.append(entry.getKey());
+                buf.append('=');
+                buf.append(entry.getValue());
+            }
+            query = buf.toString();
+        }
+        else // We're not supporting auth on non GET or POST requests
             return false;
-
-        query = query.replace("&sig=" + sig, EMPTY);
         
         return signQueryString(query, secret).equals(sig);
     }
@@ -562,8 +589,9 @@ public class ServletUtils {
      * @param statusCode
      */
     public static void doXmlStatusCodeError(HttpServletResponse response, int statusCode) 
-            throws ServletException, IOException {
-        
+            throws ServletException, IOException 
+    {
+        response.setContentType("text/xml");
         response.setStatus(statusCode);
         response.getWriter().println(String.format("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<%d/>", statusCode));
     }
