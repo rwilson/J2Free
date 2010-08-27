@@ -269,6 +269,13 @@
         </function-signature>
     </function>
     <function>
+        <name>random</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            double random()
+        </function-signature>
+    </function>
+    <function>
         <name>addProtocol</name>
         <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
         <function-signature>

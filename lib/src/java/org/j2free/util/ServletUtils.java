@@ -326,18 +326,18 @@ public class ServletUtils {
         }
         else if (method.equalsIgnoreCase("POST"))
         {
-            TreeMap<String, String> params = new TreeMap(req.getParameterMap());
+            TreeMap<String, String[]> params = new TreeMap(req.getParameterMap());
             params.remove("sig"); // remove the signature
 
             StringBuilder buf = new StringBuilder();
-            for (Map.Entry<String, String> entry : params.entrySet())
+            for (Map.Entry<String, String[]> entry : params.entrySet())
             {
                 if (buf.length() > 0)
                     buf.append("&");
                 
                 buf.append(entry.getKey());
                 buf.append('=');
-                buf.append(entry.getValue());
+                buf.append(entry.getValue()[0]);
             }
             query = buf.toString();
         }

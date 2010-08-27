@@ -182,6 +182,10 @@ public class StandardExtensions
         return org.j2free.security.SecurityUtils.SHA1(str);
     }
 
+    public static double random() {
+        return Math.random();
+    }
+
     /**
      * Adds the correct protocol.
      * @param url
