@@ -294,7 +294,8 @@ public class FragmentCacheTag extends BodyTagSupport {
             return EVAL_BODY_BUFFERED;
         }
 
-        boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
+        boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null ||
+                               pageContext.getRequest().getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
 
         // If the force-refresh attribute is set, then try to acquire
         // the lock regardless of condition of expiration.  Doing so
