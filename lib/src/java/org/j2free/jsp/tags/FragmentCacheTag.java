@@ -45,8 +45,8 @@ import static org.j2free.util.ServletUtils.*;
  * 
  * @author  Ryan Wilson
  */
-public class FragmentCacheTag extends BodyTagSupport {
-    
+public class FragmentCacheTag extends BodyTagSupport
+{
     private final Log log = LogFactory.getLog(getClass());
 
     /***********************************************************************
@@ -89,9 +89,8 @@ public class FragmentCacheTag extends BodyTagSupport {
      */
     public static void registerStrategy(String name, FragmentCache cache) {
         caches.put(name, cache);
-        if (defaultCache.get() == null) {
+        if (defaultCache.get() == null)
             defaultCache.compareAndSet(null, cache);
-        }
     }
 
     /**
@@ -111,9 +110,8 @@ public class FragmentCacheTag extends BodyTagSupport {
      */
     public static void disable() {
         enabled.set(false);
-        for (FragmentCache fc : caches.values()) {
+        for (FragmentCache fc : caches.values())
             fc.destroy();
-        }
         caches.clear();
     }
 
@@ -129,6 +127,26 @@ public class FragmentCacheTag extends BodyTagSupport {
     private static final AtomicLong WARNING_COMPUTE_DURATION = new AtomicLong(10000);
     public static void setWarningComputeDuration(long duration) {
         WARNING_COMPUTE_DURATION.set(duration);
+    }
+
+    /**
+     * Holds a reference to any Fragment a Thread has locked for update so that
+     * it can be released in the event of a processing error resulting in doEndTag
+     * not being called.
+     */
+    private static ThreadLocal<Fragment> threadLocal = new ThreadLocal<Fragment>();
+
+    public static void releaseFragment()
+    {
+        Fragment fragment = threadLocal.get();
+        if (fragment != null)
+        {
+            try {
+                fragment.tryRelease();
+            } finally {
+                threadLocal.remove();
+            }
+        }
     }
 
     /***********************************************************************
@@ -211,15 +229,16 @@ public class FragmentCacheTag extends BodyTagSupport {
      *
      */
     @Override
-    public int doStartTag() throws JspException {
-
+    public int doStartTag() throws JspException
+    {
         start = System.currentTimeMillis();
 
         // If the cache isn't enabled, make sure disable is set
         disable |= !enabled.get();
 
         // If disable is set, either by the tag, the request attribute, or the global flag, then ignore the cache
-        if (disable) {
+        if (disable)
+        {
             if (log.isTraceEnabled()) log.trace(key + ": DISABLED");
             return EVAL_BODY_BUFFERED;
         }
@@ -228,7 +247,8 @@ public class FragmentCacheTag extends BodyTagSupport {
 
         // timeout is assumed to be on milliseconds, but there
         // is the additional parameter
-        if (!empty(unit)) {
+        if (!empty(unit))
+        {
             try {
                 TimeUnit timeUnit = TimeUnit.valueOf(unit.toUpperCase());
                 if (timeUnit != TimeUnit.MILLISECONDS) {
@@ -260,8 +280,8 @@ public class FragmentCacheTag extends BodyTagSupport {
         fragment = cache.get(key);
 
         // If not ...
-        if (fragment == null) {
-
+        if (fragment == null)
+        {
             if (log.isTraceEnabled()) log.trace(key + ": NOT FOUND, creating...");
 
             // If the fragment didn't exist, store a new one...
@@ -270,9 +290,9 @@ public class FragmentCacheTag extends BodyTagSupport {
             // of FragmentCache guarantees that the retruned value of this function will
             // be the current Fragment stored in the cache by this key.
             fragment = cache.putIfAbsent(key, cache.createFragment(condition, timeout));
-            
-        } else if (fragment != null && fragment.isLockAbandoned()) {
-
+        }
+        else if (fragment != null && fragment.isLockAbandoned())
+        {
             // Or if it exists but is abandoned (lock-for-update has been held > lock wait timeout).
             
             // If we're here, it probably means that a thread hit an exception while updating the old fragment and was never
@@ -280,43 +300,40 @@ public class FragmentCacheTag extends BodyTagSupport {
 
             log.warn(key + ": DIRTY, replacing");
             fragment = cache.replace(key, fragment, cache.createFragment(fragment, condition, timeout));
-            
-        } else if (log.isTraceEnabled()) {
+        } 
+        else if (log.isTraceEnabled())
             log.trace(key + ": FOUND");
+
+        final boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null ||
+                                     pageContext.getRequest().getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
+
+        final boolean updateFragment;
+        if (forceRefresh) {
+            // If the force-refresh attribute is set, then try to acquire the lock regardless of condition of expiration.  
+            // Doing so will only return false if another thread is already refreshing it which is fine.
+            if (log.isTraceEnabled()) log.trace(key + ": TRY FORCE lock-for-update");
+            updateFragment = fragment.tryLockForUpdate();
+            if (!updateFragment) log.warn(key + ": DENIED FORCE UPDATE, lock-for-update already held by another thread");
+        } else {
+            // Try to acquire the lock for update.  If successful, then  the Fragment needs to be updated and this 
+            // Thread has taken the responsibility to do so.
+            if (log.isTraceEnabled()) log.trace(key + ": TRY CONDITION lock-for-udpate: " + condition);
+            updateFragment = fragment.tryLockForUpdate(condition);
+            if (!updateFragment && log.isTraceEnabled()) log.trace(key + ": DENIED UPDATE");
         }
 
-        // Try to acquire the lock for update.  If successful, then
-        // the Fragment needs to be updated and this Thread has taken
-        // the responsibility to do so.
-        if (log.isTraceEnabled()) log.trace(key + ": TRY CONDITION lock-for-udpate: " + condition);
-        if (fragment.tryLockForUpdate(condition)) {
+        // If we got the update flag, go ahead and do it
+        if (updateFragment) {
             if (log.isTraceEnabled()) log.trace(key + ": ACQUIRED, evaluating body...");
+            threadLocal.set(fragment); // so we can release the fragment in the event of a processing error!
             return EVAL_BODY_BUFFERED;
         }
-
-        boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null ||
-                               pageContext.getRequest().getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
-
-        // If the force-refresh attribute is set, then try to acquire
-        // the lock regardless of condition of expiration.  Doing so
-        // only return false if another thread is already refreshing it
-        // which is fine.
-        if (forceRefresh) {
-            if (log.isTraceEnabled()) log.trace(key + ": TRY FORCE lock-for-update");
-            if (fragment.tryLockForUpdate()) {
-                if (log.isTraceEnabled()) log.trace(key + ": ACQUIRED, evaluating body...");
-                return EVAL_BODY_BUFFERED;
-            }
-        }
-
-        if (log.isTraceEnabled()) log.trace(key + ": DENIED");
 
         // Try to get the content, cached.get() will block if
         // the content of the fragment is not yet set, so catch an
         // InterruptedException.
         String response = null;
         try {
-            
             // if trace is on, we do a little more benchmarking, so we have
             // a distinct branch here to save a branch at the second log call
             // and save benchmarking when we're not tracing
@@ -328,7 +345,6 @@ public class FragmentCacheTag extends BodyTagSupport {
             } else {
                 response = fragment.get(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
             }
-
         } catch (InterruptedException e) {
             log.warn(key + ": INTERRUPTED while waiting for content");
         }
@@ -342,17 +358,10 @@ public class FragmentCacheTag extends BodyTagSupport {
             if (log.isTraceEnabled()) log.trace(key + ": WRITE OUTPUT");
             pageContext.getOut().write(response);
         } catch (IOException e) {
-            log.error(key, e);
+            log.error(key + ": ERROR WRITING", e);
         }
         
-        long duration = System.currentTimeMillis() - start;
-
-        if (duration > WARNING_COMPUTE_DURATION.get()) {
-            log.warn(key + ": SLOW FETCH, " + duration + "ms");
-        } else if (log.isTraceEnabled()) {
-            log.trace(key + ": COMPLETE, " + duration + "ms");
-        }
-        
+        logDuration("FETCH");
         return SKIP_BODY;
     }
 
@@ -361,27 +370,25 @@ public class FragmentCacheTag extends BodyTagSupport {
      *  then return SKIP_BODY when complete
      */
     @Override
-    public int doAfterBody() throws JspException {
-
+    public int doAfterBody() throws JspException
+    {
         // Get the BodyContent, the result of the processing of the body of the tag
         BodyContent body = getBodyContent();
         String content   = body.getString();
 
         // Make sure we had a cache
-        if (fragment != null) {
-
+        if (fragment != null)
+        {
             // Update the Fragment, doing this before writing to the page will release waiting threads sooner.
-            if (!disable) {
-                
-                if (fragment.tryUpdateAndRelease(content, condition)) {
+            if (!disable)
+            {
+                if (fragment.tryUpdateAndRelease(content, condition))
                     log.trace(key + ": UPDATE and RELEASED");
-                } else if (log.isTraceEnabled()) {
-                    log.error(key + ": UPDATE FAILED [cache.contains(\"" + key + "\")=" + cache.contains(key) + "]");
-                }
-
-            } else if (log.isTraceEnabled()) {
-                log.trace(key + ": DISABLED, not caching");
+                else if (log.isTraceEnabled())
+                    log.warn(key + ": UPDATE FAILED [cache.contains(\"" + key + "\")=" + cache.contains(key) + "]");
             }
+            else if (log.isTraceEnabled())
+                log.trace(key + ": DISABLED, not caching");
         }
         
         // Attempt to write the body to the page
@@ -392,27 +399,24 @@ public class FragmentCacheTag extends BodyTagSupport {
             log.error(key, e);
         }
 
-        long duration = System.currentTimeMillis() - start;
-
-        if (duration > WARNING_COMPUTE_DURATION.get()) {
-            log.warn(key + ": SLOW COMPUTE, " + duration + "ms");
-        } else if (log.isTraceEnabled()) {
-            log.trace(key + ": COMPLETE, " + duration + "ms");
-        }
-        
+        logDuration("COMPUTE");
         return SKIP_BODY;
     }
 
     @Override
-    public int doEndTag() throws JspException {
-        if (fragment != null) { // Don't try to release a fragment we didn't have
+    public int doEndTag() throws JspException
+    {
+        if (fragment != null)        // Don't try to release a fragment we didn't have
+        {
             fragment.tryRelease();
+            threadLocal.remove();
         }
         return EVAL_PAGE;
     }
 
     @Override
-    public void release() {
+    public void release()
+    {
         super.release();
         
         disable  = false;   // Clear out instance props
@@ -422,4 +426,16 @@ public class FragmentCacheTag extends BodyTagSupport {
         key = strategy = condition = unit = null;
     }
 
+    /**
+     * Helper function to log the duration of the fragment cache call.
+     * @param action The action taken during this call (COMPUTE | FETCH)
+     */
+    private void logDuration(String action)
+    {
+        long duration = System.currentTimeMillis() - start;
+        if (duration > WARNING_COMPUTE_DURATION.get())
+            log.warn(key + ": SLOW " + action + " (" + duration + "ms)");
+        else if (log.isTraceEnabled())
+            log.trace(key + ": " + action + " COMPLETE (" + duration + "ms)");
+    }
 }
