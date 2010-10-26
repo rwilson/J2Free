@@ -29,14 +29,15 @@ public @interface ServletConfig {
     public static enum SSLOption {
         DENY,       // Disallow SSL processing by this servlet
         OPTIONAL,   // Optionally allow SSL processing by this servlet
-        REQUIRE     // Require SSL connections to this servlet
+        REQUIRE,    // Require SSL connections to this servlet
+        UNSPECIFIED // Unspecified, delegates to the InvokerFilters runtime config
     };
 
     public String[] mappings() default {};
 
     public String regex() default "";
 
-    public SSLOption ssl() default SSLOption.DENY;
+    public SSLOption ssl() default SSLOption.UNSPECIFIED;
 
     public boolean requireController() default true;
 

@@ -100,6 +100,7 @@ public final class InvokerFilter implements Filter
         public static final String BENCHMARK_REQS   = "filter.invoker.benchmark.enabled";
         public static final String BYPASS_PATH      = "filter.invoker.bypass.path";
         public static final String MAX_SERVLET_USES = "filter.invoker.servlet-max-uses";
+        public static final String DEFAULT_SSL_OPT  = "filter.invoker.default-ssl-option";
     }
 
     // Paths to set different cache settings
@@ -115,14 +116,25 @@ public final class InvokerFilter implements Filter
 
     private static final String PRAGMA_VAL                  = "cache";
 
-    private final AtomicBoolean benchmark            = new AtomicBoolean(false);
-    private final AtomicInteger sslRedirectPort      = new AtomicInteger(-1);
-    private final AtomicInteger nonSslRedirectPort   = new AtomicInteger(-1);
-    private final AtomicInteger maxServletUses       = new AtomicInteger(1000);
-    private final AtomicReference<String> bypassPath = new AtomicReference(EMPTY);
+    @GuardedBy("lock") 
+    private boolean benchmark = false;
+
+    @GuardedBy("lock") 
+    private int sslRedirectPort = -1;
+    
+    @GuardedBy("lock")
+    private int nonSslRedirectPort = -1;
+
+    @GuardedBy("lock")
+    private int maxServletUses = 1000;
+    
+    @GuardedBy("lock")
+    private String bypassPath = EMPTY;
+
+    @GuardedBy("lock")
+    private SSLOption defaultSSLOption = SSLOption.UNSPECIFIED;
 
     // For error handling, a handler and redirect location
-    @GuardedBy("lock")
     private UncaughtServletExceptionHandler uncaughtExceptionHandler = null;
 
     // Maps URLs to classes
@@ -221,7 +233,7 @@ public final class InvokerFilter implements Filter
              * were discovered earlier to be static content, so don't
              * process those.
              */
-            if (klass == null && !path.matches(bypassPath.get()))
+            if (klass == null && !path.matches(bypassPath))
             {
                 // (1) Look for *.ext wildcard matches
                 String partial;
@@ -328,19 +340,21 @@ public final class InvokerFilter implements Filter
                 ServletMapping mapping = servletMap.get(klass);
 
                 // If the klass requires SSL, make sure we're on an SSL connection
-                SSLOption sslOpt = mapping.config.ssl();
                 boolean   isSsl  = request.isSecure();
+                SSLOption sslOpt = mapping.config.ssl();
+                if (sslOpt == SSLOption.UNSPECIFIED)
+                    sslOpt = defaultSSLOption;
                 
                 if (sslOpt == SSLOption.REQUIRE && !isSsl)
                 {
                     if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path);
-                    redirectOverSSL(request, response, sslRedirectPort.get());
+                    redirectOverSSL(request, response, sslRedirectPort);
                     return;
                 } 
                 else if (sslOpt == SSLOption.DENY && isSsl)
                 {
                     if (log.isDebugEnabled()) log.debug("Redirecting off SSL: " + path);
-                    redirectOverNonSSL(request, response, nonSslRedirectPort.get());
+                    redirectOverNonSSL(request, response, nonSslRedirectPort);
                     return;
                 }
 
@@ -376,7 +390,7 @@ public final class InvokerFilter implements Filter
                 {
                     // maxUses values less than 0 indicate the value is not set and the default should be used
                     // maxUses == 0 indicates the servlet should NOT be reloaded
-                    int maxUses = mapping.config.maxUses() < 0 ? maxServletUses.get() : mapping.config.maxUses();
+                    int maxUses = mapping.config.maxUses() < 0 ? maxServletUses : mapping.config.maxUses();
                     if (maxUses > 0)
                     {
                         long instanceUses = mapping.incrementUses(); // only increment if servlet reloading is enabled
@@ -420,7 +434,7 @@ public final class InvokerFilter implements Filter
 
             finish = System.currentTimeMillis();
 
-            if (benchmark.get())
+            if (benchmark)
             {
                 log.info(
                     String.format(
@@ -534,23 +548,37 @@ public final class InvokerFilter implements Filter
             write.lock();
 
             // In case the user has let us know about paths that are guaranteed static
-            bypassPath.set( config.getString(Property.BYPASS_PATH, EMPTY) );
+            bypassPath = config.getString(Property.BYPASS_PATH, EMPTY);
 
             // Can enable benchmarking globally
-            benchmark.set( config.getBoolean(Property.BENCHMARK_REQS, false) );
+            benchmark = config.getBoolean(Property.BENCHMARK_REQS, false);
 
             // Set the SSL redirect port
             int val = config.getInt(Constants.PROP_LOCALPORT_SSL, -1);
             if (val > 0)
-                sslRedirectPort.set(val);
+                sslRedirectPort = val;
 
             // Set the SSL redirect port
             val = config.getInt(Constants.PROP_LOCALPORT, -1);
             if (val > 0)
-                nonSslRedirectPort.set(val);
+                nonSslRedirectPort = val;
 
             // Set the reload threshold for servlets
-            maxServletUses.set( config.getInt(Property.MAX_SERVLET_USES, 1000) );
+            maxServletUses = config.getInt(Property.MAX_SERVLET_USES, 1000);
+
+            // The default SSL option
+            String defSSLStr = config.getString(Property.DEFAULT_SSL_OPT, null);
+            if (defSSLStr != null)
+            {
+                try
+                {
+                    defaultSSLOption = SSLOption.valueOf(defSSLStr);
+                }
+                catch (Exception e)
+                {
+                    log.error("Error setting default SSLOption for value: " + defSSLStr);
+                }
+            }
         }
         finally
         {
