@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.net.URL;
 
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +51,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.jcip.annotations.GuardedBy;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.logging.Log;
@@ -59,12 +60,17 @@ import org.apache.commons.logging.LogFactory;
 import org.j2free.annotations.ServletConfig;
 import org.j2free.annotations.FilterConfig;
 import org.j2free.annotations.ServletConfig.SSLOption;
+import org.j2free.servlet.EntityAdminServlet;
+import org.j2free.servlet.LogoutServlet;
+import org.j2free.servlet.ProxyServlet;
+import org.j2free.servlet.StaticJspServlet;
 
 import org.j2free.util.Constants;
 import org.j2free.util.UncaughtServletExceptionHandler;
 
 import static org.j2free.util.ServletUtils.*;
 import static org.j2free.util.Constants.*;
+import org.j2free.util.Global;
 
 import org.scannotation.AnnotationDB;
 import org.scannotation.ClasspathUrlFinder;
@@ -85,16 +91,8 @@ import org.scannotation.WarUrlFinder;
  */
 public final class InvokerFilter implements Filter
 {
-    /**
-     * In lieu of a Log field
-     */
-    private static Log getLog()
-    {
-        return LogFactory.getLog(InvokerFilter.class);
-    }
-
     // Convenience class for referencing static resources
-    private static final class StaticResource extends HttpServlet { }
+    private final class StaticResource extends HttpServlet { }
 
     // Properties
     public static class Property
@@ -117,51 +115,45 @@ public final class InvokerFilter implements Filter
 
     private static final String PRAGMA_VAL                  = "cache";
 
-    private static final AtomicBoolean benchmark            = new AtomicBoolean(false);
-    private static final AtomicInteger sslRedirectPort      = new AtomicInteger(-1);
-    private static final AtomicInteger nonSslRedirectPort   = new AtomicInteger(-1);
-    private static final AtomicInteger maxServletUses       = new AtomicInteger(1000);
-    private static final AtomicReference<String> bypassPath = new AtomicReference(EMPTY);
+    private final AtomicBoolean benchmark            = new AtomicBoolean(false);
+    private final AtomicInteger sslRedirectPort      = new AtomicInteger(-1);
+    private final AtomicInteger nonSslRedirectPort   = new AtomicInteger(-1);
+    private final AtomicInteger maxServletUses       = new AtomicInteger(1000);
+    private final AtomicReference<String> bypassPath = new AtomicReference(EMPTY);
 
     // For error handling, a handler and redirect location
-    private static final AtomicReference<UncaughtServletExceptionHandler> exceptionHandler
-            = new AtomicReference(null);
+    @GuardedBy("lock")
+    private UncaughtServletExceptionHandler uncaughtExceptionHandler = null;
 
     // Maps URLs to classes
-    private static final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap
+    private final ConcurrentMap<String, Class<? extends HttpServlet>> urlMap
             = new ConcurrentHashMap(500, 0.8f, 50);
 
     // Maps the whole URL of resolved partial URLs to classes
-    private static final ConcurrentLinkedHashMap<String, Class<? extends HttpServlet>> partialsMap
+    private final ConcurrentLinkedHashMap<String, Class<? extends HttpServlet>> partialsMap
             = ConcurrentLinkedHashMap.create(EvictionPolicy.LRU, 10000, 50);
 
     // A map of regex's to test mapping against
-    private static final ConcurrentMap<String, Class<? extends HttpServlet>> regexMap
+    private final ConcurrentMap<String, Class<? extends HttpServlet>> regexMap
             = new ConcurrentHashMap();
 
     // A map of HttpServlet classes to mapping for that class
-    private static final ConcurrentHashMap<Class<? extends HttpServlet>, ServletMapping> servletMap
+    private final ConcurrentHashMap<Class<? extends HttpServlet>, ServletMapping> servletMap
             = new ConcurrentHashMap();
 
     // Class for resolving filters at various paths and depths
-    private static final ConcurrentSkipListSet<FilterMapping> filters = new ConcurrentSkipListSet();
+    private final ConcurrentSkipListSet<FilterMapping> filters = new ConcurrentSkipListSet();
 
     // Used to queue requests during (re)configuration.  Fairness is enabled,
     // otherwise writes could wait indefinitely because of the high contention
     // on this filter.
-    private static final ReadWriteLock lock  = new ReentrantReadWriteLock(true);
-    private static final Lock          read  = lock.readLock();
-    private static final Lock          write = lock.writeLock();
+    private final ReadWriteLock lock  = new ReentrantReadWriteLock(true);
+    private final Lock          read  = lock.readLock();
+    private final Lock          write = lock.writeLock();
 
     private final Log log = LogFactory.getLog(getClass());
 
-    /**
-     * Required impls
-     */
-    public void init(javax.servlet.FilterConfig fc)
-    { }
-    
-    public void destroy()
+    public InvokerFilter()
     { }
 
     /**
@@ -361,9 +353,7 @@ public final class InvokerFilter implements Filter
 
                     // Service the end-point on the chain
                     if (log.isTraceEnabled())
-                    {
                         log.trace("ServiceChain [path=" + path +", endPoint=" + mapping.getName() + "]");
-                    }
                     
                     new ServiceChain(filters.iterator(), path, mapping).service(request, response);
 
@@ -371,19 +361,14 @@ public final class InvokerFilter implements Filter
                     process = System.currentTimeMillis();
 
                     if (request.getParameter("benchmark") != null)
-                    {
                         log.info(klass.getName() + " execution time: " + (process - start));
-                    }
                 } 
                 catch (Exception e)
                 {
                     process = System.currentTimeMillis();
 
-                    UncaughtServletExceptionHandler uceh = exceptionHandler.get();
-                    if (uceh != null)
-                    {
-                        uceh.handleException(req, resp, e);
-                    }
+                    if (uncaughtExceptionHandler != null)
+                        uncaughtExceptionHandler.handleException(req, resp, e);
                     else
                         throw new ServletException(e);
                 } 
@@ -407,13 +392,9 @@ public final class InvokerFilter implements Filter
                                 if (log.isTraceEnabled())
                                 {
                                     if (servletMap.replace(klass, mapping, newMapping))
-                                    {
                                         log.trace("Successfully replaced old " + klass.getSimpleName() + " with a new instance");
-                                    }
                                     else
-                                    {
                                         log.trace("Failed to replace old " + klass.getSimpleName() + " with a new instance");
-                                    }
                                 }
                                 else
                                 {
@@ -456,6 +437,128 @@ public final class InvokerFilter implements Filter
     }
 
     /**
+     *
+     */
+    public void init(javax.servlet.FilterConfig fc)
+    {
+        try
+        {
+            write.lock();
+
+            Configuration config = (Configuration)Global.get(CONTEXT_ATTR_CONFIG);
+            if (config != null) configure(config);
+
+            UncaughtServletExceptionHandler ueh = (UncaughtServletExceptionHandler)
+                                                  Global.get(CONTEXT_ATTR_UNCAUGHT_EXCEPTION_HANDLER);
+            if (ueh != null) uncaughtExceptionHandler = ueh;
+
+            ServletContext context = fc.getServletContext();
+            load(context);
+
+            // StaticJspServlet
+            if (config.getBoolean(PROP_STATICJSP_ON, false))
+            {
+                String staticJspDir  = config == null ? DEFAULT_STATICJSP_DIR : config.getString(PROP_STATICJSP_DIR,DEFAULT_STATICJSP_DIR);
+                String staticJspPath = config == null ? DEFAULT_STATICJSP_PATH : config.getString(PROP_STATICJSP_PATH,DEFAULT_STATICJSP_PATH);
+
+                StaticJspServlet.directory.set(staticJspDir);
+
+                Set<String> staticJsps = context.getResourcePaths(staticJspDir);
+                if (staticJsps != null && !staticJsps.isEmpty())
+                {
+                    for (String jsp : staticJsps)
+                    {
+                        if (jsp.endsWith(".jsp"))
+                        {
+                            jsp = staticJspPath + jsp.replace(staticJspDir, EMPTY).replaceAll("\\.jsp$", EMPTY);
+                            addServletMapping(jsp, StaticJspServlet.class);
+                        }
+                    }
+                }
+            }
+
+            // LogoutServlet
+            if (config.getBoolean(PROP_SERVLET_LOGOUT_ON, false))
+                addServletMapping(config, PROP_SERVLET_LOGOUT_PATH, DEFAULT_LOGOUT_PATH, LogoutServlet.class);
+
+            // ProxyServlet
+            if (config.getBoolean(PROP_SERVLET_PROXY_ON, false))
+                addServletMapping(config, PROP_SERVLET_PROXY_PATH, DEFAULT_PROXY_PATH, ProxyServlet.class);
+
+            // Admin Servlet
+            if (config.getBoolean(PROP_SERVLET_ADMIN_ON, false))
+                addServletMapping(config, PROP_SERVLET_ADMIN_PATH, DEFAULT_ADMIN_PATH, EntityAdminServlet.class);
+        }
+        finally
+        {
+            write.unlock();
+        }
+    }
+
+    /**
+     * Release resources when destroyed
+     */
+    public void destroy()
+    {
+        try
+        {
+            write.lock();
+
+            // Destroy the servlets used in the mapping
+            for (ServletMapping mapping : servletMap.values())
+                mapping.servlet.destroy();
+
+            for (FilterMapping mapping : filters)
+                mapping.filter.destroy();
+
+            urlMap.clear();
+            partialsMap.clear();
+            regexMap.clear();
+            servletMap.clear();
+            filters.clear();
+        }
+        finally
+        {
+            write.unlock(); // ALWAYS unlock
+        }
+    }
+
+    /**
+     * Configures the InvokerFilter, locking to prevent request processing
+     * while configuration is set.
+     */
+    private void configure(Configuration config)
+    {
+        try
+        {
+            write.lock();
+
+            // In case the user has let us know about paths that are guaranteed static
+            bypassPath.set( config.getString(Property.BYPASS_PATH, EMPTY) );
+
+            // Can enable benchmarking globally
+            benchmark.set( config.getBoolean(Property.BENCHMARK_REQS, false) );
+
+            // Set the SSL redirect port
+            int val = config.getInt(Constants.PROP_LOCALPORT_SSL, -1);
+            if (val > 0)
+                sslRedirectPort.set(val);
+
+            // Set the SSL redirect port
+            val = config.getInt(Constants.PROP_LOCALPORT, -1);
+            if (val > 0)
+                nonSslRedirectPort.set(val);
+
+            // Set the reload threshold for servlets
+            maxServletUses.set( config.getInt(Property.MAX_SERVLET_USES, 1000) );
+        }
+        finally
+        {
+            write.unlock(); // ALWAYS unlock
+        }
+    }
+
+    /**
      * Locks to prevent request processing while mapping is added.
      *
      * Finds all classes annotated with ServletConfig and maps the class to
@@ -464,9 +567,8 @@ public final class InvokerFilter implements Filter
      *
      * @param context an active ServletContext
      */
-    public static void load(final ServletContext context)
+    public void load(final ServletContext context)
     {
-        Log log = getLog();
         try
         {
             write.lock();
@@ -534,30 +636,7 @@ public final class InvokerFilter implements Filter
 
                                 // Create an instance of the servlet and init it
                                 HttpServlet servlet = klass.newInstance();
-                                servlet.init(
-                                        new javax.servlet.ServletConfig()
-                                        {
-                                            public String getServletName()
-                                            {
-                                                return klass.getName();
-                                            }
-
-                                            public ServletContext getServletContext()
-                                            {
-                                                return context;
-                                            }
-
-                                            public String getInitParameter(String name)
-                                            {
-                                                return null;
-                                            }
-
-                                            public Enumeration getInitParameterNames()
-                                            {
-                                                return null;
-                                            }
-                                        }
-                                    );
+                                servlet.init(new ServletConfigImpl(klass.getName(), context));
 
                                 // Store a reference
                                 servletMap.put(klass, new ServletMapping(servlet, config));
@@ -588,30 +667,7 @@ public final class InvokerFilter implements Filter
 
                                 // Create an instance of the servlet and init it
                                 Filter filter = klass.newInstance();
-                                filter.init(
-                                        new javax.servlet.FilterConfig()
-                                        {
-                                            public String getFilterName()
-                                            {
-                                                return klass.getName();
-                                            }
-
-                                            public ServletContext getServletContext()
-                                            {
-                                                return context;
-                                            }
-
-                                            public String getInitParameter(String namw)
-                                            {
-                                                return null;
-                                            }
-
-                                            public Enumeration getInitParameterNames()
-                                            {
-                                                return null;
-                                            }
-                                        }
-                                    );
+                                filter.init(new FilterConfigImpl(klass.getName(), context));
 
                                 if (log.isDebugEnabled())
                                     log.debug("Mapping filter " + klass.getName() + " to path " + config.mapping());
@@ -639,44 +695,14 @@ public final class InvokerFilter implements Filter
     }
 
     /**
-     * Clears loaded configuration, used for dynamic reconfiguation.
-     * Locks to prevent request processing while modifications are made.
-     */
-    public static void reset()
-    {
-        try
-        {
-            write.lock();
-
-            // Destroy the servlets used in the mapping
-            for (ServletMapping mapping : servletMap.values())
-            {
-                mapping.servlet.destroy();
-            }
-
-            urlMap.clear();
-            partialsMap.clear();
-            regexMap.clear();
-            servletMap.clear();
-            filters.clear();
-
-        } 
-        finally
-        {
-            write.unlock(); // ALWAYS unlock
-        }
-    }
-
-    /**
      * Locks to prevent request processing while mapping is added.
      *
      * @param path The path to map a Servlet to
      * @param klass The Servlet to map
      * @return null if the servlet was mapped to the path, or a class if another servlet was already mapped to that path
      */
-    public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass)
+    public Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass)
     {
-        Log log = getLog();
         try
         {
             write.lock();
@@ -699,55 +725,40 @@ public final class InvokerFilter implements Filter
         }
     }
 
-    /**
-     * Configures the InvokerFilter, locking to prevent request processing
-     * while configuration is set.
-     * 
-     * @param bypass A regex String used to specify known static paths (optional, but recommend for optimization purposes)
-     * @param doBenchmark If true, each request will be benchmarked
-     * @param nonSslPort Port to be used for non-SSL requests
-     * @param sslPort Port to be used for SSL-requests
-     */
-    public static void configure(Configuration config)
-    {
-        try
-        {
-            write.lock();
-
-            // In case the user has let us know about paths that are guaranteed static
-            bypassPath.set( config.getString(Property.BYPASS_PATH, EMPTY) );
-
-            // Can enable benchmarking globally
-            benchmark.set( config.getBoolean(Property.BENCHMARK_REQS, false) );
-
-            // Set the SSL redirect port
-            int val = config.getInt(Constants.PROP_LOCALPORT_SSL, -1);
-            if (val > 0)
-                sslRedirectPort.set(val);
-
-            // Set the SSL redirect port
-            val = config.getInt(Constants.PROP_LOCALPORT, -1);
-            if (val > 0)
-                nonSslRedirectPort.set(val);
-
-            // Set the reload threshold for servlets
-            maxServletUses.set( config.getInt(Property.MAX_SERVLET_USES, 1000) );
-        } 
-        finally
-        {
-            write.unlock(); // ALWAYS unlock
-        }
-    }
 
     /**
-     * Specifies a {@link UncaughtServletExceptionHandler} to which uncaught
-     * exceptions thrown during request execution will be delegated.
+     * Internal method for adding a servlet config
      *
-     * @param useh A defined UncaughtServletExceptionHandler
+     * @param config
+     * @param pathProp
+     * @param defaultPath
+     * @param servletClass
      */
-    public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler handler)
+    private synchronized void addServletMapping(Configuration config, String pathProp, String defaultPath, Class<? extends HttpServlet> servletClass)
     {
-        getLog().info("UncaughtExceptionHandler registered.");
-        exceptionHandler.set(handler);
+        String path;
+        Class  oldKlass;
+
+        Iterator itr;
+
+        List paths = config.getList(pathProp);
+
+        if (paths == null)
+        {
+            oldKlass = addServletMapping(defaultPath, servletClass);
+            if (oldKlass != null)
+                log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + defaultPath);
+        }
+        else
+        {
+            itr = paths.iterator();
+            while (itr.hasNext())
+            {
+                path = (String)itr.next();
+                oldKlass = addServletMapping(path, servletClass);
+                if (oldKlass != null)
+                    log.error("Error mapping " + servletClass.getSimpleName() + ", " + oldKlass.getSimpleName() + " was alread mapped to " + path);
+            }
+        }
     }
 }

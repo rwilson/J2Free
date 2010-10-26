@@ -51,6 +51,8 @@ public class Constants {
     public static final String CONTEXT_ATTR_TASK_MANAGER = "j2free-task-manager";
     public static final String CONTEXT_ATTR_SPYMEMCACHED = "j2free-spymemcached-client";
 
+    public static final String CONTEXT_ATTR_UNCAUGHT_EXCEPTION_HANDLER = "uncaught-exception-handler";
+
     // Useful constants
     public static final byte NULL_BYTE   = 0x0;
     public static final String UTF_8     = "UTF-8";
