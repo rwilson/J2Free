@@ -21,7 +21,7 @@ public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
     private transient ConcurrentHashMap<E, Object> map;
 
     // Dummy value to associate with an Object in the backing Map
-    private static final Object PRESENT = new Object();
+    private final Object PRESENT = new Object();
 
     /**
      * Constructs a new, empty set; the backing <tt>ConcurrentHashMap</tt> instance has

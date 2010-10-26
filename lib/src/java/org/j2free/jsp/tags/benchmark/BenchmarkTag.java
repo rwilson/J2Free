@@ -20,9 +20,7 @@ import org.apache.commons.logging.LogFactory;
 
 public class BenchmarkTag extends TagSupport {
     
-    private static final Log log = LogFactory.getLog(BenchmarkTag.class);
-    
-    private static final String EMPTY = "";
+    private final Log log = LogFactory.getLog(BenchmarkTag.class);
     
     /* Attributes */
     private boolean disable;
@@ -68,7 +66,7 @@ public class BenchmarkTag extends TagSupport {
 
         tick = System.currentTimeMillis() - tick;
         
-        String result = (name != null && !EMPTY.equals(name)) ? name + ": " + tick + "ms" : tick + "ms";
+        String result = (name != null && !"".equals(name)) ? name + ": " + tick + "ms" : tick + "ms";
         
         if (comments) {
             try {

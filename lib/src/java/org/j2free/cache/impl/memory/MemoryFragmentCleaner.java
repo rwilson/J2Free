@@ -19,8 +19,6 @@ package org.j2free.cache.impl.memory;
 
 import org.j2free.cache.*;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
@@ -35,7 +33,7 @@ import org.apache.commons.logging.LogFactory;
 @ThreadSafe
 public class MemoryFragmentCleaner implements Runnable {
 
-    private static final Log log = LogFactory.getLog(MemoryFragmentCleaner.class);
+    private final Log log = LogFactory.getLog(MemoryFragmentCleaner.class);
 
     private final FragmentCache<MemoryFragment> cache;
 

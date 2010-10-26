@@ -41,7 +41,7 @@ import org.j2free.util.KeyValuePair;
  */
 final class HttpCallable implements Comparable<HttpCallable>, Callable<HttpCallResult>
 {
-    private static final Log log = LogFactory.getLog(HttpCallable.class);
+    private final Log log = LogFactory.getLog(HttpCallable.class);
 
     private final HttpCallTask task;
     private final HttpClient client;

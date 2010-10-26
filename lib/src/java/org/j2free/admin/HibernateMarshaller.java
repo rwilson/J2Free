@@ -20,7 +20,7 @@ import org.j2free.jpa.Controller;
  */
 public final class HibernateMarshaller implements Marshaller {
 
-    private static final Log log = LogFactory.getLog(HibernateMarshaller.class);
+    private final Log log = LogFactory.getLog(HibernateMarshaller.class);
     
     /* Maps Class names to previously generated Marshallers so we don't have to
      * go through the expensive process of creating the same marshaller twice.
@@ -38,7 +38,8 @@ public final class HibernateMarshaller implements Marshaller {
             try {
                 marshaller = new HibernateMarshaller(klass, meta);
             } catch (Exception e) {
-                log.error("Error creating marshaller for " + klass.getName(),e);
+                System.err.println("Error creating marshaller for " + klass.getName());
+                e.printStackTrace(System.err);
                 return null;
             }
         }

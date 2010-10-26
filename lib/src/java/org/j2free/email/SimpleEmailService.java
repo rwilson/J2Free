@@ -31,7 +31,7 @@ import org.j2free.util.PriorityReference;
  */
 public class SimpleEmailService
 {
-    private static final Log log = LogFactory.getLog(SimpleEmailService.class);
+    private final Log log = LogFactory.getLog(SimpleEmailService.class);
 
     private static final AtomicReference<EmailService> instance = new AtomicReference(null);
 
@@ -621,7 +621,7 @@ public class SimpleEmailService
     {
         public void handleException(PriorityReference<MimeMessage> message, Throwable t)
         {
-            log.error("Error sending e-mail", t);
+            LogFactory.getLog(getClass()).error("Error sending e-mail", t);
         }
 
         @Override
@@ -664,7 +664,7 @@ public class SimpleEmailService
 
         public void handleException(PriorityReference<MimeMessage> message, Throwable t)
         {
-            log.warn("Error sending message, requeuing...");
+            LogFactory.getLog(getClass()).warn("Error sending message, requeuing...");
             if (isEnabled())
             {
                 instance.get().enqueue(message.get(), priority == null ? message.getPriority() : priority);

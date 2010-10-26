@@ -46,7 +46,7 @@ import org.apache.commons.logging.LogFactory;
 @ThreadSafe
 public final class QueuedHttpCallService implements HttpCallService {
 
-    private static final Log log = LogFactory.getLog(QueuedHttpCallService.class);
+    private final Log log = LogFactory.getLog(QueuedHttpCallService.class);
 
     private final ThreadPoolExecutor                 executor;
     private final MultiThreadedHttpConnectionManager connectionManager;

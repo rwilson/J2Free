@@ -27,24 +27,24 @@ import static org.j2free.util.Constants.*;
  * @version
  */
 @ServletConfig(
-    ssl        = SSLOption.OPTIONAL,
+    ssl = SSLOption.OPTIONAL,
     requireController = true
 )
 public class StaticJspServlet extends HttpServlet {
-
-    private static final Log log = LogFactory.getLog(StaticJspServlet.class);
 
     public static final AtomicReference<String> directory = new AtomicReference<String>(EMPTY);
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+        throws ServletException, IOException
+    {
         dispatchRequest(request,response, directory.get() + request.getRequestURI().replaceFirst(request.getContextPath(), EMPTY) + ".jsp");
     }
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+        throws ServletException, IOException
+    {
         doGet(request,response);
     }
 }

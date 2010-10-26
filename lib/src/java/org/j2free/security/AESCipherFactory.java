@@ -21,9 +21,9 @@ import org.j2free.util.LaunderThrowable;
  * @author Arjun Lall
  */
 @Immutable
-public class AESCipherFactory {
-
-    public static Cipher getCipher(byte[] passPhrase, int cipherMode) {
+public class AESCipherFactory
+{
+    public Cipher getCipher(byte[] passPhrase, int cipherMode) {
         
         Cipher cipher = null;
         
@@ -42,7 +42,7 @@ public class AESCipherFactory {
         return cipher;
     }
     
-    public static Cipher getCipherFromHexString(String key, int cipherMode) {
+    public Cipher getCipherFromHexString(String key, int cipherMode) {
         try {
             return getCipher(Hex.decodeHex(key.toCharArray()), cipherMode);
         } catch (DecoderException ex) {

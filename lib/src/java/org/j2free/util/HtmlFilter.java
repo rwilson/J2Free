@@ -13,27 +13,29 @@ import org.apache.commons.logging.*;
 @NotThreadSafe
 public class HtmlFilter
 {
-    private static final Log log = LogFactory.getLog(HtmlFilter.class);
+    private final int PLAINTEXT_LINE_LENGTH = 60;
 
-    private static final int PLAINTEXT_LINE_LENGTH = 60;
+    private TreeSet<String> okayTags;
+    private final String[] defaultAllowedTags = {
+                                                   "br", "hr", "strong",
+                                                    "b", "i", "u", "font",
+                                                    "ul", "ol", "li", "a"
+                                                };
 
-    private static TreeSet<String> okayTags;
-    private static final String[] defaultAllowedTags = {"br", "hr", "strong",
-                                                        "b", "i", "u", "font",
-                                                        "ul", "ol", "li", "a"};
+    private final String HTML_START = "<([A-Z][A-Z0-9]*)\\b[^>]*>";
+    private final String HTML_END   = "</([A-Z][A-Z0-9]*)\\b[^>]*>";
 
-    private static final String HTML_START = "<([A-Z][A-Z0-9]*)\\b[^>]*>";
-    private static final String HTML_END   = "</([A-Z][A-Z0-9]*)\\b[^>]*>";
+    private final String NOBR_SPACE_PATTERN = "&nbsp;";
+    private final String EMAIL_LINE_BREAKS   = "</?[tb]r\\s?/?>";
+    private final String LINK_PATTERN = "<a.*?href=\"([^\"]*?)\"[^>]*?>([^<]*?)</a>";
 
-    private static final String NOBR_SPACE_PATTERN = "&nbsp;";
-    private static final String EMAIL_LINE_BREAKS   = "</?[tb]r\\s?/?>";
-    private static final String LINK_PATTERN = "<a.*?href=\"([^\"]*?)\"[^>]*?>([^<]*?)</a>";
-
-    static
+    public HtmlFilter()
     {
         okayTags = new TreeSet<String>();
         okayTags.addAll(Arrays.asList(defaultAllowedTags));
     }
+
+    private final Log log = LogFactory.getLog(HtmlFilter.class);
 
     public String filter(String msg)
     {

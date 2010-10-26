@@ -49,11 +49,11 @@ public class FragmentCacheTag extends BodyTagSupport
 {
     private final Log log = LogFactory.getLog(getClass());
 
+    private final String ATTRIBUTE_FORCE_REFRESH = "nocache";
+
     /***********************************************************************
      * Static Implementation
      */
-    private static final String ATTRIBUTE_FORCE_REFRESH = "nocache";
-
     // The possible FragmentCaches
     private static final ConcurrentHashMap<String, FragmentCache> caches
             = new ConcurrentHashMap<String, FragmentCache>(5, 1.0f, 5);

@@ -30,7 +30,7 @@ import org.j2free.http.SimpleHttpService;
 )
 public class ProxyServlet extends HttpServlet {
 
-    private static Log log = LogFactory.getLog(ProxyServlet.class);
+    private Log log = LogFactory.getLog(ProxyServlet.class);
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

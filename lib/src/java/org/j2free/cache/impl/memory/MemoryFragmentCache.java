@@ -43,8 +43,6 @@ import org.j2free.cache.FragmentCacheStatistics;
 @ThreadSafe
 public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
 
-    private final Log log = LogFactory.getLog(getClass());
-
     // Config Properties
     private static final String PROP_SIZE           = Properties.ENGINE_PREFIX + "memory.size";
     private static final String PROP_LOAD_FACTOR    = Properties.ENGINE_PREFIX + "memory.load-factor";
@@ -62,12 +60,15 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
     private MemoryFragmentCleaner cleaner;
 
     // A single-threaded executor to run the cleaner task
-    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     // A ScheduledFuture representing the cleaner task
-    private static volatile ScheduledFuture cleanerFuture = null;
+    private volatile ScheduledFuture cleanerFuture = null;
 
-    public MemoryFragmentCache(Configuration config) {
+    private final Log log = LogFactory.getLog(getClass());
+
+    public MemoryFragmentCache(Configuration config)
+    {
         this(
             config.getInt(PROP_SIZE, DEFAULT_SIZE),
             config.getFloat(PROP_LOAD_FACTOR, DEFAULT_LOAD_FACTOR),
@@ -169,7 +170,7 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
      * @param interval The time interval
      * @param unit The time unit the interval is in
      */
-    public void scheduleCleaner(long interval, TimeUnit unit, boolean runNow) {
+    public final void scheduleCleaner(long interval, TimeUnit unit, boolean runNow) {
 
         if (cleanerFuture != null)
             cleanerFuture.cancel(false);
@@ -180,5 +181,4 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
         log.info("Scheduling cleaner task every " + interval + " " + unit.name());
         cleanerFuture = executor.scheduleAtFixedRate(cleaner, interval, interval, unit);
     }
-
 }

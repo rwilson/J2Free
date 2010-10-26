@@ -28,7 +28,6 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.j2free.security.SecurityUtils;
@@ -40,8 +39,6 @@ import static org.j2free.util.Constants.*;
  * @author Ryan Wilson
  */
 public class ServletUtils {
-
-    private static final Log log = LogFactory.getLog(ServletUtils.class);
 
     public static int getIntParameter(HttpServletRequest req, String name) {
         return getIntParameter(req, name, -1);
@@ -459,7 +456,7 @@ public class ServletUtils {
             url.insert(portStart, sslPort);   // Insert the right port where it should be
         }
 
-        log.debug("redirectOverSSL sending 301: " + url.toString());
+        LogFactory.getLog(ServletUtils.class).debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 
@@ -498,7 +495,7 @@ public class ServletUtils {
             url.insert(portStart, sslPort);   // Insert the right port where it should be
         }
 
-        log.debug("redirectOverSSL sending 301: " + url.toString());
+        LogFactory.getLog(ServletUtils.class).debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 
@@ -537,7 +534,7 @@ public class ServletUtils {
             url.insert(portStart, nonSslPort);   // Insert the right port where it should be
         }
 
-        log.debug("redirectOverSSL sending 301: " + url.toString());
+        LogFactory.getLog(ServletUtils.class).debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 
@@ -576,7 +573,7 @@ public class ServletUtils {
             url.insert(portStart, nonSslPort);   // Insert the right port where it should be
         }
 
-        log.debug("redirectOverSSL sending 301: " + url.toString());
+        LogFactory.getLog(ServletUtils.class).debug("redirectOverSSL sending 301: " + url.toString());
         sendPermanentRedirect(response, url.toString());
     }
 

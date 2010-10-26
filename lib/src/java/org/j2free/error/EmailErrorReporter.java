@@ -22,7 +22,7 @@ import static org.j2free.util.ServletUtils.*;
  */
 public class EmailErrorReporter
 {
-    private static final Log log = LogFactory.getLog(EmailErrorReporter.class);
+    private final Log log = LogFactory.getLog(EmailErrorReporter.class);
 
     private final String to;
     private final KeyValuePair<String,String> from;

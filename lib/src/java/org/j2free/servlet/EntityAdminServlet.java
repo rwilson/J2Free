@@ -53,11 +53,11 @@ import org.j2free.util.ServletUtils;
  * @version
  */
 @ServletConfig
-public class EntityAdminServlet extends HttpServlet {
+public class EntityAdminServlet extends HttpServlet
+{
+    private Log log = LogFactory.getLog(EntityAdminServlet.class);
     
-    private static Log log = LogFactory.getLog(EntityAdminServlet.class);
-    
-    private static TreeMap<String,Class> entityLookup;
+    private TreeMap<String,Class> entityLookup;
 
     private static class Dispatch {
         private static final String ADMIN_JSP       = "/WEB-INF/j2free/jsp/Admin.jsp";

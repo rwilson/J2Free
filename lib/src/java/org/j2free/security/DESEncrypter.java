@@ -27,11 +27,12 @@ import org.j2free.util.LaunderThrowable;
 @Immutable
 public class DESEncrypter {
 
-    private static final byte[] salt = {
+    private final byte[] salt = {
         (byte) 0xA9, (byte) 0x9B, (byte) 0xC8, (byte) 0x32,
         (byte) 0x56, (byte) 0x35, (byte) 0xE3, (byte) 0x03
     };
-    private static final int ITERATION_COUNT = 19;
+    private final int ITERATION_COUNT = 19;
+    
     private final Cipher encoder;
     private final Cipher decoder;
 

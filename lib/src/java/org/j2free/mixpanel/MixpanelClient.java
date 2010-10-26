@@ -51,7 +51,7 @@ import org.json.JSONStringer;
 @ThreadSafe
 public final class MixpanelClient {
 
-    public static final String BASE_URL = "http://api.mixpanel.com/track/";
+    public final String BASE_URL = "http://api.mixpanel.com/track/";
 
     private final String token;
     private final AtomicBoolean debug;

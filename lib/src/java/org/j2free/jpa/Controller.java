@@ -70,9 +70,9 @@ import org.j2free.util.KeyValuePair;
  *
  * @author Ryan Wilson
  */
-public final class Controller {
-
-    private static final Log log = LogFactory.getLog(Controller.class);
+public final class Controller
+{
+    private final Log log = LogFactory.getLog(Controller.class);
 
     public static final String ATTRIBUTE_KEY = "controller";
 
@@ -102,7 +102,8 @@ public final class Controller {
      *      }
      * </pre>
      */
-    public static Controller get() {
+    public static Controller get()
+    {
         return get(true);
     }
 
@@ -150,24 +151,28 @@ public final class Controller {
      *      }
      * </pre>
      */
-    public static Controller get(boolean create) {
-
+    public static Controller get(boolean create)
+    {
         Controller controller = threadLocal.get();  // Get the controller associated with this Thread
-
-        if (controller != null) {
-            if (controller.isTransactionOpen()) {
+        if (controller != null)
+        {
+            if (controller.isTransactionOpen())
                 return controller;                  // short-circuit, saves a branch
-            } else {
+            else
+            {
                 threadLocal.remove();               // Sanity check, make sure an old controller isn't stuck on the Thread
                 controller = null;
             }
         }
                                                     // At this point, controller == null
-        if (create) {                               // If the user requested one be created
-            try {
+        if (create)                                 // If the user requested one be created
+        {
+            try
+            {
                 controller = new Controller(true);  // Try to create one... (specify true to start the TX)
                 threadLocal.set(controller);        // and associate it with the current thread after we know the tx was opened successfully
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new RuntimeException(e);      // Wrap any problems in a RuntimeException
             }
         }
@@ -183,13 +188,16 @@ public final class Controller {
      *
      * @throws RuntimeException if there is an error creating the controller
      */
-    public static Controller getIsolatedInstance() {
-        try {
+    public static Controller getIsolatedInstance()
+    {
+        try
+        {
             // Only NamingException will be caught here, since the constructor
             // does not throw the other exceptions unless true is specified as
             // the argument.
             return new Controller(false);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Error creating isolated Controller", e);
         }
     }
@@ -202,13 +210,16 @@ public final class Controller {
      *
      * @throws RuntimeException if there is an exception ending the UserTransaction
      */
-    public static void release() {
-        
+    public static void release()
+    {
         Controller controller = threadLocal.get();     // Get the controller associated with the current-thread
-        if (controller != null) {                      // If there was one,
-            try {
+        if (controller != null)                        // If there was one,
+        {
+            try
+            {
                 controller.end();                      // end the transaction
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
                 threadLocal.remove();                  // and ALWAYS disassociate it with the current-thread
@@ -228,8 +239,8 @@ public final class Controller {
     protected Throwable problem;
     protected InvalidValue[] errors;
 
-    private Controller(boolean beginTX) throws NamingException, NotSupportedException, SystemException {
-
+    private Controller(boolean beginTX) throws NamingException, NotSupportedException, SystemException
+    {
         InitialContext ctx = new InitialContext();
         
         tx = (UserTransaction) ctx.lookup("UserTransaction");
@@ -237,22 +248,22 @@ public final class Controller {
 
         problem = null;
 
-        if (beginTX) {
-            begin();
-        }
+        if (beginTX) begin();
     }
 
     /**
      * @return The CMT <tt>UserTransaction</tt>
      */
-    public UserTransaction getUserTransaction() {
+    public UserTransaction getUserTransaction()
+    {
         return tx;
     }
 
     /**
      * @return The underlying <tt>EntityManager</tt>
      */
-    public EntityManager getEntityManager() {
+    public EntityManager getEntityManager()
+    {
         return em;
     }
 
@@ -263,8 +274,8 @@ public final class Controller {
      * @throws NotSupportedException
      * @throws SystemException
      */
-    public void begin() throws NotSupportedException, SystemException {
-
+    public void begin() throws NotSupportedException, SystemException
+    {
         // Make sure a transaction isn't already in progress
         if (tx.getStatus() == Status.STATUS_ACTIVE)
             return;
@@ -289,10 +300,12 @@ public final class Controller {
      * @throws HeuristicMixedException
      * @throws HeuristicRollbackException
      */
-    public void end() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
-        try {
-
-            switch (tx.getStatus()) {
+    public void end() throws SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException
+    {
+        try
+        {
+            switch (tx.getStatus())
+            {
                 case Status.STATUS_MARKED_ROLLBACK:
                     tx.rollback();
                     break;
@@ -317,8 +330,9 @@ public final class Controller {
 
             problem = null;
             errors  = null;
-
-        } catch (InvalidStateException ise) {
+        } 
+        catch (InvalidStateException ise)
+        {
             problem = ise;
             this.errors = ise.getInvalidValues();
         }
@@ -327,10 +341,13 @@ public final class Controller {
     /**
      * @return true if <tt>begin</tt> has been called, otherwise false
      */
-    public boolean isTransactionOpen() {
-        try {
+    public boolean isTransactionOpen()
+    {
+        try
+        {
             return tx.getStatus() == Status.STATUS_ACTIVE;
-        } catch (SystemException ex) {
+        }
+        catch (SystemException ex) {
             return false;
         }
     }
@@ -339,7 +356,8 @@ public final class Controller {
      * Clears the persistence context.
      * @see {@link EntityManager} clear
      */
-    public void clear() {
+    public void clear()
+    {
         em.clear();
     }
 
@@ -347,11 +365,14 @@ public final class Controller {
      * Flush the persistence context, after which
      * @see {@link EntityManager} flush
      */
-    public void flush() {
-        try {
+    public void flush()
+    {
+        try
+        {
             em.flush();
             problem = null;
-        } catch (InvalidStateException ise) {
+        }
+        catch (InvalidStateException ise) {
             this.errors = ise.getInvalidValues();
         }
     }

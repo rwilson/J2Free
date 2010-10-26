@@ -85,7 +85,13 @@ import org.scannotation.WarUrlFinder;
  */
 public final class InvokerFilter implements Filter
 {
-    private static final Log log = LogFactory.getLog(InvokerFilter.class);
+    /**
+     * In lieu of a Log field
+     */
+    private static Log getLog()
+    {
+        return LogFactory.getLog(InvokerFilter.class);
+    }
 
     // Convenience class for referencing static resources
     private static final class StaticResource extends HttpServlet { }
@@ -146,6 +152,8 @@ public final class InvokerFilter implements Filter
     private static final ReadWriteLock lock  = new ReentrantReadWriteLock(true);
     private static final Lock          read  = lock.readLock();
     private static final Lock          write = lock.writeLock();
+
+    private final Log log = LogFactory.getLog(getClass());
 
     /**
      * Required impls
@@ -458,7 +466,7 @@ public final class InvokerFilter implements Filter
      */
     public static void load(final ServletContext context)
     {
-        log.debug("Scanning resources...");
+        Log log = getLog();
         try
         {
             write.lock();
@@ -668,6 +676,7 @@ public final class InvokerFilter implements Filter
      */
     public static Class<? extends HttpServlet> addServletMapping(String path, Class<? extends HttpServlet> klass)
     {
+        Log log = getLog();
         try
         {
             write.lock();
@@ -738,7 +747,7 @@ public final class InvokerFilter implements Filter
      */
     public static void registerUncaughtExceptionHandler(UncaughtServletExceptionHandler handler)
     {
-        log.info("UncaughtExceptionHandler registered.");
+        getLog().info("UncaughtExceptionHandler registered.");
         exceptionHandler.set(handler);
     }
 }

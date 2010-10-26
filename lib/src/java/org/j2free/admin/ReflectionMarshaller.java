@@ -60,7 +60,7 @@ import org.j2free.jpa.Controller;
  */
 public final class ReflectionMarshaller implements Marshaller {
     
-    private static final Log log = LogFactory.getLog(ReflectionMarshaller.class);
+    private final Log log = LogFactory.getLog(ReflectionMarshaller.class);
     
     /**************************************************************************/
     // Static Implementation
@@ -82,7 +82,7 @@ public final class ReflectionMarshaller implements Marshaller {
             try {
                 marshaller = new ReflectionMarshaller(klass);
             } catch (Exception e) {
-                log.error("Error creating marshaller for " + klass.getName(),e);
+                LogFactory.getLog(ReflectionMarshaller.class).error("Error creating marshaller for " + klass.getName(),e);
                 return null;
             }
         }

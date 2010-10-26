@@ -47,9 +47,9 @@ import com.sun.org.apache.xerces.internal.dom.DocumentImpl;
 @ThreadSafe
 public final class HoptoadNotifier
 {
-    private static final String NOTIFIER_VERSION = "0.1";
+    private final String NOTIFIER_VERSION = "0.1";
 
-    private static final String API_URL = "http://hoptoadapp.com/notifier_api/v2/notices";
+    private final String API_URL = "http://hoptoadapp.com/notifier_api/v2/notices";
 
     private final Log log = LogFactory.getLog(getClass());
 

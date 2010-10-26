@@ -27,8 +27,8 @@ import static java.lang.System.out;
  */
 public class EmailServiceTest extends TestCase
 {
-    private static final int N_THREADS = 20;
-    private static final KeyValuePair<String,String> FROM = new KeyValuePair<String,String>("Test","from@example.com");
+    private final int N_THREADS = 20;
+    private final KeyValuePair<String,String> FROM = new KeyValuePair<String,String>("Test","from@example.com");
 
     private EmailService service;
 

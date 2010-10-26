@@ -18,14 +18,14 @@ import java.util.Map;
  */
 public class HtmlTag {
     
-    private static final String OPEN       = "<";
-    private static final String CLOSE      = ">";
-    private static final String SELF_CLOSE = " />";
-    private static final String END_OPEN   = "</";
+    private final String OPEN       = "<";
+    private final String CLOSE      = ">";
+    private final String SELF_CLOSE = " />";
+    private final String END_OPEN   = "</";
     
-    private static final String SPACE      = " ";
-    private static final String ATT_CLOSE  = "\"";
-    private static final String ATT_OPEN   = "=\"";
+    private final String SPACE      = " ";
+    private final String ATT_CLOSE  = "\"";
+    private final String ATT_OPEN   = "=\"";
     
     protected String  body;
     protected boolean selfClosing;

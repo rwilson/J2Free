@@ -18,9 +18,6 @@ import org.j2free.util.concurrent.CountingSet;
 @Deprecated
 public class AddCountingSet<E> extends HashSet<E> {
     
-    public static final boolean ORDER_ASC  = true;
-    public static final boolean ORDER_DESC = false;
-    
     private HashMap<E,Integer> set;
     
     public AddCountingSet() {

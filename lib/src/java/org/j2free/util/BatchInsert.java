@@ -159,7 +159,7 @@ public class BatchInsert {
                type.equals(Double.class);
     }
 
-    private static String tick(String s) {
+    private String tick(String s) {
         return String.format("`%s`", s);
     }
 

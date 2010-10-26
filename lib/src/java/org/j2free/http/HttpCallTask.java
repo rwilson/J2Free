@@ -41,13 +41,9 @@ import org.j2free.util.Priority;
 @ThreadSafe
 public class HttpCallTask implements Comparable<HttpCallTask>
 {
-    private static final Log log = LogFactory.getLog(HttpCallTask.class);
+    private final Log log = LogFactory.getLog(HttpCallTask.class);
 
-    public static enum Method
-    {
-        GET,
-        POST
-    };
+    public static enum Method { GET, POST };
 
     protected final Method method;
 
