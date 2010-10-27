@@ -33,10 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -134,6 +130,9 @@ public final class InvokerFilter implements Filter
     @GuardedBy("lock")
     private SSLOption defaultSSLOption = SSLOption.UNSPECIFIED;
 
+    @GuardedBy("lock")
+    private RequestExaminer requestExaminer = new RequestExaminerImpl();
+
     // For error handling, a handler and redirect location
     private UncaughtServletExceptionHandler uncaughtExceptionHandler = null;
 
@@ -180,11 +179,11 @@ public final class InvokerFilter implements Filter
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException
     {
-        HttpServletRequest  request  = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) resp;
+        HttpServletRequest  httpReq  = (HttpServletRequest) req;
+        HttpServletResponse httpResp = (HttpServletResponse) resp;
 
         // Get the path after the context-path (final so we can't accidentally fuck with it)
-        final String path = request.getRequestURI().substring(request.getContextPath().length());
+        final String path = httpReq.getRequestURI().substring(httpReq.getContextPath().length());
 
         // Benchmark vars
         final long start   = System.currentTimeMillis();  // start time
@@ -196,18 +195,18 @@ public final class InvokerFilter implements Filter
         // Set cache-control based on content
         if (Constants.RUN_MODE.compareTo(RunMode.PRODUCTION) == -1) // dev mode
         {
-            response.setHeader(HEADER_PRAGMA, "no-cache");
-            response.setHeader(HEADER_CACHE_CONTROL, "no-store");
+            httpResp.setHeader(HEADER_PRAGMA, "no-cache");
+            httpResp.setHeader(HEADER_CACHE_CONTROL, "no-store");
         } 
         else if (path.matches(SHORT_CACHE_REGEX) && !path.contains(CAPTCHA_PATH))
         {
-            response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
-            response.setHeader(HEADER_CACHE_CONTROL, SHORT_CACHE_VAL);
+            httpResp.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
+            httpResp.setHeader(HEADER_CACHE_CONTROL, SHORT_CACHE_VAL);
         } 
         else if (path.matches(LONG_CACHE_REGEX))
         {
-            response.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
-            response.setHeader(HEADER_CACHE_CONTROL, LONG_CACHE_VAL);
+            httpResp.setHeader(HEADER_PRAGMA, PRAGMA_VAL);
+            httpResp.setHeader(HEADER_CACHE_CONTROL, LONG_CACHE_VAL);
         }
 
         try
@@ -334,27 +333,28 @@ public final class InvokerFilter implements Filter
                 resolve = System.currentTimeMillis();
                 chain.doFilter(req, resp);
                 process  = System.currentTimeMillis();
-            } 
+            }
             else
             {
                 ServletMapping mapping = servletMap.get(klass);
 
                 // If the klass requires SSL, make sure we're on an SSL connection
-                boolean   isSsl  = request.isSecure();
+                boolean isSsl = requestExaminer.isSSL(httpReq);
+
                 SSLOption sslOpt = mapping.config.ssl();
                 if (sslOpt == SSLOption.UNSPECIFIED)
                     sslOpt = defaultSSLOption;
                 
                 if (sslOpt == SSLOption.REQUIRE && !isSsl)
                 {
-                    if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path);
-                    redirectOverSSL(request, response, sslRedirectPort);
+                    if (log.isDebugEnabled()) log.debug("Redirecting over SSL: " + path + " [url=" + httpReq.getRequestURL() + "]");
+                    redirectOverSSL(httpReq, httpResp, sslRedirectPort);
                     return;
                 } 
                 else if (sslOpt == SSLOption.DENY && isSsl)
                 {
-                    if (log.isDebugEnabled()) log.debug("Redirecting off SSL: " + path);
-                    redirectOverNonSSL(request, response, nonSslRedirectPort);
+                    if (log.isDebugEnabled()) log.debug("Redirecting off SSL: " + path + " [url=" + httpReq.getRequestURL() + "]");
+                    redirectOverNonSSL(httpReq, httpResp, nonSslRedirectPort);
                     return;
                 }
 
@@ -369,12 +369,12 @@ public final class InvokerFilter implements Filter
                     if (log.isTraceEnabled())
                         log.trace("ServiceChain [path=" + path +", endPoint=" + mapping.getName() + "]");
                     
-                    new ServiceChain(filters.iterator(), path, mapping).service(request, response);
+                    new ServiceChain(filters.iterator(), path, mapping).service(httpReq, httpResp);
 
                     // Get the time after running
                     process = System.currentTimeMillis();
 
-                    if (request.getParameter("benchmark") != null)
+                    if (httpReq.getParameter("benchmark") != null)
                         log.info(klass.getName() + " execution time: " + (process - start));
                 } 
                 catch (Exception e)
@@ -462,9 +462,14 @@ public final class InvokerFilter implements Filter
             Configuration config = (Configuration)Global.get(CONTEXT_ATTR_CONFIG);
             if (config != null) configure(config);
 
-            UncaughtServletExceptionHandler ueh = (UncaughtServletExceptionHandler)
-                                                  Global.get(CONTEXT_ATTR_UNCAUGHT_EXCEPTION_HANDLER);
+            // Use a custom exception handler, if there is one
+            UncaughtServletExceptionHandler ueh =
+                    (UncaughtServletExceptionHandler) Global.get(CONTEXT_ATTR_UNCAUGHT_EXCEPTION_HANDLER);
             if (ueh != null) uncaughtExceptionHandler = ueh;
+
+            // Use a custom request examiner, if there is one
+            RequestExaminer reqex = (RequestExaminer) Global.get(CONTEXT_ATTR_REQUEST_EXAMINER);
+            if (reqex != null) requestExaminer = reqex;
 
             ServletContext context = fc.getServletContext();
             load(context);
