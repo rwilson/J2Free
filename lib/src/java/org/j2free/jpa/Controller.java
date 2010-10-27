@@ -74,6 +74,11 @@ public final class Controller
 {
     private final Log log = LogFactory.getLog(Controller.class);
 
+    private static Log getLog()
+    {
+        return LogFactory.getLog(Controller.class);
+    }
+
     public static final String ATTRIBUTE_KEY = "controller";
 
     /*****************************************************
@@ -219,7 +224,9 @@ public final class Controller
             {
                 controller.end();                      // end the transaction
             }
-            catch (Exception e) {
+            catch (RollbackException re) {
+                getLog().debug("transaction marked for rollback");
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
                 threadLocal.remove();                  // and ALWAYS disassociate it with the current-thread
