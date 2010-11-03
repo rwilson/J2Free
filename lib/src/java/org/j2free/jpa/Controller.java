@@ -627,8 +627,10 @@ public final class Controller
             this.problem = ise;
             this.errors  = ise.getInvalidValues();
 
-            for (InvalidValue error : ise.getInvalidValues()) {
-                log.warn("Invalid Value: " + error.getBeanClass() + "." + error.getPropertyName() + " = " + error.getValue() + " | " + error.getMessage());
+            if (log.isDebugEnabled())
+            {
+                for (InvalidValue error : ise.getInvalidValues())
+                    log.warn("Invalid Value: " + error.getBeanClass() + "." + error.getPropertyName() + " = " + error.getValue() + " | " + error.getMessage());
             }
 
             markForRollback();
