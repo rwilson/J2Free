@@ -30,23 +30,27 @@ import org.j2free.util.Constants;
  *
  * @author Ryan Wilson
  */
-final class FilterMapping implements Servicable, Comparable<FilterMapping> {
-
+final class FilterMapping implements Servicable, Comparable<FilterMapping>
+{
     protected final Filter filter;
     protected final String path;
     
     private final boolean reqCont;
     private final int depth;
+    private final int priority;
 
-    protected FilterMapping(Filter filter, FilterConfig config) {
-        this(filter, config.mapping(), config.requireController());
+    protected FilterMapping(Filter filter, FilterConfig config)
+    {
+        this(filter, config.mapping(), config.requireController(), config.priority());
     }
 
-    protected FilterMapping(Filter filter, String path, boolean requireController) {
-        this.filter  = filter;
-        this.path    = path.replace("*", Constants.EMPTY); // trim the "*" off the end
-        this.reqCont = requireController;
-        this.depth   = this.path.split("/").length;
+    protected FilterMapping(Filter filter, String path, boolean requireController, int priority)
+    {
+        this.filter   = filter;
+        this.path     = path.replace("*", Constants.EMPTY); // trim the "*" off the end
+        this.reqCont  = requireController;
+        this.depth    = this.path.split("/").length;
+        this.priority = priority;
     }
 
     /**
@@ -56,14 +60,18 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
      * @param o
      * @return
      */
-    public int compareTo(FilterMapping o) {
-        if (this.depth < o.depth) {
+    public int compareTo(FilterMapping o)
+    {
+        if (this.depth < o.depth)
             return -1;
-        } else if (this.depth > o.depth) {
+        else if (this.depth > o.depth)
             return 1;
-        } else {
+        else if (this.priority < o.priority)
+            return -1;
+        else if (this.priority > o.priority)
+            return 1;
+        else
             return this.path.compareTo(o.path);
-        }
     }
 
     /**
@@ -71,7 +79,8 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
      * @return <tt>true</tt> if the associated <tt>Filter</tt> should
      *         be run for the specified URI, otherwise <tt>false</tt>
      */
-    public boolean appliesTo(String uri) {
+    public boolean appliesTo(String uri)
+    {
         return uri.startsWith(this.path);
     }
 
@@ -80,14 +89,16 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
      *         requested a {@link Controller} be present when it is
      *         called, otherwise <tt>false</tt>.
      */
-    public boolean requiresController() {
+    public boolean requiresController()
+    {
         return reqCont;
     }
 
     /**
      * @return A name for this FilterMapping
      */
-    public String getName() {
+    public String getName()
+    {
         return filter.getClass().getName();
     }
 
@@ -96,8 +107,8 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
      * @see {@link Servicable}.service
      */
     public void service(ServletRequest req, ServletResponse resp, ServiceChain chain)
-            throws IOException, ServletException {
-        
+        throws IOException, ServletException
+    {
         filter.doFilter( req, resp, wrapChain(chain) );
     }
 
@@ -109,12 +120,14 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping> {
      * @param chain A {@link ServiceChain}
      * @return A {@link FilterChain}
      */
-    private FilterChain wrapChain(final ServiceChain chain) {
+    private FilterChain wrapChain(final ServiceChain chain)
+    {
         return new FilterChain() {
-                public void doFilter(final ServletRequest req, final ServletResponse resp)
-                    throws IOException, ServletException {
-                    chain.service(req, resp);
-                }
-            };
+                    public void doFilter(final ServletRequest req, final ServletResponse resp)
+                        throws IOException, ServletException
+                    {
+                        chain.service(req, resp);
+                    }
+                };
     }
 }

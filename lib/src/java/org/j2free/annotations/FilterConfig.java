@@ -26,9 +26,26 @@ public @interface FilterConfig {
 
     public String mapping();
 
+    /**
+     * Whether the Filter expects an open Controller. Default is false.
+     */
     public boolean requireController() default false;
 
     // @TODO implement regex filter maappings (this is going to suck...)
     //public String regex() default "";
 
+    /**
+     * Filters are ordered by their "depth", which is the number of "/" they have
+     * in their mapping.  The lesser the depth, the earlier in the filter chain a
+     * filter is processed.
+     *
+     * In the event that two Filters have the same depth, the priority field is
+     * used as a tie-breaker.  The default of 0 is the max priority, so Filters
+     * that do not specify a priority and have a depth conflict will be ordered
+     * by the path alphabetically (e.g. "/a/b" will preceed "/b/c" in the filter
+     * chain.
+     *
+     * It is HIGHLY recommended to specify this field!
+     */
+    public int priority() default 0;
 }

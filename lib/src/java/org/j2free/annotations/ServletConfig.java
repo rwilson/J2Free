@@ -39,6 +39,9 @@ public @interface ServletConfig {
 
     public SSLOption ssl() default SSLOption.UNSPECIFIED;
 
+    /**
+     * Whether the Filter expects an open Controller. Default is false.
+     */
     public boolean requireController() default true;
 
     /**
