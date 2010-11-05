@@ -890,7 +890,7 @@ public class ServletUtils {
      * Removes a cookie
      */
     public static void removeCookie(HttpServletResponse response, String name, boolean useRootPath) {
-        createCookie(response, name, EMPTY, -1, useRootPath);
+        createCookie(response, name, EMPTY, 0, useRootPath);
     }
 
     /**

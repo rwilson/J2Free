@@ -22,9 +22,8 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+
 import org.j2free.annotations.FilterConfig;
-import org.j2free.jpa.Controller;
-import org.j2free.util.Constants;
 
 /**
  *
@@ -33,32 +32,37 @@ import org.j2free.util.Constants;
 final class FilterMapping implements Servicable, Comparable<FilterMapping>
 {
     protected final Filter filter;
-    protected final String path;
+    
+    protected final String match;
+    protected final String exclude;
+    
+    private final boolean useExclude;
     
     private final boolean reqCont;
+    
     private final int depth;
     private final int priority;
 
     protected FilterMapping(Filter filter, FilterConfig config)
     {
-        this(filter, config.mapping(), config.requireController(), config.priority());
+        this(filter, config.match(), config.exclude(), config.requireController(), config.priority());
     }
 
-    protected FilterMapping(Filter filter, String path, boolean requireController, int priority)
+    protected FilterMapping(Filter filter, String match, String exclude, boolean requireController, int priority)
     {
-        this.filter   = filter;
-        this.path     = path.replace("*", Constants.EMPTY); // trim the "*" off the end
-        this.reqCont  = requireController;
-        this.depth    = this.path.split("/").length;
+        this.filter = filter;
+
+        this.match = match.trim();
+        this.exclude = exclude.trim();
+        this.useExclude = this.exclude != null && !"".equals(exclude);
+        
+        this.reqCont = requireController;
+        this.depth = this.match.split("/").length;
         this.priority = priority;
     }
 
     /**
-     * Orders FilterMappings their "depth" first, and alphabetically
-     * by their path second.
-     * 
-     * @param o
-     * @return
+     * Orders FilterMappings their "depth" first, and by their priority second.
      */
     public int compareTo(FilterMapping o)
     {
@@ -71,7 +75,7 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping>
         else if (this.priority > o.priority)
             return 1;
         else
-            return this.path.compareTo(o.path);
+            return 0;
     }
 
     /**
@@ -81,7 +85,10 @@ final class FilterMapping implements Servicable, Comparable<FilterMapping>
      */
     public boolean appliesTo(String uri)
     {
-        return uri.startsWith(this.path);
+        if (useExclude && uri.matches(exclude))
+            return false;
+        else
+            return uri.matches(this.match);
     }
 
     /**

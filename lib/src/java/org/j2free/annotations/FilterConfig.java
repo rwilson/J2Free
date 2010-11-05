@@ -24,15 +24,20 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FilterConfig {
 
-    public String mapping();
+    /**
+     * Paths that match this regex will go through this filter
+     */
+    public String match() default "";
+
+    /**
+     * Paths that match this regex will not go through this filter
+     */
+    public String exclude() default "";
 
     /**
      * Whether the Filter expects an open Controller. Default is false.
      */
     public boolean requireController() default false;
-
-    // @TODO implement regex filter maappings (this is going to suck...)
-    //public String regex() default "";
 
     /**
      * Filters are ordered by their "depth", which is the number of "/" they have

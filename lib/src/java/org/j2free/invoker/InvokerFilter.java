@@ -703,7 +703,7 @@ public final class InvokerFilter implements Filter
                                 filter.init(new FilterConfigImpl(klass.getName(), context));
 
                                 if (log.isDebugEnabled())
-                                    log.debug("Mapping filter " + klass.getName() + " to path " + config.mapping());
+                                    log.debug("Mapping filter " + klass.getName() + " to path " + config.match());
                                     
                                 // Store a reference
                                 filters.add( new FilterMapping(filter, config) );

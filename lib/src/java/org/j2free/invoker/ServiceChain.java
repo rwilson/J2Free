@@ -31,15 +31,16 @@ import org.j2free.jpa.Controller;
  *
  * @author Ryan Wilson
  */
-final class ServiceChain {
-
+final class ServiceChain
+{
     private final Log log = LogFactory.getLog(getClass());
 
     private final Iterator<FilterMapping> filters;
     private final String path;
     private final ServletMapping endPoint;
 
-    public ServiceChain(Iterator<FilterMapping> filters, String path, ServletMapping endPoint) {
+    public ServiceChain(Iterator<FilterMapping> filters, String path, ServletMapping endPoint)
+    {
         this.filters = filters;
         this.path     = path;
         this.endPoint = endPoint;
@@ -57,14 +58,15 @@ final class ServiceChain {
      * @throws ServletException
      */
     protected void service(ServletRequest request, ServletResponse response)
-            throws IOException, ServletException {
-        
+        throws IOException, ServletException
+    {
         // Try to get the next filter on the current depth (we're overwriting
         // the param, since we only need it in the call to mappings.ceiting(mapping).
         FilterMapping next = filters.hasNext() ? filters.next() : null;
 
         // If we found one, skip past any that don't apply to this path
-        while (next != null && !next.appliesTo(path)) {
+        while (next != null && !next.appliesTo(path))
+        {
             if (log.isTraceEnabled()) {
                 log.trace("Skipping filter [name=" + next.getName() + ", path=" + path + "]");
             }
@@ -77,16 +79,15 @@ final class ServiceChain {
         final Servicable link = next == null ? endPoint : next;
 
         boolean release = false;                                // Holds whether we need to release the Controller here
-
-        try {
-
-            if (link.requiresController()) {                    // If the next Servicable requires a Controller
-
+        try
+        {
+            if (link.requiresController())                      // If the next Servicable requires a Controller
+            {
                 log.trace("Next link requires Controller");
 
                 Controller controller = Controller.get(false);  // Try to get an existing one
-
-                if (controller == null) {                       // If there wasn't one already
+                if (controller == null)                         // If there wasn't one already
+                {
                     log.trace("No Controller associated with Thread, creating...");
                     controller = Controller.get();              // Create a new one
                     release = true;                             // And take responsibility for closing it
@@ -95,37 +96,44 @@ final class ServiceChain {
                 // If the Servicable requires a Controller and we don't have one,
                 // then blow up loudly because all resources futher down the chain
                 // will be expecting a Controller and we can't provide that.
-                if (controller == null) {
+                if (controller == null)
+                {
                     throw new ServletException(
                                 String.format(
                                     "Error providing required Controller to %s, [cause=NULL, release=%b]",
                                     link.getName(), release
                                 )
                             );
-                } else if (!controller.isTransactionOpen()) {
+                } 
+                else if (!controller.isTransactionOpen())
+                {
                     throw new ServletException(
                                 String.format(
                                     "Error providing required Controller to %s, [cause=NO TX, release=%b]",
                                     link.getName(), release
                                 )
                             );
-                } else {
+                } 
+                else
                     request.setAttribute(Controller.ATTRIBUTE_KEY, controller); // But if we got it, set it as a req attribute
-                }
             }
 
-            if (log.isTraceEnabled()) {
+            if (log.isTraceEnabled())
                 log.trace("Servicing link [name=" + link.getName() +"]");
-            }
-            link.service(request, response, this);
 
-        } catch (Exception e) {
+            link.service(request, response, this);
+        } 
+        catch (Exception e)
+        {
             throw new ServletException("Error servicing chain", e); // Wrap any exceptions as ServletException
-        } finally {
+        } 
+        finally
+        {
             // If this Servicable has the responsibility to release a Controller
             // Don't need to check requiresController() again, since release can ONLY
             // be true if requiresController() was true.
-            if (release) {
+            if (release)
+            {
                 log.trace("Releasing Controller");
                 Controller.release();
             }
