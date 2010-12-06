@@ -9,7 +9,6 @@ package org.j2free.jsp.el;
 import java.io.UnsupportedEncodingException;
 
 import java.net.URLEncoder;
-import java.security.MessageDigest;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -17,6 +16,7 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang.StringUtils;
 
 import org.j2free.util.ServletUtils;
 
@@ -197,5 +197,33 @@ public class StandardExtensions
             return "https://" + url;
         else
             return "http://" + url;
+    }
+
+    /**
+     * Converts the given ip from x.x.x.x to a number
+     */
+    public static int ipToInt(String addr)
+    {
+        if (StringUtils.isBlank(addr))
+            return 0;
+
+        String[] bytes = addr.split("\\.");
+        int ip = 0;
+        for (String s : bytes) {
+            ip <<= 8;
+            ip |= Integer.parseInt(s);
+        }
+        return ip;
+    }
+
+    /**
+     * Converts the given int to an ip addr of the form x.x.x.x
+     */
+    public static String intToIp(int i)
+    {
+        return ((i >> 24) & 0xFF) + "." +
+               ((i >> 16) & 0xFF) + "." +
+               ((i >>  8) & 0xFF) + "." +
+               ( i        & 0xFF);
     }
 }

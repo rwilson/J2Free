@@ -282,4 +282,18 @@
             java.lang.String addProtocol(javax.servlet.http.HttpServletRequest, java.lang.String)
         </function-signature>
     </function>
+    <function>
+        <name>ipToInt</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            int ipToInt(java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <name>intToIp</name>
+        <function-class>org.j2free.jsp.el.StandardExtensions</function-class>
+        <function-signature>
+            java.lang.String intToIp(int)
+        </function-signature>
+    </function>
 </taglib>
