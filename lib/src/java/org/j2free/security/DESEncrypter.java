@@ -107,41 +107,4 @@ public class DESEncrypter {
     public Cipher getEncoder() {
         return encoder;
     }
-
-    /*
-    public static void main(String[] args) throws Exception {
-
-        String key = "This is a test key";
-
-        DESEncrypter encrypter = new DESEncrypter(key);
-        DESEncrypter decrypter = new DESEncrypter(key);
-
-        JSONStringer json = new JSONStringer();
-        json.object()
-            .key("userId").value(1)
-            .key("username").value("ryan")
-            .key("location").value("San Francisco")
-            .key("level").value(22)
-            .key("avatarUrl").value("http://avatars.jamlegend.com/1.jpg")
-            .key("roles")
-                .array()
-                .value("member")
-                .value("tracker")
-                .value("founder")
-                .value("moderator")
-                .value("producer")
-            .endArray()
-            .endObject();
-
-        String str = json.toString();
-        System.out.println("Pre: " + str);
-
-        String enc = encrypter.encrypt(str);
-        String dec = decrypter.decrypt(enc);
-
-        System.out.println("Post: " + dec);
-
-        System.out.println("Match: " + str.equals(dec));
-    }
-     */
 }

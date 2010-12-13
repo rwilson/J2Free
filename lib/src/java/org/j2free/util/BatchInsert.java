@@ -163,24 +163,4 @@ public class BatchInsert {
         return String.format("`%s`", s);
     }
 
-    /*
-    public static void main(String[] args) throws Exception {
-        
-        BatchInsert bi = new BatchInsert(
-                            "song_plays",
-                            new String[] { "play_date","song_id","plays","wins" },
-                            new Class[] { Date.class, Integer.class, int.class, int.class }
-                        );
-        
-        bi.onDuplicateKeyUpdate("UPDATE plays = plays + VALUES(plays), wins = wins + VALUES(wins);");
-
-        bi.add(new Date(), 1, 10, 5);
-
-        System.out.println(bi.toString());
-
-        bi.add(new Date(), 4, 25, 20);
-
-        System.out.println(bi.toString());
-    }
-    */
 }
