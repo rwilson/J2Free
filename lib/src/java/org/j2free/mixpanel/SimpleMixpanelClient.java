@@ -86,6 +86,7 @@ public class SimpleMixpanelClient {
      * @param customProps Custom properties to send to mixpanel
      * @return A Future containing the result of the API call
      */
+    @Deprecated
     public static Future<HttpCallResult> trackFunnel(String funnel, int step, String goal, String distinctId, String ip, KeyValuePair<String, ? extends Object>... customProps) {
         ensureInitialized();
         return client.get().trackFunnel(funnel, step, goal, distinctId, ip, customProps);
@@ -100,6 +101,7 @@ public class SimpleMixpanelClient {
      * @param props All the properties to be sent to mixpanel
      * @return A Future containing the result of the API call
      */
+    @Deprecated
     public static Future<HttpCallResult> trackFunnel(String funnel, int step, String goal, HashMap<String, String> allProps) {
         ensureInitialized();
         return client.get().trackFunnel(funnel, step, goal, allProps);

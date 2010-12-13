@@ -35,36 +35,32 @@ public class MixpanelAPIClientTest extends TestCase {
     
     public void testInit() {
 
-        try {
-            Class.forName("org.j2free.http.QueuedHttpCallService");
-        } catch (ClassNotFoundException e) {
-            fail("QueuedHttpCallService could not be called!");
-        }
+        // Create a client in debug mode
+        MixpanelClient client = new MixpanelClient("dc864fba5af121e62ef6106d83d21f19");
+        client.setDebug(true);
 
-        SimpleMixpanelClient.init("dc864fba5af121e62ef6106d83d21f19");
-
-        SimpleHttpService.init(5, -1, 60l, 30, 30);
+        // start a http service
+        SimpleHttpService.init(5, -1, 600, 30, 30);
         assertTrue(SimpleHttpService.isEnabled());
 
-        SimpleMixpanelClient.setDebug(true);
-        SimpleMixpanelClient.track("test-event", null, null, new KeyValuePair("test-id", "a"));
+        // Test a track event
+        client.track("test-event", null, null, new KeyValuePair("test-id", "a"));
 
-        Future<HttpCallResult> future = SimpleMixpanelClient.track("test-event", null, null, new KeyValuePair("test-id", "b"));
+        // Test a track event and check the response
+        Future<HttpCallResult> future = client.track("test-event", null, null, new KeyValuePair("test-id", "b"));
         try {
             HttpCallResult result = future.get();
-            System.out.println("result [status=" + result.getStatusCode() + ", body=" + result.getResponse() + "]");
             assertEquals(result.getResponse(), "1");
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            fail(e.getMessage());
         }
 
+        // shutdown the http service
         try {
             boolean normal = SimpleHttpService.shutdown(30, TimeUnit.SECONDS);
             assertTrue(normal);
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            fail(e.getMessage());
         }
     }
 }

@@ -37,27 +37,20 @@ import org.json.JSONException;
 import org.json.JSONStringer;
 
 /**
- * Provides functionality for tracking mixpanel events with both
- * a static implementation or a instance implementation.
- * The static implementation uses an internal instance corresponding
- * to the last call to init(token).  For apps where only one token
- * is used, the static implementation is more convenient.  But, in
- * apps using multiple tokens, it is recommended to construct an
- * instance per token, rather than continually call init(token) to
- * swap the token currently used by the static methods.
- *
+ * Provides functionality for tracking mixpanel events.
+ * 
  * @author Ryan Wilson
  */
 @ThreadSafe
-public final class MixpanelClient {
-
+public final class MixpanelClient
+{
     public final String BASE_URL = "http://api.mixpanel.com/track/";
 
     private final String token;
     private final AtomicBoolean debug;
 
-    public MixpanelClient(String token) {
-
+    public MixpanelClient(String token)
+    {
         if (StringUtils.isBlank(token))
             throw new IllegalArgumentException("Invalid Mixpanel API token");
         
@@ -84,8 +77,8 @@ public final class MixpanelClient {
      * @param params Custom properties to send to mixpanel
      * @return A Future containing the result of the API call
      */
-    public Future<HttpCallResult> track(String event, String distinctId, String ip, KeyValuePair<String, ? extends Object>... customProps) {
-
+    public Future<HttpCallResult> track(String event, String distinctId, String ip, KeyValuePair<String, ? extends Object>... customProps)
+    {
         HashMap<String, String> props = new HashMap();
 
         // add the distint ID for the user, if it was specified
@@ -96,9 +89,8 @@ public final class MixpanelClient {
         if (!StringUtils.isBlank(ip))
             props.put("ip", ip);
 
-        for (KeyValuePair<String, ? extends Object> pair : customProps) {
+        for (KeyValuePair<String, ? extends Object> pair : customProps)
             props.put(pair.key, pair.value.toString());
-        }
 
         return track(event, props);
     }
@@ -110,9 +102,10 @@ public final class MixpanelClient {
      * @param props All the properties to be sent to mixpanel
      * @return A Future containing the result of the API call
      */
-    public Future<HttpCallResult> track(String event, HashMap<String, String> allProps) {
-        try {
-
+    public Future<HttpCallResult> track(String event, HashMap<String, String> allProps)
+    {
+        try
+        {
             allProps.put("token", token);     // make sure to add the token!
             
             JSONStringer json = new JSONStringer();
@@ -128,8 +121,8 @@ public final class MixpanelClient {
                 .endObject();
 
             return track(json.toString());
-
-        } catch (JSONException e) {
+        }
+        catch (JSONException e) {
             throw new IllegalArgumentException("Error creating JSON for API call", e);
         }
     }
@@ -145,12 +138,13 @@ public final class MixpanelClient {
      * @param customProps Custom properties to send to mixpanel
      * @return A Future containing the result of the API call
      */
-    public Future<HttpCallResult> trackFunnel(String funnel, int step, String goal, String distinctId, String ip, KeyValuePair<String, ? extends Object>... customProps) {
-
+    @Deprecated
+    public Future<HttpCallResult> trackFunnel(String funnel, int step, String goal, String distinctId, String ip, KeyValuePair<String, ? extends Object>... customProps)
+    {
         HashMap<String, String> props = new HashMap();
-        for (KeyValuePair<String, ? extends Object> pair : customProps) {
+
+        for (KeyValuePair<String, ? extends Object> pair : customProps)
             props.put(pair.key, pair.value.toString());
-        }
 
         return trackFunnel(funnel, step, goal, props);
     }
@@ -164,12 +158,12 @@ public final class MixpanelClient {
      * @param props All the properties to be sent to mixpanel
      * @return A Future containing the result of the API call
      */
-    public Future<HttpCallResult> trackFunnel(String funnel, int step, String goal, HashMap<String, String> allProps) {
-
+    @Deprecated
+    public Future<HttpCallResult> trackFunnel(String funnel, int step, String goal, HashMap<String, String> allProps)
+    {
         allProps.put("funnel", funnel);
         allProps.put("step", String.format("%d", step));
         allProps.put("goal", goal);
-        
         return track("mp_funnel", allProps);
     }
 
@@ -179,8 +173,8 @@ public final class MixpanelClient {
      * @param base64 A base64 encoded string containing the data to send to mipanel
      * @return A Future containing the result of the API call
      */
-    private Future<HttpCallResult> track(String json) {
-
+    private Future<HttpCallResult> track(String json)
+    {
         HttpCallTask task = new HttpCallTask(Method.POST, BASE_URL);
         task.addQueryParam("ip", "0"); // so mixpanel WON'T use the referrer IP as the user IP
 

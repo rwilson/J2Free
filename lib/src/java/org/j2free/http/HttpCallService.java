@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Ryan Wilson
  */
-public interface HttpCallService {
-
+public interface HttpCallService
+{
     public boolean isEnabled();
 
     /**
@@ -55,5 +55,4 @@ public interface HttpCallService {
     List<Runnable> shutdownNow();
 
     public Future<HttpCallResult> submit(final HttpCallTask task);
-
 }

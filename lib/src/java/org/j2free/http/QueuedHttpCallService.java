@@ -44,8 +44,8 @@ import org.apache.commons.logging.LogFactory;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public final class QueuedHttpCallService implements HttpCallService {
-
+public final class QueuedHttpCallService implements HttpCallService
+{
     private final Log log = LogFactory.getLog(QueuedHttpCallService.class);
 
     private final ThreadPoolExecutor                 executor;
@@ -61,8 +61,9 @@ public final class QueuedHttpCallService implements HttpCallService {
      * @param socketTimeout How long to wait for an operation
      * @throws IllegalStateException if called when the service is already running
      */
-    public QueuedHttpCallService(int corePoolSize, int maxPoolSize, long threadIdle, int connectTimeout, int socketTimeout) {
-
+    public QueuedHttpCallService(int corePoolSize,  int maxPoolSize, long threadIdle,
+                                 int connectTimeout, int socketTimeout)
+    {
         if (maxPoolSize < 0)
             maxPoolSize = Integer.MAX_VALUE;
 
@@ -95,8 +96,8 @@ public final class QueuedHttpCallService implements HttpCallService {
      * @return a HttpCallFuture representing the result of executing
      *         the specified task
      */
-    public Future<HttpCallResult> submit(final HttpCallTask task) {
-
+    public Future<HttpCallResult> submit(final HttpCallTask task)
+    {
         if (task == null)
             throw new IllegalArgumentException("HttpCallTask cannot be null");
 
@@ -120,8 +121,11 @@ public final class QueuedHttpCallService implements HttpCallService {
     /**
      * @return true of this service is currently accepting new tasks
      */
-    public boolean isEnabled() {
-        return !executor.isShutdown() && !executor.isTerminated() && !executor.isTerminating();
+    public boolean isEnabled()
+    {
+        return !executor.isShutdown() &&
+               !executor.isTerminated() &&
+               !executor.isTerminating();
     }
 
     /**
@@ -134,7 +138,8 @@ public final class QueuedHttpCallService implements HttpCallService {
      * @throws InterruptedException if the current thread is interrupted while waiting
      *         for the executor to shutdown.
      */
-    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException
+    {
         executor.shutdown();
         return executor.awaitTermination(timeout, unit);
     }
@@ -143,14 +148,16 @@ public final class QueuedHttpCallService implements HttpCallService {
      * Shuts down the service immediately, terminating any running tasks
      * @return a list of tasks running or waiting to be run
      */
-    public List<Runnable> shutdownNow() {
+    public List<Runnable> shutdownNow()
+    {
         return executor.shutdownNow();
     }
 
     /**
      * @return The status of this service
      */
-    public HttpServiceReport reportStatus() {
+    public HttpServiceReport reportStatus()
+    {
         return new HttpServiceReport(
                 executor.getPoolSize(),             // current Pool size
                 executor.getLargestPoolSize(),      // largest ever since startup
