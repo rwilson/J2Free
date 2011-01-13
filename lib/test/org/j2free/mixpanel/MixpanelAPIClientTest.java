@@ -36,18 +36,17 @@ public class MixpanelAPIClientTest extends TestCase {
     public void testInit() {
 
         // Create a client in debug mode
-        MixpanelClient client = new MixpanelClient("dc864fba5af121e62ef6106d83d21f19");
-        client.setDebug(true);
+        MixpanelClient mpmetrics = new MixpanelClient("98f0199604620f3fedf96d71929a58d9");
+//        mpmetrics.setDebug(true);
 
         // start a http service
         SimpleHttpService.init(5, -1, 600, 30, 30);
         assertTrue(SimpleHttpService.isEnabled());
 
-        // Test a track event
-        client.track("test-event", null, null, new KeyValuePair("test-id", "a"));
+        mpmetrics.registerProperty("user1", "loggedIn", Boolean.FALSE.toString());
 
         // Test a track event and check the response
-        Future<HttpCallResult> future = client.track("test-event", null, null, new KeyValuePair("test-id", "b"));
+        Future<HttpCallResult> future = mpmetrics.track("test-event", "user1", "98.234.145.140", new KeyValuePair("test-id", "a"));
         try {
             HttpCallResult result = future.get();
             assertEquals(result.getResponse(), "1");

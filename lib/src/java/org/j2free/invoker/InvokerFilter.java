@@ -104,7 +104,7 @@ public final class InvokerFilter implements Filter
     private static final String LONG_CACHE_REGEX            = ".*?\\.(swf|js|css|flv)";
     private static final String CAPTCHA_PATH                = "captcha.jpg";
 
-    private static final String SHORT_CACHE_VAL             = "max-age=21600";
+    private static final String SHORT_CACHE_VAL             = "max-age=21600";      // 6 hours
     private static final String LONG_CACHE_VAL              = "max-age=31536000";
 
     private static final String HEADER_PRAGMA               = "Pragma";

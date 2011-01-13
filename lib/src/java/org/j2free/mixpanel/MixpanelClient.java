@@ -18,6 +18,9 @@
 package org.j2free.mixpanel;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +47,14 @@ import org.json.JSONStringer;
 @ThreadSafe
 public final class MixpanelClient
 {
-    public final String BASE_URL = "http://api.mixpanel.com/track/";
+    public static final String BASE_URL = "http://api.mixpanel.com/track/";
+
+    /**
+     * Stores the distinctId => map of properties to be included with all events
+     * tracked using the distinctId.
+     */
+    private static final ConcurrentMap<String, ConcurrentHashMap<String, String>> userPropertiesMap
+            = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
 
     private final String token;
     private final AtomicBoolean debug;
@@ -69,7 +79,80 @@ public final class MixpanelClient
     }
 
     /**
-     * Makes an API call to mixpanel to track a event
+     * Removes any registered properties for the specified distinctId.
+     * 
+     * @param distinctId
+     * @return true if properties were removed, otherwise false.
+     */
+    public boolean clearRegisteredProperties(String distinctId)
+    {
+        return userPropertiesMap.remove(distinctId) != null;
+    }
+
+    /**
+     * Registers a single property to be included with all events tracked using the same distinctId.
+     * @param distinctId
+     * @param key
+     * @param value
+     */
+    public void registerProperty(String distinctId, String key, String value)
+    {
+        Map<String, String> propMap = new HashMap();
+        propMap.put(key, value);
+        registerProperties(distinctId, propMap);
+    }
+
+    /**
+     * Registers a set of properties to be included with all events tracked using the same distinctId.
+     * 
+     * @param distinctId
+     * @param customProps
+     */
+    public void registerProperties(String distinctId, KeyValuePair<String, ? extends Object>... customProps)
+    {
+        Map<String, String> propMap = new HashMap();
+        for (KeyValuePair<String, ? extends Object> pair : customProps)
+            propMap.put(pair.key, pair.value.toString());
+        registerProperties(distinctId, propMap);
+    }
+
+    /**
+     * Registers a set of properties to be included with all events tracked using the same distinctId.
+     *
+     * @param distinctId
+     * @param customProps
+     */
+    public void registerProperties(String distinctId, Map<String, String> allProps)
+    {
+        // Non-blocking algorithm
+        ConcurrentHashMap<String, String> userMap = userPropertiesMap.get(distinctId);
+
+        // If there wasn't a map when we checked, we need to create one, try to put it, and make sure
+        // that the eventual map we add properties to is the one stored.
+        if (userMap == null)
+        {
+            // create a temp new map
+            userMap = new ConcurrentHashMap<String, String>();
+
+            // try to put this user map into the static map
+            ConcurrentHashMap<String, String> storedMap = userPropertiesMap.putIfAbsent(distinctId, userMap);
+
+            // If another thread put a user map in the static map before we could, then putIfAbsent will
+            // return that map, in which case we should use it.  Otherwise, userMap is already set to the
+            // stored map.
+            if (storedMap != null)
+                userMap = storedMap;
+        }
+
+        // Okay, now userMap is guaranteed to be the stored map
+        userMap.putAll(allProps);
+    }
+
+    /**
+     * Makes an API call to mixpanel to track a event including the specified properties
+     * and any registered properties for the specified distinctId.  The properties specified
+     * in eventProps will override a property of the same name that was previously registered,
+     * but for this method call only.
      * 
      * @param event The name of the event
      * @param distinctId A unique ID for the user
@@ -77,36 +160,42 @@ public final class MixpanelClient
      * @param params Custom properties to send to mixpanel
      * @return A Future containing the result of the API call
      */
-    public Future<HttpCallResult> track(String event, String distinctId, String ip, KeyValuePair<String, ? extends Object>... customProps)
+    public Future<HttpCallResult> track(String event, String distinctId, String ip, KeyValuePair<String, ? extends Object>... eventProps)
     {
-        HashMap<String, String> props = new HashMap();
+        Map<String, String> allProps = new HashMap();
+
+        // Add the registered properties first
+        Map<String, String> userProps = userPropertiesMap.get(distinctId);
+        if (userProps != null)
+            allProps.putAll(userProps);
 
         // add the distint ID for the user, if it was specified
         if (!StringUtils.isBlank(distinctId))
-            props.put("distinctId", distinctId);
+            allProps.put("distinct_id", distinctId);
 
         // add the IP of the user, if it was specified
         if (!StringUtils.isBlank(ip))
-            props.put("ip", ip);
+            allProps.put("ip", ip);
 
-        for (KeyValuePair<String, ? extends Object> pair : customProps)
-            props.put(pair.key, pair.value.toString());
+        for (KeyValuePair<String, ? extends Object> pair : eventProps)
+            allProps.put(pair.key, pair.value.toString());
 
-        return track(event, props);
+        return track(event, allProps);
     }
 
     /**
-     * Makes an API call to mixpanel to track a event
+     * Makes an API call to mixpanel to track a event.
      * 
      * @param event The name of the event
      * @param props All the properties to be sent to mixpanel
      * @return A Future containing the result of the API call
      */
-    public Future<HttpCallResult> track(String event, HashMap<String, String> allProps)
+    private Future<HttpCallResult> track(String event, Map<String, String> allProps)
     {
         try
         {
             allProps.put("token", token);     // make sure to add the token!
+            allProps.put("time", String.valueOf(System.currentTimeMillis()));
             
             JSONStringer json = new JSONStringer();
             json.object()
@@ -129,6 +218,7 @@ public final class MixpanelClient
 
     /**
      * Makes an API call to mixpanel to track a funnel event
+     * @deprecated Create funnels on mixpanel.com from normal events.
      * 
      * @param funnel The name of the funnel
      * @param step The step in the funnel
@@ -150,7 +240,8 @@ public final class MixpanelClient
     }
 
     /**
-     * Makes an API call to mixpanel to track a funnel event
+     * Makes an API call to mixpanel to track a funnel event.
+     * @deprecated Create funnels on mixpanel.com from normal events.
      *
      * @param funnel The name of the funnel
      * @param step The step in the funnel

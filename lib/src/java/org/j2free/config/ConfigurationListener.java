@@ -540,7 +540,6 @@ public class ConfigurationListener implements ServletContextListener
                         Global.put(CONTEXT_ATTR_SPYMEMCACHED, client);
 
                         log.info("Spymemcached client created, connected to " + addresses);
-
                     }
                     catch (Exception e)
                     {
