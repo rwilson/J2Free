@@ -57,7 +57,12 @@ public final class MixpanelClient
             = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
 
     private final String token;
-    private final AtomicBoolean debug;
+
+    /**
+     * In test-mode, mixpanel routes requests to a high priority rate limited queue to make testing
+     * easier when mixpanel is back logged with data processing.
+     */
+    private final AtomicBoolean test;
 
     public MixpanelClient(String token)
     {
@@ -65,7 +70,7 @@ public final class MixpanelClient
             throw new IllegalArgumentException("Invalid Mixpanel API token");
         
         this.token = token;
-        this.debug = new AtomicBoolean(false);
+        this.test = new AtomicBoolean(false);
     }
 
     /**
@@ -74,8 +79,8 @@ public final class MixpanelClient
      * 
      * @param debug
      */
-    public void setDebug(boolean debug) {
-        this.debug.set(debug);
+    public void setTest(boolean debug) {
+        this.test.set(debug);
     }
 
     /**
@@ -269,7 +274,7 @@ public final class MixpanelClient
         HttpCallTask task = new HttpCallTask(Method.POST, BASE_URL);
         task.addQueryParam("ip", "0"); // so mixpanel WON'T use the referrer IP as the user IP
 
-        if (debug.get())
+        if (test.get())
             task.addQueryParam("test", "1");
 
         task.addQueryParam("data", new String(Base64.encodeBase64(json.getBytes())));

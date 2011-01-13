@@ -12,12 +12,11 @@ import org.apache.log4j.PatternLayout;
 
 import org.j2free.http.HttpCallResult;
 import org.j2free.http.SimpleHttpService;
-import org.j2free.util.KeyValuePair;
 
 /**
  * @author Ryan Wilson
  */
-public class MixpanelAPIClientTest extends TestCase {
+public class MixpanelClientTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
@@ -33,20 +32,20 @@ public class MixpanelAPIClientTest extends TestCase {
         BasicConfigurator.resetConfiguration();
     }
     
-    public void testInit() {
-
+    public void testInit()
+    {
         // Create a client in debug mode
         MixpanelClient mpmetrics = new MixpanelClient("98f0199604620f3fedf96d71929a58d9");
-//        mpmetrics.setDebug(true);
+        mpmetrics.setTest(true);
 
         // start a http service
         SimpleHttpService.init(5, -1, 600, 30, 30);
         assertTrue(SimpleHttpService.isEnabled());
 
-        mpmetrics.registerProperty("user1", "loggedIn", Boolean.FALSE.toString());
+        mpmetrics.registerProperty("1", "loggedIn", Boolean.TRUE.toString());
 
         // Test a track event and check the response
-        Future<HttpCallResult> future = mpmetrics.track("test-event", "user1", "98.234.145.140", new KeyValuePair("test-id", "a"));
+        Future<HttpCallResult> future = mpmetrics.track("Account.changeUsername", "1", "98.234.145.179");
         try {
             HttpCallResult result = future.get();
             assertEquals(result.getResponse(), "1");
