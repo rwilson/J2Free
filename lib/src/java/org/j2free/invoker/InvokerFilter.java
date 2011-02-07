@@ -183,7 +183,9 @@ public final class InvokerFilter implements Filter
         HttpServletResponse httpResp = (HttpServletResponse) resp;
 
         // Get the path after the context-path (final so we can't accidentally fuck with it)
-        final String path = httpReq.getRequestURI().substring(httpReq.getContextPath().length());
+        final String path = httpReq.getRequestURI()
+                                   .substring( httpReq.getContextPath().length() )  // chop the context-path
+                                   .toLowerCase();                                  // all comparisons in lower-case
 
         // Benchmark vars
         final long start   = System.currentTimeMillis();  // start time
@@ -648,14 +650,18 @@ public final class InvokerFilter implements Filter
                                         //if (url.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
                                         //    url = url.replace("*", EMPTY);
 
+                                        url = url.toLowerCase(); // all comparisons are lower-case
+
                                         if (urlMap.putIfAbsent(url, klass) == null)
                                         {
-                                            if (log.isDebugEnabled()) log.debug("Mapping servlet " + klass.getName() + " to path " + url);
+                                            if (log.isDebugEnabled())
+                                                log.debug("Mapping servlet " + klass.getName() + " to path " + url);
                                         } 
                                         else
-                                        {
-                                            log.error("Unable to map servlet  " + klass.getName() + " to path " + url + ", path already mapped to " + urlMap.get(url).getName());
-                                        }
+                                            log.error(
+                                                    "Unable to map servlet  " + klass.getName() + " to path " + url +
+                                                    ", path already mapped to " + urlMap.get(url).getName()
+                                                );
                                     }
                                 }
 
@@ -750,6 +756,7 @@ public final class InvokerFilter implements Filter
             //if (path.matches("(^\\*[^*]*?)|([^*]*?/\\*$)"))
             //    path = path.replace("*", EMPTY);
 
+            path = path.toLowerCase();
             return urlMap.putIfAbsent(path, klass);
         } 
         finally
