@@ -148,7 +148,7 @@ public final class QueuedHttpCallService implements HttpCallService
      * Shuts down the service immediately, terminating any running tasks
      * @return a list of tasks running or waiting to be run
      */
-    public List<Runnable> shutdownNow()
+    public List<Runnable> shutdown()
     {
         return executor.shutdownNow();
     }

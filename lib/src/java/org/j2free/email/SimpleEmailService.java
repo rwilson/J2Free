@@ -131,11 +131,11 @@ public class SimpleEmailService
     /**
      * Shutdown the service immediately, cancelling remaining tasks
      */
-    public static void shutdownNow()
+    public static void shutdown()
     {
         ensureInitialized();
         EmailService service = instance.get();
-        service.shutdownNow();
+        service.shutdown();
         instance.compareAndSet(service, null); // so it shows up as not enabled after shutdown
     }
 

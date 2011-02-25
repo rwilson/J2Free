@@ -52,7 +52,7 @@ public interface HttpCallService
      * Shuts down the service immediately, terminating any running tasks
      * @return a list of tasks running or waiting to be run
      */
-    List<Runnable> shutdownNow();
+    List<Runnable> shutdown();
 
     public Future<HttpCallResult> submit(final HttpCallTask task);
 }

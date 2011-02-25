@@ -208,7 +208,7 @@ public final class EmailService
     /**
      * Shutdown the service immediately, cancelling remaining tasks
      */
-    public void shutdownNow()
+    public void shutdown()
     {
         log.info("EmailService shutting down...");
         executor.shutdownNow();

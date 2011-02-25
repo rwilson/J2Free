@@ -115,6 +115,10 @@ public class FragmentCacheTag extends BodyTagSupport
         caches.clear();
     }
 
+    public static boolean isEnabled() {
+        return enabled.get();
+    }
+
     // This is the max amount of time a thread will wait() on another thread
     // that is currently updating the Fragment.  If the updating thread does
     // not complete the update within REQUEST_TIMEOUT, the waiting thread

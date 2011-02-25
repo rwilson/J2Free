@@ -17,6 +17,7 @@
  */
 package org.j2free.config;
 
+import java.util.concurrent.ExecutorService;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -116,7 +117,7 @@ public class ConfigurationListener implements ServletContextListener
     public synchronized void contextInitialized(ServletContextEvent event)
     {
         context = event.getServletContext();
-        
+
         // Get the configuration file
         String configPathTemp = (String)context.getInitParameter(INIT_PARAM_CONFIG_PATH);
 
@@ -133,7 +134,7 @@ public class ConfigurationListener implements ServletContextListener
             // Load the configuration
             DefaultConfigurationBuilder configBuilder = new DefaultConfigurationBuilder();
             configBuilder.setFileName(configPath);
-            
+
             final CombinedConfiguration config = configBuilder.getConfiguration(true);
 
             // Save the config where we can get at it later
@@ -473,7 +474,7 @@ public class ConfigurationListener implements ServletContextListener
                 }
 
                 if (!shutdown)
-                    SimpleEmailService.shutdownNow();
+                    SimpleEmailService.shutdown();
             }
 
             // QueuedHttpCallService
@@ -506,7 +507,7 @@ public class ConfigurationListener implements ServletContextListener
                 if (!shutdown)
                 {
                     // But if that doesn't finish in 60 seconds, just cut it off
-                    int count = SimpleHttpService.shutdownNow().size();
+                    int count = SimpleHttpService.shutdown().size();
                     log.warn("SimpleHttpService failed to shutdown in 60 seconds, so it was terminated with " + count + " tasks waiting");
                 }
             }
@@ -588,5 +589,49 @@ public class ConfigurationListener implements ServletContextListener
             context.removeAttribute(key);
 
         loadedConfigPropKeys.clear();
+
+        // Clear resources
+        Global.clear();
+
+        if (SimpleEmailService.isEnabled())
+        {
+            log.info("Shutting down SimpleEmailService...");
+            boolean emailOff = false;
+            try {
+                emailOff = SimpleEmailService.shutdown(2, TimeUnit.SECONDS);
+            } catch (InterruptedException ie) { }
+
+            if (!emailOff)
+                SimpleEmailService.shutdown();
+        }
+
+        if (SimpleHttpService.isEnabled())
+        {
+            log.info("Shutting down SimpleHttpService...");
+            boolean httpOff = false;
+            try {
+                httpOff = SimpleHttpService.shutdown(2, TimeUnit.SECONDS);
+            } catch (InterruptedException ie) { }
+
+            if (!httpOff)
+                SimpleHttpService.shutdown();
+        }
+
+        ExecutorService taskExecutor = (ExecutorService)Global.get(CONTEXT_ATTR_TASK_MANAGER);
+        if (taskExecutor != null)
+        {
+            log.info("Shutting down ExecutorService...");
+            List<Runnable> cancelledTasks = taskExecutor.shutdownNow();
+            if (cancelledTasks != null && !cancelledTasks.isEmpty()) {
+                for (Runnable task  : cancelledTasks) {
+                    log.warn("Cancelled task: "+task);
+                }
+            }
+        }
+
+        if (FragmentCacheTag.isEnabled()) {
+            log.info("Destroying FragmentCache");
+            FragmentCacheTag.disable();
+        }
     }
 }

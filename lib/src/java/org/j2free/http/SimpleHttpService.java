@@ -94,11 +94,11 @@ public class SimpleHttpService
      * Shuts down the instance immediately, terminating any running tasks
      * @return a list of tasks running or waiting to be run
      */
-    public static List<Runnable> shutdownNow()
+    public static List<Runnable> shutdown()
     {
         ensureEnabled();
         HttpCallService service = instance.get();
-        List<Runnable> queue = service.shutdownNow();
+        List<Runnable> queue = service.shutdown();
         instance.compareAndSet(service, null); // so it shows up as not enabled after shutdown
         return queue;
     }
