@@ -25,15 +25,16 @@ import org.j2free.cache.FragmentCacheStatistics;
  * @author Ryan Wilson
  */
 @Immutable
-public class MemoryFragmentCacheStatistics implements FragmentCacheStatistics {
-
+public final class MemoryFragmentCacheStatistics implements FragmentCacheStatistics
+{
     private final int size;
     private final long timestamp;
 
     private final int  lastCleanCount;
     private final long lastCleanTimestamp;
 
-    public MemoryFragmentCacheStatistics(int size, int lastCleanCount, long lastCleanTimestamp) {
+    public MemoryFragmentCacheStatistics(int size, int lastCleanCount, long lastCleanTimestamp)
+    {
         this.lastCleanCount = lastCleanCount;
         this.lastCleanTimestamp = lastCleanTimestamp;
         this.size = size;

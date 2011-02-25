@@ -13,9 +13,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.j2free.annotations.ServletConfig;
 import org.j2free.annotations.ServletConfig.SSLOption;
 

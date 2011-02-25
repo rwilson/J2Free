@@ -41,7 +41,7 @@ public class HoptoadNotifierTest extends TestCase
     {
         super.tearDown();
         BasicConfigurator.resetConfiguration();
-        SimpleHttpService.shutdownNow();
+        SimpleHttpService.shutdown();
     }
 
     /**

@@ -17,7 +17,6 @@
  */
 package org.j2free.cache;
 
-import java.util.Iterator;
 import net.jcip.annotations.ThreadSafe;
 
 /**
@@ -56,17 +55,11 @@ public interface FragmentCache<T extends Fragment> {
     }
 
     /**
-     * Performs any resource cleanup
+     * Performs any resource cleanup.  This will be called when the application is
+     * undeployed.
      */
     public void destroy();
     
-    /**
-     * Removes all {@link Fragment} instances from the <tt>FragmentCache</tt>.
-     *
-     * @return the number of {@link Fragment} instances the cache held before the clear.
-     */
-    public int clear();
-
     /**
      * Tests if the specified key is in this cache.
      * 
@@ -76,116 +69,24 @@ public interface FragmentCache<T extends Fragment> {
     public boolean contains(String key);
 
     /**
-     * Creates a new {@link Fragment} of the default type supported by this implementation.
-     * 
-     * @param condition An optional condition upon creation of the {@link Fragment};
-     *        if the condition supplied to tryAcquireLock does not match this
-     *        condition, then the cache considers itself in need of update.
-     * @param timeout The timeout for this cached {@link Fragment}
-     * @return the new {@link Fragment}
-     */
-    public T createFragment(String condition, long timeout);
-
-    /**
-     * Creates a new {@link Fragment} of the default type supported by this implementation.
-     *
-     * @param content An start value for the content of this {@link Fragment}
-     * @param condition An optional condition upon creation of the {@link Fragment};
-     *        if the condition supplied to tryAcquireLock does not match this
-     *        condition, then the cache considers itself in need of update.
-     * @param timeout The timeout for this cached {@link Fragment}
-     * @return the new {@link Fragment}
-     */
-    public T createFragment(T content, String condition, long timeout);
-
-    /**
      * Gets the {@link Fragment} stored under the argument key if one exists.
      *
      * @param key The key of a {@link Fragment} to get
-     * @return The {@link Fragment} stored via the argument key otherwise null.
+     * @param condition An optional condition upon creation of the {@link Fragment};
+     *        if the condition supplied to tryAcquireLock does not match this
+     *        condition, then the cache considers itself in need of update.
+     * @param timeout The timeout for this cached {@link Fragment}
+     * 
+     * @return The {@link Fragment} stored via the argument key or a new instance if
+     *         one did not exist.
      */
-    public T get(String key);
+    public T getOrCreate(String key, String condition, long timeout);
 
     /**
      * @return statistics about the current state of the cache, or historical data
      *         if the implementation supports that.
      */
     public FragmentCacheStatistics getStatistics();
-
-    /**
-     * Removes the {@link Fragment} stored under the argument key if one exists.
-     *
-     * @param key The key of a {@link Fragment} to evict.
-     * @return The {@link Fragment} if it was found, otherwise null.
-     */
-    public T evict(String key);
-
-    /**
-     * Removes the {@link Fragment} stored under the argument key if one exists and it equals
-     * the {@link Fragment} referenced by the argument {@link Fragment}.
-     *
-     * @param key The key of a {@link Fragment} to evict.
-     * @param expected The {@link Fragment} expected to be removed.
-     *
-     * @return true if the argument key was mapped to the argument {@link Fragment}, otherwise false.
-     */
-    public boolean evict(String key, T expected);
-
-    /**
-     * @return An {@link Iterator} for the keys in the cache.
-     */
-    public Iterator<String> keyIterator();
-
-    /**
-     * Associates the specified key to the specified {@link Fragment} in this cache.
-     * Neither the key nor the {@link Fragment} can be null. The {@link Fragment} can
-     * be retrieved by calling the get method with a key that is equal to the original
-     * key.
-     * 
-     * @param key the key
-     * @param fragment the {@link Fragment}
-     * @return Previous {@link Fragment} of the specified key in this cache, or null if
-     *         it did not have one.
-     */
-    public T put(String key, T fragment);
-
-    /**
-     * Associates the specified {@link Fragment} with the specified key if there is not one already.
-     * This is equivalent to
-     * <pre>
-     *      if (!cache.contains(key)) {
-     *          cache.put(key, fragment);
-     *      }
-     *      return cache.get(key);
-     * </pre>
-     * except that the action is performed atomically.
-     * 
-     * @param key key with which the specified {@link Fragment} is to be associated
-     * @param fragment {@link Fragment} to be associated with the specified key
-     * @return Current {@link Fragment} associated with specified key.  If the cache previously
-     *         associated a {@link Fragment} with the specified key, the old {@link Fragment} is
-     *         returned, otherwise the argument {@link Fragment} is returned.
-     */
-    public T putIfAbsent(String key, T fragment);
-
-    /**
-     * Replace {@link Fragment} for key only if currently mapped to some value. Acts as
-     * <pre>
-     *      if (cache.get(key).equals(expected)) {
-     *          cache.put(key, replacement);
-     *          return replacement;
-     *      } else return cache.get(key);
-     * </pre>
-     * except that the action is performed atomically.
-     * 
-     * @param key key with which the specified {@link Fragment} is associated
-     * @param oldFragment {@link Fragment} expected to be associated with the specified key.
-     * @param newFragment {@link Fragment} to be associated with the specified key.
-     * @return Current {@link Fragment} associated with the specified key. If the previous
-     *         {@link Fragment} equaled the expected, then the replacement {@link Fragment}
-     *         is returned.
-     */
-    public T replace(String key, T expected, T replacement);
 
     /**
      * @return The number of fragments currently in the cache.

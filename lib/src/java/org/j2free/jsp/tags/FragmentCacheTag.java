@@ -87,10 +87,12 @@ public class FragmentCacheTag extends BodyTagSupport
      * @param name The name by which to reference this cache strategy
      * @param cache An instance of FragmentCache
      */
-    public static void registerStrategy(String name, FragmentCache cache) {
+    public static void registerStrategy(String name, FragmentCache cache)
+    {
         caches.put(name, cache);
-        if (defaultCache.get() == null)
+        if (defaultCache.get() == null) {
             defaultCache.compareAndSet(null, cache);
+        }
     }
 
     /**
@@ -108,11 +110,17 @@ public class FragmentCacheTag extends BodyTagSupport
     /**
      * Disables fragment caching, clears any cached fragments
      */
-    public static void disable() {
-        enabled.set(false);
-        for (FragmentCache fc : caches.values())
-            fc.destroy();
-        caches.clear();
+    public static void disable()
+    {
+        if (enabled.compareAndSet(true, false)) {
+            for (FragmentCache fc : caches.values())
+                fc.destroy();
+            caches.clear();
+        }
+    }
+
+    public static boolean isEnabled() {
+        return enabled.get();
     }
 
     // This is the max amount of time a thread will wait() on another thread
@@ -255,7 +263,8 @@ public class FragmentCacheTag extends BodyTagSupport
                     log.trace(key + ": Converting " + timeout + " " + timeUnit.name() + " to ms");
                     timeout = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.warn(key + ": Unable to interpret timeout unit, assuming MILLISECONDS");
             }
         }
@@ -263,7 +272,8 @@ public class FragmentCacheTag extends BodyTagSupport
         cache = defaultCache.get();
 
         // If the user specified a cache, try to get that one
-        if (!StringUtils.isEmpty(strategy)) {
+        if (!StringUtils.isEmpty(strategy))
+        {
             cache = caches.get(strategy);
             if (cache == null) {
                 log.warn(key + ": NO CACHE for strategy: " + strategy);
@@ -277,44 +287,20 @@ public class FragmentCacheTag extends BodyTagSupport
         }
 
         // See if there is a cached Fragment already
-        fragment = cache.get(key);
+        fragment = cache.getOrCreate(key, condition, timeout);
 
-        // If not ...
-        if (fragment == null)
-        {
-            if (log.isTraceEnabled()) log.trace(key + ": NOT FOUND, creating...");
+        boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null ||
+                               pageContext.getRequest().getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
 
-            // If the fragment didn't exist, store a new one...
-            // Necessary to use putIfAbset, because the map could have changed
-            // since calling cache.get(key) above.  In either case, the implementation
-            // of FragmentCache guarantees that the retruned value of this function will
-            // be the current Fragment stored in the cache by this key.
-            fragment = cache.putIfAbsent(key, cache.createFragment(condition, timeout));
-        }
-        else if (fragment != null && fragment.isLockAbandoned())
-        {
-            // Or if it exists but is abandoned (lock-for-update has been held > lock wait timeout).
-            
-            // If we're here, it probably means that a thread hit an exception while updating the old fragment and was never
-            // able to unlock the fragment.  So, remove the old fragment, then create a new one starting with the old content
-
-            log.warn(key + ": DIRTY, replacing");
-            fragment = cache.replace(key, fragment, cache.createFragment(fragment, condition, timeout));
-        } 
-        else if (log.isTraceEnabled())
-            log.trace(key + ": FOUND");
-
-        final boolean forceRefresh = pageContext.getAttribute(ATTRIBUTE_FORCE_REFRESH) != null ||
-                                     pageContext.getRequest().getAttribute(ATTRIBUTE_FORCE_REFRESH) != null;
-
-        final boolean updateFragment;
+        boolean updateFragment;
         if (forceRefresh) {
             // If the force-refresh attribute is set, then try to acquire the lock regardless of condition of expiration.  
-            // Doing so will only return false if another thread is already refreshing it which is fine.
+            // Doing so will only return false if another thread is already refreshing it, which is fine.
             if (log.isTraceEnabled()) log.trace(key + ": TRY FORCE lock-for-update");
             updateFragment = fragment.tryLockForUpdate();
             if (!updateFragment) log.warn(key + ": DENIED FORCE UPDATE, lock-for-update already held by another thread");
-        } else {
+        }
+        else {
             // Try to acquire the lock for update.  If successful, then  the Fragment needs to be updated and this 
             // Thread has taken the responsibility to do so.
             if (log.isTraceEnabled()) log.trace(key + ": TRY CONDITION lock-for-udpate: " + condition);
@@ -333,19 +319,22 @@ public class FragmentCacheTag extends BodyTagSupport
         // the content of the fragment is not yet set, so catch an
         // InterruptedException.
         String response = null;
-        try {
+        try
+        {
             // if trace is on, we do a little more benchmarking, so we have
             // a distinct branch here to save a branch at the second log call
             // and save benchmarking when we're not tracing
             if (log.isTraceEnabled()) {
                 log.trace(key + ": GET content");
                 final long getTime = System.currentTimeMillis();
-                response = fragment.get(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
+                response = fragment.getContent(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
                 log.trace(key + ": GOT content [waitTime:" + (System.currentTimeMillis() - getTime) + "]");
-            } else {
-                response = fragment.get(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
             }
-        } catch (InterruptedException e) {
+            else {
+                response = fragment.getContent(REQUEST_TIMEOUT.get(), TimeUnit.SECONDS);
+            }
+        }
+        catch (InterruptedException e) {
             log.warn(key + ": INTERRUPTED while waiting for content");
         }
 
@@ -357,7 +346,8 @@ public class FragmentCacheTag extends BodyTagSupport
         try {
             if (log.isTraceEnabled()) log.trace(key + ": WRITE OUTPUT");
             pageContext.getOut().write(response);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             log.error(key + ": ERROR WRITING", e);
         }
         
@@ -395,7 +385,8 @@ public class FragmentCacheTag extends BodyTagSupport
         try {
             if (log.isTraceEnabled()) log.trace(key + ": WRITE OUTPUT");
             body.getEnclosingWriter().write(content);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             log.error(key, e);
         }
 

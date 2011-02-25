@@ -17,7 +17,6 @@
  */
 package org.j2free.cache.impl.memory;
 
-import org.j2free.cache.*;
 import java.util.Iterator;
 
 import net.jcip.annotations.GuardedBy;
@@ -31,16 +30,17 @@ import org.apache.commons.logging.LogFactory;
  * @author  Ryan Wilson
  */
 @ThreadSafe
-public class MemoryFragmentCleaner implements Runnable {
+public final class MemoryFragmentCleaner implements Runnable {
 
     private final Log log = LogFactory.getLog(MemoryFragmentCleaner.class);
 
-    private final FragmentCache<MemoryFragment> cache;
+    private final MemoryFragmentCache cache;
 
     @GuardedBy("this") private long lastCleanTimestamp;
     @GuardedBy("this") private int lastCleanCount;
 
-    public MemoryFragmentCleaner(FragmentCache<MemoryFragment> cache) {
+    public MemoryFragmentCleaner(MemoryFragmentCache cache)
+    {
         super();
         this.cache = cache;
 
@@ -48,8 +48,8 @@ public class MemoryFragmentCleaner implements Runnable {
         this.lastCleanCount     = -1;
     }
 
-    public void run() {
-
+    public void run()
+    {
         long start = System.currentTimeMillis();
 
         Iterator<String> iterator = cache.keyIterator();
@@ -62,9 +62,9 @@ public class MemoryFragmentCleaner implements Runnable {
 
             String key;
             MemoryFragment fragment;
-            while (iterator.hasNext()) {
-
-                key      = iterator.next();
+            while (iterator.hasNext())
+            {
+                key = iterator.next();
                 fragment = cache.get(key);
 
                 // @TODO remove race-condition where fragment could be locked b/t calls to isExpiredOrLockAbandoned and evict

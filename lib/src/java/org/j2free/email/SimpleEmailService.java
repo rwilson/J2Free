@@ -131,7 +131,7 @@ public class SimpleEmailService
     /**
      * Shutdown the service immediately, cancelling remaining tasks
      */
-    public static void shutdownNow()
+    public static void shutdown()
     {
         ensureInitialized();
         EmailService service = instance.get();

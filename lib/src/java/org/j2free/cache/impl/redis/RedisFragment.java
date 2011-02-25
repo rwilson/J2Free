@@ -1,7 +1,7 @@
-/*
- * Fragment.java
+/**
+ * RedisFragment.java
  *
- * Copyright (c) 2009 FooBrew, Inc.
+ * Copyright (c) 2010 FooBrew, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.j2free.cache;
+package org.j2free.cache.impl.redis;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.j2free.cache.Fragment;
+import redis.clients.jedis.JedisPool;
 
 /**
- * Implementations of Fragment MUST be thread-safe.
- *
  * @author Ryan Wilson
  */
 @ThreadSafe
-public interface Fragment {
+public final class RedisFragment implements Fragment
+{
+    protected static class Field
+    {
+        protected static String CONTENT   = "content";
+        protected static String CONDITION = "condition";
+
+        protected static String[] ALL = new String[] { CONTENT, CONDITION };
+    }
+
+    private final Log log = LogFactory.getLog(getClass());
+
+    private final JedisPool pool;
+
+    protected RedisFragment(JedisPool pool)
+    {
+        this.pool = pool;
+    }
 
     /**
+     * @see {@link Fragment}
+     *
      * If the content of this Fragment has not yet been initialized, this method
      * will block until either (1) it is initialized, or (2) <code>waitFor</code>
      * has passed.  Otherwise, it will return content immediately, even if currently
@@ -38,14 +60,23 @@ public interface Fragment {
      * @param unit the TimeUnit to wait for
      * @return the content
      */
-    public String getContent(long waitFor, TimeUnit unit) throws InterruptedException;
+    public String getContent(long waitFor, TimeUnit unit) throws InterruptedException
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
     /**
+     * @see {@link Fragment}
+     *
      * @return true if the Fragment is locked and the lockWait has passed, otherwise false.
      */
-    public boolean isLockAbandoned();
+    public boolean isLockAbandoned()
+    {
+    }
 
     /**
+     * @see {@link Fragment}
+     *
      * Atomic bundling of a few tasks:
      *  (a) Check if this fragment is expired
      *  (b) Check if the condition under which this fragment was created has expired
@@ -57,9 +88,14 @@ public interface Fragment {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryLockForUpdate(final String condition);
+    public boolean tryLockForUpdate()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
     /**
+     * @see {@link Fragment}
+     *
      * This try will attempt to force-lock the fragment for update
      * regardless of condition or expiration status.  It is meant to
      * be used to refresh the cache due to a manual request.
@@ -67,9 +103,14 @@ public interface Fragment {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryLockForUpdate();
+    public boolean tryLockForUpdate(String condition)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
     /**
+     * @see {@link Fragment}
+     *
      *  Checks that the caller Thread owns the update lock; if so
      *  updates the content and notifies other threads that may be
      *  waiting to get the content, otherwise returns false.
@@ -77,12 +118,19 @@ public interface Fragment {
      *  @param content the content to set
      *  @param condition the current condition
      */
-    public boolean tryUpdateAndRelease(String content, String condition);
-
+    public boolean tryUpdateAndRelease(String content, String condition)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
     /**
+     * @see {@link Fragment}
+     *
      *  Attemtps to release the lock if the current thread holds it,
      *  otherwise does nothing.
      */
-    public void tryRelease();
-
+    public void tryRelease()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

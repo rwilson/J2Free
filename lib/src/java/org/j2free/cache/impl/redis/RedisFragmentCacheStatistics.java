@@ -1,7 +1,7 @@
-/*
- * FragmentCacheStatistics.java
+/**
+ * RedisFragmentCacheStatistics.java
  *
- * Copyright (c) 2009 FooBrew, Inc.
+ * Copyright (c) 2010 FooBrew, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.j2free.cache;
+package org.j2free.cache.impl.redis;
 
 import net.jcip.annotations.Immutable;
+import org.j2free.cache.FragmentCacheStatistics;
 
 /**
  *
  * @author Ryan Wilson
  */
 @Immutable
-public interface FragmentCacheStatistics
+public class RedisFragmentCacheStatistics implements FragmentCacheStatistics
 {
-    public int getCacheSize();
-    public long getTimestamp();
+    
 }

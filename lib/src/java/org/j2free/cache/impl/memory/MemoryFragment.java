@@ -40,11 +40,15 @@ import org.j2free.util.ServletUtils;
  * MemoryFragment.  Access to the actual content of the frament is synchronized on the objects
  * internal monitor, as is the condition, and the locked and updated timestamps.
  *
+ * MemoryFragment implements Cloneable for the cases when an instance becomes abandoned by
+ * the Thread which holds its update lock.  In that case, since the instance cannot be
+ * unlocked, it is cloned to produce an unlocked copy.
+ *
  * @author Ryan Wilson
  * @version 1.0
  */
 @ThreadSafe
-public class MemoryFragment implements Fragment, Cloneable {
+public final class MemoryFragment implements Fragment, Cloneable {
 
     private final Log log = LogFactory.getLog(getClass());
 
@@ -69,7 +73,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      *
      * @param timeout The timeout for this cached MemoryFragment
      */
-    public MemoryFragment(String condition, long timeout) {
+    public MemoryFragment(String condition, long timeout)
+    {
         this(null, condition, timeout);
     }
 
@@ -81,8 +86,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      *
      * @param timeout The timeout for this cached MemoryFragment
      */
-    public MemoryFragment(String content, String condition, long timeout) {
-
+    public MemoryFragment(String content, String condition, long timeout)
+    {
         this.content = content;
         this.timeout = timeout;
 
@@ -97,7 +102,8 @@ public class MemoryFragment implements Fragment, Cloneable {
     }
 
     @Override
-    public MemoryFragment clone() throws CloneNotSupportedException {
+    public MemoryFragment clone() throws CloneNotSupportedException
+    {
         return new MemoryFragment(content, condition, timeout);
     }
 
@@ -108,7 +114,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      *         <tt>MemoryFragment</tt>, but using the specified newCondition and
      *         newTimeout
      */
-    public MemoryFragment clone(String newCondition, long newTimeout) {
+    public MemoryFragment clone(String newCondition, long newTimeout)
+    {
         return new MemoryFragment(content, newCondition, newTimeout);
     }
 
@@ -122,7 +129,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      * @param unit the TimeUnit to wait for
      * @return the content
      */
-    public String get(long waitFor, TimeUnit unit) throws InterruptedException {
+    public String getContent(long waitFor, TimeUnit unit) throws InterruptedException
+    {
         if (initialized.await(waitFor, unit)) {
             synchronized (this) {
                 return content;
@@ -136,7 +144,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      * @return true if the MemoryFragment is expired, locked, and the lockWait has passed,
      *         otherwise false.
      */
-    public synchronized boolean isLockAbandoned() {
+    public synchronized boolean isLockAbandoned()
+    {
         return updateLock.isLocked() && (System.currentTimeMillis() - lockedTime ) >= MAX_LOCK_HOLD;
     }
 
@@ -144,7 +153,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      * @return true if the MemoryFragment is expired, or is locked and the lockWait has
      *         passed, otherwise false
      */
-    protected synchronized boolean isExpiredOrLockAbandoned() {
+    protected synchronized boolean isExpiredOrLockAbandoned()
+    {
         long    now    = System.currentTimeMillis();
         boolean locked = updateLock.isLocked();
 
@@ -164,17 +174,19 @@ public class MemoryFragment implements Fragment, Cloneable {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryLockForUpdate(String curCondition) {
-
+    public boolean tryLockForUpdate(String curCondition)
+    {
         // If the caller Thread is already the owner, just return true
-        if (updateLock.isHeldByCurrentThread()) {
+        if (updateLock.isHeldByCurrentThread())
+        {
             if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: thread already holds lock, short-circuiting...");
             return true;
         }
 
         // If this MemoryFragment is currently locked for update by a different Thread
         // and the lock has not expired, return false.
-        if (updateLock.isLocked()) {
+        if (updateLock.isLocked())
+        {
             if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: Fragment locked by another thread, returning false...");
             return false;
         }
@@ -225,17 +237,19 @@ public class MemoryFragment implements Fragment, Cloneable {
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
-    public boolean tryLockForUpdate() {
-
+    public boolean tryLockForUpdate()
+    {
         // If the caller Thread is already the owner, just return true
-        if (updateLock.isHeldByCurrentThread()) {
+        if (updateLock.isHeldByCurrentThread())
+        {
             if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: thread already holds lock, short-circuiting...");
             return true;
         }
 
         // If this MemoryFragment is currently locked for update by a different Thread
         // and the lock has not expired, return false.
-        if (updateLock.isLocked()) {
+        if (updateLock.isLocked())
+        {
             if (log.isTraceEnabled()) log.trace("tryAcquireForUpdate: Fragment locked by another thread, returning false...");
             return false;
         }
@@ -260,8 +274,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      *  @param content the content to set
      *  @param condition the current condition
      */
-    public boolean tryUpdateAndRelease(String newContent, String newCondition) {
-
+    public boolean tryUpdateAndRelease(String newContent, String newCondition)
+    {
         // Make sure the caller owns the lock
         if (!updateLock.isHeldByCurrentThread())
             return false;
@@ -287,8 +301,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      *  Attemtps to release the lock if the current thread holds it,
      *  otherwise does nothing.
      */
-    public void tryRelease() {
-
+    public void tryRelease()
+    {
         if (!updateLock.isHeldByCurrentThread())
             return;
 

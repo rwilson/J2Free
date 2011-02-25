@@ -41,8 +41,8 @@ import org.j2free.cache.FragmentCacheStatistics;
  * @author Ryan Wilson
  */
 @ThreadSafe
-public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
-
+public final class MemoryFragmentCache implements FragmentCache<MemoryFragment>
+{
     // Config Properties
     private static final String PROP_SIZE           = Properties.ENGINE_PREFIX + "memory.size";
     private static final String PROP_LOAD_FACTOR    = Properties.ENGINE_PREFIX + "memory.load-factor";
@@ -83,7 +83,7 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
     }
 
     public MemoryFragmentCache(int initialSize) {
-        this.map     = new ConcurrentHashMap<String,MemoryFragment>(initialSize);
+        this.map = new ConcurrentHashMap<String,MemoryFragment>(initialSize);
         this.cleaner = new MemoryFragmentCleaner(this);
     }
 
@@ -95,71 +95,133 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
      * @param loadFactor
      * @param concurrencyLevel
      */
-    public MemoryFragmentCache(int initialSize, float loadFactor, int concurrencyLevel) {
-        this.map     = new ConcurrentHashMap<String,MemoryFragment>(initialSize, loadFactor, concurrencyLevel);
+    public MemoryFragmentCache(int initialSize, float loadFactor, int concurrencyLevel)
+    {
+        this.map = new ConcurrentHashMap<String,MemoryFragment>(initialSize, loadFactor, concurrencyLevel);
         this.cleaner = new MemoryFragmentCleaner(this);
     }
 
-    public void destroy() {
-        clear();
+    /**
+     * Performs any resource cleanup.  This will be called when the application is
+     * undeployed.
+     */
+    public void destroy()
+    {
         if (cleanerFuture != null) {
             cleanerFuture.cancel(true);
         }
-    }
-
-    public int clear() {
-        int size = map.size();
         map.clear();
-        return size;
     }
 
-    public boolean contains(String key) {
+    /**
+     * Tests if the specified key is in this cache.
+     *
+     * @param key possible key
+     * @return true if and only if the specified key is in this cache, otherwise false.
+     */
+    public boolean contains(String key)
+    {
         return map.containsKey(key);
     }
 
-    public MemoryFragment createFragment(String condition, long timeout) {
-        return new MemoryFragment(condition, timeout);
-    }
+    /**
+     * Removes the {@link Fragment} stored under the argument key if one exists and it equals
+     * the {@link Fragment} referenced by the argument {@link Fragment}.
+     *
+     * @param key The key of a {@link Fragment} to evict.
+     * @param expected The {@link Fragment} expected to be removed.
+     *
+     * @return true if the argument key was mapped to the argument {@link Fragment}, otherwise false.
+     */
 
-    public MemoryFragment createFragment(MemoryFragment base, String condition, long timeout) {
-        return base.clone(condition, timeout);
-    }
-
-    public MemoryFragment evict(String key) {
-        return map.remove(key);
-    }
-
-    public boolean evict(String key, MemoryFragment expected) {
+    protected boolean evict(String key, MemoryFragment expected) {
         return map.remove(key, expected);
     }
 
+    /**
+     * Gets the {@link Fragment} stored under the argument key if one exists.
+     *
+     * @param key The key of a {@link Fragment} to get
+     * @return The {@link Fragment} stored via the argument key otherwise null.
+     */
     public MemoryFragment get(String key) {
         return map.get(key);
     }
 
-    public Iterator<String> keyIterator() {
+    /**
+     * Gets the {@link Fragment} stored under the argument key if one exists.
+     *
+     * @param key The key of a {@link Fragment} to get
+     * @param condition An optional condition upon creation of the {@link Fragment};
+     *        if the condition supplied to tryAcquireLock does not match this
+     *        condition, then the cache considers itself in need of update.
+     * @param timeout The timeout for this cached {@link Fragment}
+     *
+     * @return The {@link Fragment} stored via the argument key otherwise null.
+     */
+    public MemoryFragment getOrCreate(String key, String condition, long timeout)
+    {
+        // Try to get an existing Fragment
+        MemoryFragment fragment = get(key);
+
+        // If not ...
+        if (fragment == null)
+        {
+            if (log.isTraceEnabled()) log.trace(key + ": NOT FOUND, creating...");
+
+            // If the fragment didn't exist, store a new one...
+            // Necessary to use putIfAbset, because the cache could have changed
+            // since calling get(key) above. If the call to putIfAbsent returns
+            // non-null, then there was already a MemoryFragment in the cache, so
+            // use the response value.
+            fragment = new MemoryFragment(condition, timeout);
+            MemoryFragment cached = map.putIfAbsent(key, fragment);
+            if (cached != null) fragment = cached;
+        }
+        else if (fragment != null && fragment.isLockAbandoned())
+        {
+            // Or if it exists but is abandoned (lock-for-update has been held > lock wait timeout).
+
+            // If we're here, it probably means that a thread hit an exception while updating the
+            // old fragment and was never able to unlock the it.  So, remove the old fragment, then
+            // create a new one starting with the old content.
+
+            log.warn(key + ": DIRTY, replacing");
+            MemoryFragment clone = fragment.clone(condition, timeout);
+            fragment = map.replace(key, fragment, clone) ? clone : map.get(key);
+        }
+        else if (log.isTraceEnabled())
+            log.trace(key + ": FOUND");
+
+        return fragment;
+    }
+
+    /**
+     * @return An {@link Iterator} for the keys in the cache.
+     */
+    protected Iterator<String> keyIterator()
+    {
         return map.keySet().iterator();
     }
 
-    public MemoryFragment put(String key, MemoryFragment fragment) {
-        return map.put(key, fragment);
-    }
-
-    public MemoryFragment putIfAbsent(String key, MemoryFragment fragment) {
-        MemoryFragment cached = map.putIfAbsent(key, fragment);
-        return cached == null ? fragment : cached;
-    }
-
-    public MemoryFragment replace(String key, MemoryFragment expected, MemoryFragment replacement) {
-        return map.replace(key, expected, replacement) ? replacement : map.get(key);
-    }
-
+    /**
+     * @return The number of fragments currently in the cache.
+     */
     public int size() {
         return map.size();
     }
 
-    public FragmentCacheStatistics getStatistics() {
-        return new MemoryFragmentCacheStatistics(map.size(), cleaner.getLastCleanCount(), cleaner.getLastCleanTimestamp());
+    /**
+     * @return statistics about the current state of the cache, or historical data
+     *         if the implementation supports that.
+     */
+    public FragmentCacheStatistics getStatistics()
+    {
+        return new MemoryFragmentCacheStatistics(
+                        map.size(),
+                        cleaner.getLastCleanCount(),
+                        cleaner.getLastCleanTimestamp()
+                    );
     }
     
     /**
@@ -170,8 +232,8 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
      * @param interval The time interval
      * @param unit The time unit the interval is in
      */
-    public final void scheduleCleaner(long interval, TimeUnit unit, boolean runNow) {
-
+    public final void scheduleCleaner(long interval, TimeUnit unit, boolean runNow)
+    {
         if (cleanerFuture != null)
             cleanerFuture.cancel(false);
 
