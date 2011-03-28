@@ -5,7 +5,7 @@ import junit.framework.TestCase;
 
 /**
  *
- * @author ryan
+ * @author Ryan Wilson
  */
 public class FilterMappingTest extends TestCase {
     

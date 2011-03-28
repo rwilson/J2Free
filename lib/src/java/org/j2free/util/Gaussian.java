@@ -1,5 +1,3 @@
-
-// From http://www.cs.princeton.edu/introcs/21function/Gaussian.java
 /*************************************************************************
  *  Compilation:  javac Gaussian.java
  *  Execution:    java Gaussian x mu sigma

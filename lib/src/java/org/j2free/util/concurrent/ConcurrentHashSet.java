@@ -1,7 +1,12 @@
-/*
- * ConcurrentHashSet.java
+/**
+ * $RCSfile$
+ * $Revision: 42 $
+ * $Date: 2004-10-21 00:28:12 -0700 (Thu, 21 Oct 2004) $
  *
- * Copyright (c) 2009 FooBrew, Inc.
+ * Copyright (C) 2004 Jive Software. All rights reserved.
+ *
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution.
  */
 package org.j2free.util.concurrent;
 
@@ -103,5 +108,4 @@ public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
     public void clear() {
         map.clear();
     }
-
 }

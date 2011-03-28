@@ -3,7 +3,7 @@
  *
  * Created on April 3, 2008, 1:58 PM
  *
- * Copyright (c) 2008 Publi.us
+ * Copyright (c) 2008 FooBrew, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
