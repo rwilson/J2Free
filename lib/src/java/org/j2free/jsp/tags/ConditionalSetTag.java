@@ -59,7 +59,11 @@ public class ConditionalSetTag extends SetSupport {
     // Constructor and lifecycle management
 
     // initialize inherited and local state
-    public ConditionalSetTag() {
+    /**
+     * 
+     */
+    public ConditionalSetTag()
+    {
         super();
         init();
     }
@@ -80,6 +84,11 @@ public class ConditionalSetTag extends SetSupport {
     //*********************************************************************
     // Tag logic
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doStartTag() throws JspException {
 
@@ -90,6 +99,9 @@ public class ConditionalSetTag extends SetSupport {
     }
 
     // Releases any resources we may have (or inherit)
+    /**
+     *
+     */
     @Override
     public void release() {
         super.release();
@@ -100,25 +112,50 @@ public class ConditionalSetTag extends SetSupport {
     //*********************************************************************
     // Accessor methods
 
-    public void setIfTrue(String valueT) {
+    /**
+     * 
+     * @param valueT
+     */
+    public void setIfTrue(String valueT)
+    {
         this.valIfTrue_ = valueT;
         this.valueSpecified = true;
     }
 
-    public void setIfFalse(String valueF) {
+    /**
+     * 
+     * @param valueF
+     */
+    public void setIfFalse(String valueF)
+    {
         this.valIfFalse_ = valueF;
         this.valueSpecified = true;
     }
 
-    public void setTarget(String target_) {
+    /**
+     * 
+     * @param target_
+     */
+    public void setTarget(String target_)
+    {
         this.target_ = target_;
     }
 
-    public void setProperty(String property_) {
+    /**
+     * 
+     * @param property_
+     */
+    public void setProperty(String property_)
+    {
         this.property_ = property_;
     }
 
-    public void setTest(String test) {
+    /**
+     * 
+     * @param test
+     */
+    public void setTest(String test)
+    {
         this.test = test;
     }
 
@@ -131,7 +168,13 @@ public class ConditionalSetTag extends SetSupport {
     }
 
     // Supplied conditional logic
-    protected boolean condition() throws JspTagException {
+    /**
+     * 
+     * @return
+     * @throws JspTagException
+     */
+    protected boolean condition() throws JspTagException
+    {
 	try {
             Object r = ExpressionEvaluatorManager.evaluate("test", test, Boolean.class, this, pageContext);
             if (r == null)

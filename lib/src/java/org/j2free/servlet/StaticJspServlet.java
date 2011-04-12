@@ -45,8 +45,18 @@ import static org.j2free.util.Constants.*;
 )
 public class StaticJspServlet extends HttpServlet {
 
+    /**
+     *
+     */
     public static final AtomicReference<String> directory = new AtomicReference<String>(EMPTY);
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
@@ -54,6 +64,13 @@ public class StaticJspServlet extends HttpServlet {
         dispatchRequest(request,response, directory.get() + request.getRequestURI().replaceFirst(request.getContextPath(), EMPTY) + ".jsp");
     }
     
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException

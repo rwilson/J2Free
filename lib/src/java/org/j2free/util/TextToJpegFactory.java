@@ -24,7 +24,12 @@ import java.io.*;
 import com.sun.image.codec.jpeg.*;
 
 
-public class TextToJpegFactory {
+/**
+ *
+ * @author ryan
+ */
+public class TextToJpegFactory
+{
     
     private static final Color  BG_COLOR   = Color.white;
     private static final Color  FG_COLOR   = Color.black;
@@ -64,7 +69,14 @@ public class TextToJpegFactory {
         return img2;
     }
     
-    public static void encodeJpeg(OutputStream out, String text) throws IOException {
+    /**
+     * 
+     * @param out
+     * @param text
+     * @throws IOException
+     */
+    public static void encodeJpeg(OutputStream out, String text) throws IOException
+    {
         BufferedImage img = getBufferedImage(text,BG_COLOR,FG_COLOR,FONT_SIZE,FONT_STYLE,FONT_NAME);
         JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
         JPEGEncodeParam param = encoder.getDefaultJPEGEncodeParam(img);
@@ -72,7 +84,18 @@ public class TextToJpegFactory {
         encoder.encode(img, param);
     }
     
-    public static void encodeJpeg(OutputStream out, String text, Color bgColor, Color fgColor, int fontSize, int fontStyle, String fontName) 
+    /**
+     *
+     * @param out
+     * @param text
+     * @param bgColor
+     * @param fgColor
+     * @param fontSize
+     * @param fontStyle
+     * @param fontName
+     * @throws IOException
+     */
+    public static void encodeJpeg(OutputStream out, String text, Color bgColor, Color fgColor, int fontSize, int fontStyle, String fontName)
         throws IOException {
         BufferedImage img = getBufferedImage(text,bgColor,fgColor,fontSize,fontStyle,fontName);
         JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);

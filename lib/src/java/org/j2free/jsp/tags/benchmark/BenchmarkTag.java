@@ -41,25 +41,50 @@ public class BenchmarkTag extends TagSupport {
     private boolean logs;
     private String  name;
 
-    public void setDisable(boolean disable) {
+    /**
+     * 
+     * @param disable
+     */
+    public void setDisable(boolean disable)
+    {
         this.disable = disable;
     }
 
-    public void setComments(boolean comments) {
+    /**
+     * 
+     * @param comments
+     */
+    public void setComments(boolean comments)
+    {
         this.comments = comments;
     }
     
-    public void setLogs(boolean logs) {
+    /**
+     * 
+     * @param logs
+     */
+    public void setLogs(boolean logs)
+    {
         this.logs = logs;
     }
     
-    public void setName(String name) {
+    /**
+     * 
+     * @param name
+     */
+    public void setName(String name)
+    {
         this.name = name;
     }
     
     /* Instance fields */
     private long tick;
     
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doStartTag() throws JspException {
 
@@ -70,6 +95,11 @@ public class BenchmarkTag extends TagSupport {
         return EVAL_BODY_INCLUDE;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doEndTag() throws JspException {
 

@@ -38,9 +38,18 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class BitInt
 {
+    /**
+     * 
+     */
     public static enum OnFlag
     {
+        /**
+         *
+         */
         ZERO(0),
+        /**
+         *
+         */
         ONE(1);
 
         final int bitValue;
@@ -53,16 +62,28 @@ public class BitInt
     private int value;
     private final OnFlag flag;
 
+    /**
+     *
+     */
     public BitInt()
     {
         this(0);
     }
 
+    /**
+     *
+     * @param initialValue
+     */
     public BitInt(int initialValue)
     {
         this(initialValue, OnFlag.ONE);
     }
 
+    /**
+     *
+     * @param initialValue
+     * @param flag
+     */
     public BitInt(int initialValue, OnFlag flag)
     {
         this.value = initialValue;
@@ -71,6 +92,7 @@ public class BitInt
 
     /**
      * @param pos should be an int with only 1 bit set
+     * @return
      */
     public synchronized boolean isSet(int pos)
     {
@@ -82,6 +104,7 @@ public class BitInt
 
     /**
      * @param pos should be an int with only 1 bit set
+     * @param on
      */
     public synchronized void set(int pos, boolean on)
     {
@@ -91,6 +114,7 @@ public class BitInt
 
     /**
      * @param pos should be an int with only 1 bit set
+     * @param desired
      */
     public synchronized void set(int pos, int desired)
     {
@@ -112,6 +136,10 @@ public class BitInt
         value ^= pos;
     }
 
+    /**
+     *
+     * @return
+     */
     public synchronized int intValue()
     {
         return value;

@@ -36,7 +36,17 @@ public class HttpServiceReport {
     private final long totalTaskCount;
     private final long completedTaskCount;
 
-    public HttpServiceReport(int curPS, int largestPS, int maxPS, int activeTC, long totalTC, long completedTC) {
+    /**
+     * 
+     * @param curPS
+     * @param largestPS
+     * @param maxPS
+     * @param activeTC
+     * @param totalTC
+     * @param completedTC
+     */
+    public HttpServiceReport(int curPS, int largestPS, int maxPS, int activeTC, long totalTC, long completedTC)
+    {
         this.currentPoolSize    = curPS;
         this.largestPoolSize    = largestPS;
         this.maxPoolSize        = maxPS;

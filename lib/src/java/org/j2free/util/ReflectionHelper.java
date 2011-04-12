@@ -26,7 +26,9 @@ package org.j2free.util;
 public class ReflectionHelper {
     
     /**
-     *  @return true if Class inter is an interface, and the Class clazz
+     *  @param clazz
+     * @param inter
+     * @return true if Class inter is an interface, and the Class clazz
      *          implements Class inter, otherwise false
      */
     public static boolean implementsInterface(Class<?> clazz, Class inter)
@@ -38,7 +40,9 @@ public class ReflectionHelper {
     }
     
     /**
-     *  @return true if Class clazz extends Class extended
+     *  @param clazz
+     * @param extended
+     * @return true if Class clazz extends Class extended
      */
     public static boolean extendsClass(Class clazz, Class extended)
     {

@@ -31,13 +31,28 @@ import org.j2free.admin.ReflectionMarshaller;
  */
 public class Reflection {
     
+    /**
+     *
+     */
     public static HashMap<String,Object> constantsMap = new HashMap<String, Object>();
     
-    public static boolean isEntity(Object obj) {
+    /**
+     * 
+     * @param obj
+     * @return
+     */
+    public static boolean isEntity(Object obj)
+    {
         return obj.getClass().getAnnotation(Entity.class) != null;
     }
     
-    public static String extractId(Object obj) {
+    /**
+     * 
+     * @param obj
+     * @return
+     */
+    public static String extractId(Object obj)
+    {
         Class klass = obj.getClass();
         if (klass.getAnnotation(Entity.class) == null)
             return null;
@@ -49,7 +64,14 @@ public class Reflection {
             return "" + marshaller.extractId(obj);
     }
     
-    public static Object getStaticConstant(String className, String property) {
+    /**
+     * 
+     * @param className
+     * @param property
+     * @return
+     */
+    public static Object getStaticConstant(String className, String property)
+    {
         if (constantsMap.containsKey(className+"."+property)) {
             return constantsMap.get(className+"."+property);
         }

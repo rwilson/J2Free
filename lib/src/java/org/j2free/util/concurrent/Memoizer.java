@@ -29,6 +29,8 @@ import org.j2free.util.LaunderThrowable;
 /**
  * A thread-safe scalable result-cache
  *
+ * @param <A> 
+ * @param <V>
  * @author Ryan Wilson
  */
 @ThreadSafe
@@ -37,12 +39,24 @@ public class Memoizer<A,V> implements Computable<A,V> {
     private final ConcurrentHashMap<A, Future<V>> cache;
     private final Computable<A,V> work;
 
-    public Memoizer(Computable<A,V> c) {
+    /**
+     * 
+     * @param c
+     */
+    public Memoizer(Computable<A,V> c)
+    {
         cache = new ConcurrentHashMap<A, Future<V>>();
         work  = c;
     }
 
-    public V compute(final A arg) throws InterruptedException {
+    /**
+     * 
+     * @param arg
+     * @return
+     * @throws InterruptedException
+     */
+    public V compute(final A arg) throws InterruptedException
+    {
         while (true) {
             Future<V> f = cache.get(arg);
             if (f == null) {

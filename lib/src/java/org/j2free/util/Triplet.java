@@ -21,6 +21,9 @@ package org.j2free.util;
 
 /**
  *
+ * @param <A> 
+ * @param <B>
+ * @param <C>
  * @author Ryan Wilson
  */
 public class Triplet<A,B,C> {
@@ -29,36 +32,77 @@ public class Triplet<A,B,C> {
     private B second;
     private C third;
     
-    public Triplet() {
+    /**
+     * 
+     */
+    public Triplet()
+    {
     }
     
-    public Triplet(A first, B second, C third) {
+    /**
+     * 
+     * @param first
+     * @param second
+     * @param third
+     */
+    public Triplet(A first, B second, C third)
+    {
         this.first = first;
         this.second = second;
         this.third = third;
     }
 
-    public A getFirst() {
+    /**
+     * 
+     * @return
+     */
+    public A getFirst()
+    {
         return first;
     }
 
-    public void setFirst(A first) {
+    /**
+     * 
+     * @param first
+     */
+    public void setFirst(A first)
+    {
         this.first = first;
     }
 
-    public B getSecond() {
+    /**
+     * 
+     * @return
+     */
+    public B getSecond()
+    {
         return second;
     }
 
-    public void setSecond(B second) {
+    /**
+     * 
+     * @param second
+     */
+    public void setSecond(B second)
+    {
         this.second = second;
     }
 
-    public C getThird() {
+    /**
+     * 
+     * @return
+     */
+    public C getThird()
+    {
         return third;
     }
 
-    public void setThird(C third) {
+    /**
+     * 
+     * @param third
+     */
+    public void setThird(C third)
+    {
         this.third = third;
     }
     

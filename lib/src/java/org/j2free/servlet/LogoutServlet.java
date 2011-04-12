@@ -35,6 +35,13 @@ import org.j2free.annotations.ServletConfig;
 )
 public class LogoutServlet extends HttpServlet {
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
@@ -42,6 +49,13 @@ public class LogoutServlet extends HttpServlet {
         response.sendRedirect("/");
     }
     
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {

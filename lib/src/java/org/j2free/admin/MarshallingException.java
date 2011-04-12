@@ -25,19 +25,39 @@ package org.j2free.admin;
  */
 public class MarshallingException extends Exception {
 
-    public MarshallingException() {
+    /**
+     * 
+     */
+    public MarshallingException()
+    {
         super();
     }
     
-    public MarshallingException(String message) {
+    /**
+     * 
+     * @param message
+     */
+    public MarshallingException(String message)
+    {
         super(message);
     }
     
-    public MarshallingException(Throwable cause) {
+    /**
+     * 
+     * @param cause
+     */
+    public MarshallingException(Throwable cause)
+    {
         super(cause);
     }
     
-    public MarshallingException(String message, Throwable cause) {
+    /**
+     * 
+     * @param message
+     * @param cause
+     */
+    public MarshallingException(String message, Throwable cause)
+    {
         super(message, cause);
     }
     

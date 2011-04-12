@@ -68,6 +68,13 @@ public class EntityAdminServlet extends HttpServlet
         private static final String ENTITY_CREATE   = "/WEB-INF/j2free/jsp/EntityCreate.jsp";
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
@@ -125,6 +132,13 @@ public class EntityAdminServlet extends HttpServlet
         request.getRequestDispatcher(Dispatch.ADMIN_JSP).forward(request,response);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException {

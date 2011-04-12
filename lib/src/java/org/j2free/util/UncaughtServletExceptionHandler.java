@@ -32,6 +32,14 @@ import javax.servlet.ServletResponse;
  */
 public interface UncaughtServletExceptionHandler
 {
+    /**
+     *
+     * @param request
+     * @param response
+     * @param e
+     * @throws ServletException
+     * @throws IOException
+     */
     public void handleException(ServletRequest request, ServletResponse response, Throwable e)
             throws ServletException, IOException;
 }

@@ -33,11 +33,15 @@ import net.jcip.annotations.ThreadSafe;
 public class SimpleHttpService
 {
     // Static convenience IMPL
+    /**
+     *
+     */
     public static AtomicReference<HttpCallService> instance = new AtomicReference(null);
 
     /**
      * Enables this instance.
      *
+     * @param corePoolSize
      * @param maxPoolSize The max number of threads
      * @param threadIdle How long a thread can be idle before terminating it
      * @param connectTimeout How long to wait for a connection
@@ -49,11 +53,18 @@ public class SimpleHttpService
         instance.set(new QueuedHttpCallService(corePoolSize, maxPoolSize, threadIdle, connectTimeout, socketTimeout));
     }
 
+    /**
+     *
+     * @return
+     */
     public static boolean isEnabled()
     {
         return instance.get() != null;
     }
 
+    /**
+     *
+     */
     public static void ensureEnabled()
     {
         if (!isEnabled())
@@ -102,6 +113,11 @@ public class SimpleHttpService
         return queue;
     }
 
+    /**
+     *
+     * @param task
+     * @return
+     */
     public static Future<HttpCallResult> submit(final HttpCallTask task)
     {
         ensureEnabled();

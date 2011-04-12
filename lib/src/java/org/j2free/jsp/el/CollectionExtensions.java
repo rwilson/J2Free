@@ -33,39 +33,79 @@ import org.j2free.jpa.Controller;
 public class CollectionExtensions {
 
     /**
+     * @param c 
+     * @return
      * @deprecated use <tt>size(Collection c)</tt> instead
      */
     public static int getCollectionSize(Collection c) {
         return c == null ? 0 : c.size();
     }
 
-    public static int size(Collection c) {
+    /**
+     * 
+     * @param c
+     * @return
+     */
+    public static int size(Collection c)
+    {
         return c == null ? 0 : c.size();
     }
     
     /**
+     * @param c 
+     * @param o
+     * @return
      * @deprecated use <tt>contains(Collection c)</tt> instead
      */
     public static boolean collectionContains(Collection c, Object o) {
         return c == null ? false : c.contains(o);
     }
 
-    public static boolean contains(Collection c, Object o) {
+    /**
+     * 
+     * @param c
+     * @param o
+     * @return
+     */
+    public static boolean contains(Collection c, Object o)
+    {
         return c == null ? false : c.contains(o);
     }
 
-    public static <T> List<T> shuffle(List<T> list) {
+    /**
+     * 
+     * @param <T>
+     * @param list
+     * @return
+     */
+    public static <T> List<T> shuffle(List<T> list)
+    {
         if (list != null && !list.isEmpty()) 
             Collections.shuffle(list);
         
         return list;
     }
     
-    public static boolean isEmpty(Collection c) {
+    /**
+     * 
+     * @param c
+     * @return
+     */
+    public static boolean isEmpty(Collection c)
+    {
         return c == null ? true : c.isEmpty();
     }
     
-    public static <T extends Object> List<T> filter(Collection c, String filter) throws ServletException {
+    /**
+     * 
+     * @param <T>
+     * @param c
+     * @param filter
+     * @return
+     * @throws ServletException
+     */
+    public static <T extends Object> List<T> filter(Collection c, String filter) throws ServletException
+    {
 
         boolean release = false;
         try {
@@ -85,6 +125,16 @@ public class CollectionExtensions {
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param c
+     * @param filter
+     * @param start
+     * @param limit
+     * @return
+     * @throws ServletException
+     */
     public static <T extends Object> List<T> filterLimited(Collection c, String filter, int start, int limit)
             throws ServletException {
 
@@ -106,11 +156,24 @@ public class CollectionExtensions {
         }
     }
 
-    public static String join(Collection c, String delimiter) {
+    /**
+     * 
+     * @param c
+     * @param delimiter
+     * @return
+     */
+    public static String join(Collection c, String delimiter)
+    {
         return ServletUtils.join(c, delimiter);
     }
 
-    public static List sort(Collection c) {
+    /**
+     * 
+     * @param c
+     * @return
+     */
+    public static List sort(Collection c)
+    {
         List list = new ArrayList(c);
         Collections.sort(list);
         return list;

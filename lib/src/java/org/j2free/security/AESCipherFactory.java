@@ -35,7 +35,14 @@ import org.j2free.util.LaunderThrowable;
 @Immutable
 public class AESCipherFactory
 {
-    public Cipher getCipher(byte[] passPhrase, int cipherMode) {
+    /**
+     * 
+     * @param passPhrase
+     * @param cipherMode
+     * @return
+     */
+    public Cipher getCipher(byte[] passPhrase, int cipherMode)
+    {
         
         Cipher cipher = null;
         
@@ -54,7 +61,14 @@ public class AESCipherFactory
         return cipher;
     }
     
-    public Cipher getCipherFromHexString(String key, int cipherMode) {
+    /**
+     * 
+     * @param key
+     * @param cipherMode
+     * @return
+     */
+    public Cipher getCipherFromHexString(String key, int cipherMode)
+    {
         try {
             return getCipher(Hex.decodeHex(key.toCharArray()), cipherMode);
         } catch (DecoderException ex) {

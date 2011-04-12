@@ -47,6 +47,9 @@ import org.json.JSONStringer;
 @ThreadSafe
 public final class MixpanelClient
 {
+    /**
+     *
+     */
     public static final String BASE_URL = "http://api.mixpanel.com/track/";
 
     /**
@@ -64,6 +67,10 @@ public final class MixpanelClient
      */
     private final AtomicBoolean test;
 
+    /**
+     *
+     * @param token
+     */
     public MixpanelClient(String token)
     {
         if (StringUtils.isBlank(token))
@@ -125,7 +132,7 @@ public final class MixpanelClient
      * Registers a set of properties to be included with all events tracked using the same distinctId.
      *
      * @param distinctId
-     * @param customProps
+     * @param allProps
      */
     public void registerProperties(String distinctId, Map<String, String> allProps)
     {
@@ -162,7 +169,7 @@ public final class MixpanelClient
      * @param event The name of the event
      * @param distinctId A unique ID for the user
      * @param ip The IP of the user
-     * @param params Custom properties to send to mixpanel
+     * @param eventProps
      * @return A Future containing the result of the API call
      */
     public Future<HttpCallResult> track(String event, String distinctId, String ip, KeyValuePair<String, ? extends Object>... eventProps)
@@ -251,7 +258,7 @@ public final class MixpanelClient
      * @param funnel The name of the funnel
      * @param step The step in the funnel
      * @param goal The goal of the funnel
-     * @param props All the properties to be sent to mixpanel
+     * @param allProps
      * @return A Future containing the result of the API call
      */
     @Deprecated

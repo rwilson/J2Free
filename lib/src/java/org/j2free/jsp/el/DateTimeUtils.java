@@ -37,7 +37,13 @@ public class DateTimeUtils {
 
     private static final long MILLIS_PER_DAY   = 1000 * SECONDS_PER_DAY;
 
-    public static int getCountdown(java.util.Date event) {
+    /**
+     * 
+     * @param event
+     * @return
+     */
+    public static int getCountdown(java.util.Date event)
+    {
 
         if (event == null)
             return -1;
@@ -148,7 +154,13 @@ public class DateTimeUtils {
      *
      * 16 becomes 16th, 23 becomes 23rd
      */
-    public static String formatNumberWithExtension(int num) {
+    /**
+     * 
+     * @param num
+     * @return
+     */
+    public static String formatNumberWithExtension(int num)
+    {
         int n = num;
         while (n > 10)
             n = n % 10;
@@ -167,7 +179,13 @@ public class DateTimeUtils {
         return (num + append);
     }
     
-    public static String formatDateLowPrecision(Date date) {
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String formatDateLowPrecision(Date date)
+    {
 
         if (date == null) return Constants.EMPTY;
 
@@ -212,7 +230,13 @@ public class DateTimeUtils {
         }
     }
     
-    public static String formatDateMinPrecision(Date date) {
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String formatDateMinPrecision(Date date)
+    {
 
         if (date == null) return Constants.EMPTY;
         
@@ -230,7 +254,13 @@ public class DateTimeUtils {
         return df.format(date);
     }
     
-    public static String asEllapsedDays(Date date) {
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String asEllapsedDays(Date date)
+    {
 
         if (date == null) return Constants.EMPTY;
 
@@ -249,7 +279,13 @@ public class DateTimeUtils {
             return String.format("%d days ago", diff);
     }
 
-    public static String formatDateNoTime(Date date) {
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String formatDateNoTime(Date date)
+    {
         
         if (date == null) return Constants.EMPTY;
         
@@ -269,7 +305,13 @@ public class DateTimeUtils {
         return df.format(date);
     }
     
-    public static String formatDateTimeOnly(Date date) {
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String formatDateTimeOnly(Date date)
+    {
         
         if (date == null) return Constants.EMPTY;
         
@@ -303,7 +345,15 @@ public class DateTimeUtils {
         return output;
     }
     
-    public static String formatDate(Date date, String pattern, boolean relativeToNow) {
+    /**
+     * 
+     * @param date
+     * @param pattern
+     * @param relativeToNow
+     * @return
+     */
+    public static String formatDate(Date date, String pattern, boolean relativeToNow)
+    {
         
         if (date == null)
             return Constants.EMPTY;
@@ -338,7 +388,13 @@ public class DateTimeUtils {
         return df.format(date);
     }
     
-    public static String formatDate(Date date) {
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String formatDate(Date date)
+    {
 
         if (date == null)
             return Constants.EMPTY;
@@ -372,11 +428,23 @@ public class DateTimeUtils {
         return output;
     }
 
-    public static String asEllapsedTimeAgo(Double millis) {
+    /**
+     * 
+     * @param millis
+     * @return
+     */
+    public static String asEllapsedTimeAgo(Double millis)
+    {
         return asEllapsedTime(System.currentTimeMillis() - millis);
     }
 
-    public static String asEllapsedTime(Double millis) {
+    /**
+     * 
+     * @param millis
+     * @return
+     */
+    public static String asEllapsedTime(Double millis)
+    {
 
         if (millis == null)
             return Constants.EMPTY;
@@ -410,7 +478,12 @@ public class DateTimeUtils {
         return output;
     }
 
-    public static long currentTimeMillis() {
+    /**
+     * 
+     * @return
+     */
+    public static long currentTimeMillis()
+    {
         return System.currentTimeMillis();
     }
 }

@@ -29,6 +29,10 @@ import java.util.concurrent.TimeUnit;
  */
 public interface HttpCallService
 {
+    /**
+     *
+     * @return
+     */
     public boolean isEnabled();
 
     /**
@@ -54,5 +58,10 @@ public interface HttpCallService
      */
     List<Runnable> shutdown();
 
+    /**
+     *
+     * @param task
+     * @return
+     */
     public Future<HttpCallResult> submit(final HttpCallTask task);
 }

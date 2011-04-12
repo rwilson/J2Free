@@ -37,9 +37,19 @@ public final class HibernateMarshaller implements Marshaller {
     /* Maps Class names to previously generated Marshallers so we don't have to
      * go through the expensive process of creating the same marshaller twice.
      */
+    /**
+     *
+     */
     protected static ConcurrentHashMap<String,HibernateMarshaller> marshallers = new ConcurrentHashMap();
 
-    public static HibernateMarshaller getForClass(Class klass, ClassMetadata meta) {
+    /**
+     * 
+     * @param klass
+     * @param meta
+     * @return
+     */
+    public static HibernateMarshaller getForClass(Class klass, ClassMetadata meta)
+    {
 
         HibernateMarshaller marshaller = marshallers.get(klass.getName());
 
@@ -70,28 +80,65 @@ public final class HibernateMarshaller implements Marshaller {
 
     }
 
-    public Object asIdType(String stringId) {
+    /**
+     * 
+     * @param stringId
+     * @return
+     */
+    public Object asIdType(String stringId)
+    {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public Object extractId(Object obj) {
+    /**
+     * 
+     * @param obj
+     * @return
+     */
+    public Object extractId(Object obj)
+    {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public String getIdName() {
+    /**
+     * 
+     * @return
+     */
+    public String getIdName()
+    {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public Class getIdType() {
+    /**
+     * 
+     * @return
+     */
+    public Class getIdType()
+    {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    /**
+     *
+     * @param entity
+     * @param parameterMap
+     * @param controller
+     * @return
+     * @throws MarshallingException
+     */
     public Object marshallIn(Object entity, Map<String, String[]> parameterMap, Controller controller)
             throws MarshallingException {
         
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    /**
+     *
+     * @param entity
+     * @param includeTransient
+     * @return
+     * @throws IllegalArgumentException
+     */
     public List<MarshalledField> marshallOut(Object entity, boolean includeTransient)
             throws IllegalArgumentException {
         

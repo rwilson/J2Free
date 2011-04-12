@@ -50,7 +50,12 @@ public class DESEncrypter {
     private final Cipher encoder;
     private final Cipher decoder;
 
-    public DESEncrypter(String passPhrase) {
+    /**
+     * 
+     * @param passPhrase
+     */
+    public DESEncrypter(String passPhrase)
+    {
 
         try {
             // Create the key based on the passPhrase
@@ -114,11 +119,21 @@ public class DESEncrypter {
         }
     }
 
-    public Cipher getDecoder() {
+    /**
+     * 
+     * @return
+     */
+    public Cipher getDecoder()
+    {
         return decoder;
     }
 
-    public Cipher getEncoder() {
+    /**
+     * 
+     * @return
+     */
+    public Cipher getEncoder()
+    {
         return encoder;
     }
 }

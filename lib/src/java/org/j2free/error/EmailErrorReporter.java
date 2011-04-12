@@ -39,17 +39,33 @@ public class EmailErrorReporter
     private final String to;
     private final KeyValuePair<String,String> from;
 
+    /**
+     *
+     * @param to
+     * @param from
+     */
     public EmailErrorReporter(String to, KeyValuePair<String, String> from)
     {
         this.to = to;
         this.from = from;
     }
 
+    /**
+     *
+     * @param request
+     * @param throwable
+     */
     public void send(HttpServletRequest request, Throwable throwable)
     {
         send("JamLegend Error Report " + new Date().toString(), describeRequest(request) + "\n\nStack Trace:\n" + throwableToString(throwable));
     }
 
+    /**
+     *
+     * @param subject
+     * @param body
+     * @param throwable
+     */
     public void send(String subject, String body, Throwable throwable)
     {
         send(subject, body + "\n\nStack Trace:\n" + throwableToString(throwable));

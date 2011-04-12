@@ -35,10 +35,19 @@ public class RequireController extends TagSupport {
     // Just used to hold the reference b/t start and end tags
     private Controller controller;
 
-    public RequireController() {
+    /**
+     * 
+     */
+    public RequireController()
+    {
         closeTx = false;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doStartTag() throws JspException {
 
@@ -79,6 +88,11 @@ public class RequireController extends TagSupport {
         }
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doEndTag() throws JspException {
 
@@ -96,6 +110,9 @@ public class RequireController extends TagSupport {
         return EVAL_PAGE;
     }
 
+    /**
+     *
+     */
     @Override
     public void release() {
         closeTx = false;

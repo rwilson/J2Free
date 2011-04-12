@@ -27,7 +27,13 @@ public class GChartUtil {
     private static final String SIMPLE_MAP   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final String EXTENDED_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.";
 
-    public static String encodeSimple(int num) {
+    /**
+     * 
+     * @param num
+     * @return
+     */
+    public static String encodeSimple(int num)
+    {
         if (num < 0 || num > SIMPLE_MAP.length() - 1) {
             return "";
         }
@@ -90,7 +96,14 @@ public class GChartUtil {
         scaleForExtendedEncoding(ints, min, max);
     }
 
-    public static void scaleForExtendedEncoding(int[] ints, int min, int max) {
+    /**
+     * 
+     * @param ints
+     * @param min
+     * @param max
+     */
+    public static void scaleForExtendedEncoding(int[] ints, int min, int max)
+    {
         double scale = 4095.0d / (double)(max - min);
 
         for (int i = 0; i < ints.length; i++) {
@@ -101,6 +114,8 @@ public class GChartUtil {
     /**
      * Scales and encodes the array of ints using the
      * min and max in this array for scaling.
+     * @param ints 
+     * @return
      */
     public static String scaleAndEncode(int[] ints) {
         scaleForExtendedEncoding(ints);
@@ -112,6 +127,10 @@ public class GChartUtil {
      * min and max arguments for scaling.  USE THIS
      * METHOD WHEN ENCODING MULTIPLE DATA SETS TO BE
      * DISPLAYED ON THE SAME GRAPH.
+     * @param ints 
+     * @param min 
+     * @param max
+     * @return
      */
     public static String scaleAndEncode(int[] ints, int min, int max) {
         scaleForExtendedEncoding(ints, min, max);

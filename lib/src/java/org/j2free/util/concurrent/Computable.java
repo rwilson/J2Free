@@ -20,10 +20,18 @@ package org.j2free.util.concurrent;
 
 /**
  *
+ * @param <A> 
+ * @param <V>
  * @author Ryan Wilson
  */
 public interface Computable<A,V> {
 
+    /**
+     *
+     * @param arg
+     * @return
+     * @throws InterruptedException
+     */
     public V compute(A arg) throws InterruptedException;
 
 }

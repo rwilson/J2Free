@@ -112,8 +112,15 @@ public class ConfigurationListener implements ServletContextListener
     // so that they can be removed before reconfiguration
     private final ConcurrentHashSet<String> loadedConfigPropKeys = new ConcurrentHashSet();
 
+    /**
+     *
+     */
     protected ServletContext context;
 
+    /**
+     *
+     * @param event
+     */
     public synchronized void contextInitialized(ServletContextEvent event)
     {
         context = event.getServletContext();
@@ -581,6 +588,10 @@ public class ConfigurationListener implements ServletContextListener
         }
     }
 
+    /**
+     *
+     * @param event
+     */
     public synchronized void contextDestroyed(ServletContextEvent event)
     {
         // Remove all properties from the ServletContext that were set in the

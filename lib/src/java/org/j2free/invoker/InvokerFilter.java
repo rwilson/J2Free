@@ -93,11 +93,26 @@ public final class InvokerFilter implements Filter
     private final class StaticResource extends HttpServlet { }
 
     // Properties
+    /**
+     *
+     */
     public static class Property
     {
+        /**
+         *
+         */
         public static final String BENCHMARK_REQS   = "filter.invoker.benchmark.enabled";
+        /**
+         *
+         */
         public static final String BYPASS_PATH      = "filter.invoker.bypass.path";
+        /**
+         *
+         */
         public static final String MAX_SERVLET_USES = "filter.invoker.servlet-max-uses";
+        /**
+         *
+         */
         public static final String DEFAULT_SSL_OPT  = "filter.invoker.default-ssl-option";
     }
 
@@ -166,15 +181,18 @@ public final class InvokerFilter implements Filter
 
     private final Log log = LogFactory.getLog(getClass());
 
+    /**
+     *
+     */
     public InvokerFilter()
     { }
 
     /**
      *
-     * @param request The servlet request we are processing
-     * @param result The servlet response we are creating
+     * @param req
      * @param chain The filter chain we are processing
      *
+     * @param resp
      * @exception IOException if an input/output error occurs
      * @exception ServletException if a servlet error occurs
      */
@@ -456,6 +474,7 @@ public final class InvokerFilter implements Filter
 
     /**
      *
+     * @param fc
      */
     public void init(javax.servlet.FilterConfig fc)
     {

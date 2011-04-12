@@ -22,20 +22,45 @@
 
 package org.j2free.util;
 
-public class Gaussian {
+/**
+ *
+ * @author ryan
+ */
+public class Gaussian
+{
 
     // return phi(x) = standard Gaussian pdf
-    public static double phi(double x) {
+    /**
+     * 
+     * @param x
+     * @return
+     */
+    public static double phi(double x)
+    {
         return Math.exp(-x*x / 2) / Math.sqrt(2 * Math.PI);
     }
 
     // return phi(x, mu, signma) = Gaussian pdf with mean mu and stddev sigma
-    public static double phi(double x, double mu, double sigma) {
+    /**
+     * 
+     * @param x
+     * @param mu
+     * @param sigma
+     * @return
+     */
+    public static double phi(double x, double mu, double sigma)
+    {
         return phi((x - mu) / sigma) / sigma;
     }
 
     // return Phi(z) = standard Gaussian cdf using Taylor approximation
-    public static double Phi(double z) {
+    /**
+     * 
+     * @param z
+     * @return
+     */
+    public static double Phi(double z)
+    {
         if (z < -8.0) return 0.0;
         if (z >  8.0) return 1.0;
         double sum = 0.0, term = z;
@@ -47,12 +72,26 @@ public class Gaussian {
     }
 
     // return Phi(z, mu, sigma) = Gaussian cdf with mean mu and stddev sigma
-    public static double Phi(double z, double mu, double sigma) {
+    /**
+     * 
+     * @param z
+     * @param mu
+     * @param sigma
+     * @return
+     */
+    public static double Phi(double z, double mu, double sigma)
+    {
         return Phi((z - mu) / sigma);
     } 
 
     // Compute z such that Phi(z) = y via bisection search
-    public static double PhiInverse(double y) {
+    /**
+     * 
+     * @param y
+     * @return
+     */
+    public static double PhiInverse(double y)
+    {
         return PhiInverse(y, .00000001, -8, 8);
     } 
 

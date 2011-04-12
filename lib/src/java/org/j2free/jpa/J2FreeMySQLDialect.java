@@ -26,7 +26,11 @@ import org.hibernate.dialect.function.SQLFunctionTemplate;
  */
 public class J2FreeMySQLDialect extends MySQLInnoDBDialect {
 
-    public J2FreeMySQLDialect() {
+    /**
+     * 
+     */
+    public J2FreeMySQLDialect()
+    {
         super();
         registerFunction(
             "date_sub_interval",

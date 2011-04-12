@@ -44,28 +44,69 @@ public class PausableThreadPoolExecutor extends ThreadPoolExecutor {
 
     @GuardedBy("pauseLock") private boolean isPaused;
 
+    /**
+     *
+     * @param corePoolSize
+     * @param maximumPoolSize
+     * @param keepAliveTime
+     * @param unit
+     * @param workQueue
+     */
     public PausableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
                                       TimeUnit unit, BlockingQueue<Runnable> workQueue) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
     }
 
+    /**
+     *
+     * @param corePoolSize
+     * @param maximumPoolSize
+     * @param keepAliveTime
+     * @param unit
+     * @param workQueue
+     * @param handler
+     */
     public PausableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
                                       TimeUnit unit, BlockingQueue<Runnable> workQueue,
                                       RejectedExecutionHandler handler) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue,handler);
     }
 
+    /**
+     *
+     * @param corePoolSize
+     * @param maximumPoolSize
+     * @param keepAliveTime
+     * @param unit
+     * @param workQueue
+     * @param threadFactory
+     */
     public PausableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
                                       TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
     }
 
+    /**
+     *
+     * @param corePoolSize
+     * @param maximumPoolSize
+     * @param keepAliveTime
+     * @param unit
+     * @param workQueue
+     * @param threadFactory
+     * @param handler
+     */
     public PausableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
                                       TimeUnit unit, BlockingQueue<Runnable> workQueue, 
                                       ThreadFactory threadFactory, RejectedExecutionHandler handler) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
     }
 
+    /**
+     *
+     * @param t
+     * @param r
+     */
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
         super.beforeExecute(t, r);
@@ -80,7 +121,11 @@ public class PausableThreadPoolExecutor extends ThreadPoolExecutor {
        }
     }
 
-    public void pause() {
+    /**
+     * 
+     */
+    public void pause()
+    {
         pauseLock.lock();
         try {
             isPaused = true;
@@ -89,7 +134,12 @@ public class PausableThreadPoolExecutor extends ThreadPoolExecutor {
         }
     }
 
-    public boolean isPaused() {
+    /**
+     * 
+     * @return
+     */
+    public boolean isPaused()
+    {
         pauseLock.lock();
         try {
             return isPaused;
@@ -98,7 +148,11 @@ public class PausableThreadPoolExecutor extends ThreadPoolExecutor {
         }
     }
 
-    public void unpause() {
+    /**
+     * 
+     */
+    public void unpause()
+    {
         pauseLock.lock();
         try {
             isPaused = false;

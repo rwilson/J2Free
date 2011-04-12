@@ -23,7 +23,14 @@ package org.j2free.annotations;
  */
 public @interface InitParam {
 
+    /**
+     * @return The name of the InitParam.
+     */
     public String name();
+
+    /**
+     * @return The value of the InitParam.
+     */
     public String value();
     
 }

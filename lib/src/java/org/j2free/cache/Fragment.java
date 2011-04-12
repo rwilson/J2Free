@@ -37,6 +37,7 @@ public interface Fragment {
      * @param waitFor how long to wait
      * @param unit the TimeUnit to wait for
      * @return the content
+     * @throws InterruptedException
      */
     public String get(long waitFor, TimeUnit unit) throws InterruptedException;
 
@@ -53,7 +54,9 @@ public interface Fragment {
      *  - If (a || b) && c then lock this Fragment for update by the calling Thread
      *    and return true; otherwise return false.
      *
-     * @param The current condition (only used if original condition was set)
+     * @param condition A condition which, if changed since the last update, should
+     *                  trigger an update.
+     * 
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
@@ -76,6 +79,7 @@ public interface Fragment {
      *
      *  @param content the content to set
      *  @param condition the current condition
+     * @return
      */
     public boolean tryUpdateAndRelease(String content, String condition);
 

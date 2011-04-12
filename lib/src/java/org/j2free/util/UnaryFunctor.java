@@ -21,10 +21,17 @@ package org.j2free.util;
  * This is just a shell which can be instantiated
  * and then defined inline. e.g.
  * 
+ * @param <A>
  * @author Ryan Wilson
  */
 public interface UnaryFunctor<A> {
 
+    /**
+     *
+     * @param <R>
+     * @param arg
+     * @return
+     */
     public <R> R run(A arg);
 
 }

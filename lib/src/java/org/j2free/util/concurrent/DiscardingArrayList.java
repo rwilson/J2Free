@@ -61,6 +61,7 @@ import net.jcip.annotations.ThreadSafe;
  * offer is bound to succeed reasonably quickly, or immediately under
  * low contention.
  *
+ * @param <E>
  * @depcrecated
  * @author Ryan Wilson
  */
@@ -71,13 +72,22 @@ public class DiscardingArrayList<E> {
     @GuardedBy("this") private int head;
     @GuardedBy("this") private int count;
 
-    public DiscardingArrayList(int capacity) {
+    /**
+     * 
+     * @param capacity
+     */
+    public DiscardingArrayList(int capacity)
+    {
         buf = (E[]) new Object[capacity];
         head  = 0;
         count = 0;
     }
 
-    public synchronized void clear() {
+    /**
+     * 
+     */
+    public synchronized void clear()
+    {
         for (int i = 0; i < buf.length; i++) {
             buf[i] = null;
         }
@@ -85,11 +95,22 @@ public class DiscardingArrayList<E> {
         count = 0;
     }
 
-    public synchronized int size() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized int size()
+    {
         return count;
     }
 
-    public synchronized E add(E o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public synchronized E add(E o)
+    {
         E previous = buf[head];
 
         buf[head] = o;
@@ -103,7 +124,12 @@ public class DiscardingArrayList<E> {
         return previous;
     }
 
-    public synchronized List<E> asList() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized List<E> asList()
+    {
         List<E> list = new LinkedList<E>();
 
         // If we haven't filled up the buffer, just get the elements starting at 0

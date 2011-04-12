@@ -22,7 +22,13 @@ package org.j2free.jsp.el;
  */
 public class Arrays
 {
-    public static int length(Object[] arr) {
+    /**
+     * 
+     * @param arr
+     * @return
+     */
+    public static int length(Object[] arr)
+    {
         return arr == null ? 0 : arr.length;
     }
 }

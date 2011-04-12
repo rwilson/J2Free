@@ -74,29 +74,57 @@ public class BatchInsert {
         ignore = false;
     }
 
-    public void onDuplicateKeyUpdate(String action) {
+    /**
+     * 
+     * @param action
+     */
+    public void onDuplicateKeyUpdate(String action)
+    {
         onDuplicateKeyUpdate = action;
     }
 
-    public void setIgnore(boolean ignore) {
+    /**
+     * 
+     * @param ignore
+     */
+    public void setIgnore(boolean ignore)
+    {
         this.ignore = ignore;
     }
 
-    public void add(Object... values) {
+    /**
+     * 
+     * @param values
+     */
+    public void add(Object... values)
+    {
         if (values.length != fields.length)
             throw new IllegalArgumentException("Invalid value set, length does not match field length!");
 
         valuesList.add(values);
     }
 
-    public int size() {
+    /**
+     * 
+     * @return
+     */
+    public int size()
+    {
         return valuesList.size();
     }
 
-    public void clear() {
+    /**
+     * 
+     */
+    public void clear()
+    {
         valuesList.clear();
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public String toString() {
         StringBuilder query = new StringBuilder();

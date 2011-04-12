@@ -24,5 +24,10 @@ import javax.servlet.http.HttpServletRequest;
  */
 public interface RequestExaminer
 {
+    /**
+     *
+     * @param req
+     * @return
+     */
     public boolean isSSL(HttpServletRequest req);
 }

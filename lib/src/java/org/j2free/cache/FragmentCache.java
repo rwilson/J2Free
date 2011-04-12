@@ -34,24 +34,50 @@ import net.jcip.annotations.ThreadSafe;
  * can provide a no-args constructor and be created via properties config
  * as well.
  *
+ * @param <T>
  * @author Ryan Wilson
  */
 @ThreadSafe
 public interface FragmentCache<T extends Fragment> {
 
-    public static class Properties {
+    /**
+     * 
+     */
+    public static class Properties
+    {
 
         private static final String PREFIX = "fragment.cache.";
 
         // FragmentCache Config
+        /**
+         *
+         */
         public static final String ENABLED          = PREFIX + "enabled";
+        /**
+         *
+         */
         public static final String REQUEST_TIMEOUT  = PREFIX + "request-timeout"; // In Seconds
+        /**
+         *
+         */
         public static final String WARNING_DURATION = PREFIX + "warning-duration"; // In Seconds
+        /**
+         *
+         */
         public static final String ENGINE_NAMES     = PREFIX + "names";
+        /**
+         *
+         */
         public static final String DEFAULT_ENGINE   = PREFIX + "default";
+        /**
+         *
+         */
         public static final String ENGINE_PREFIX    = PREFIX + "strategy.";
 
         // FragmentCache implementation config templates
+        /**
+         *
+         */
         public static final String ENGINE_CLASS_TEMPLATE = ENGINE_PREFIX + "%s.class";
     }
 
@@ -179,8 +205,8 @@ public interface FragmentCache<T extends Fragment> {
      * except that the action is performed atomically.
      * 
      * @param key key with which the specified {@link Fragment} is associated
-     * @param oldFragment {@link Fragment} expected to be associated with the specified key.
-     * @param newFragment {@link Fragment} to be associated with the specified key.
+     * @param expected
+     * @param replacement
      * @return Current {@link Fragment} associated with the specified key. If the previous
      *         {@link Fragment} equaled the expected, then the replacement {@link Fragment}
      *         is returned.

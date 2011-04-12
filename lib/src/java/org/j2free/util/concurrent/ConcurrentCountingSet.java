@@ -36,6 +36,7 @@ import net.jcip.annotations.ThreadSafe;
  * and using non-blocking CAS algorithms in the <tt>add</tt> and <tt>remove</tt>
  * methods.
  *
+ * @param <T>
  * @author Ryan Wilson
  */
 @ThreadSafe
@@ -45,45 +46,77 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
 {
     private final ConcurrentHashMap<T, Integer> set;
 
+    /**
+     *
+     */
     public ConcurrentCountingSet()
     {
         set = new ConcurrentHashMap<T,Integer>();
     }
 
+    /**
+     *
+     * @param initialCapacity
+     */
     public ConcurrentCountingSet(int initialCapacity)
     {
         set = new ConcurrentHashMap<T,Integer>(initialCapacity);
     }
 
+    /**
+     *
+     * @param c
+     */
     public ConcurrentCountingSet(Collection<? extends T> c)
     {
         set = new ConcurrentHashMap<T,Integer>(Math.max((int) (c.size() / .75f) + 1, 16));
         for (T e : c) add(e);
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     public int getAddCount(T o)
     {
         Integer i = set.get(o);
         return i == null ? 0 : i.intValue();
     }
 
+    /**
+     *
+     * @return
+     */
     public T min()
     {
         Object[] array = toArray();
         return array.length == 0 ? null : (T)array[0];
     }
 
+    /**
+     *
+     * @return
+     */
     public T max()
     {
         Object[] array = toArray();
         return array.length == 0 ? null : (T)array[array.length - 1];
     }
 
+    /**
+     *
+     */
     public void clear()
     {
         set.clear();
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     public boolean add(T o)
     {
         if (set.putIfAbsent(o, 1) == null)
@@ -100,6 +133,7 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
     }
 
     /**
+     * @param c
      * @return true if any add for an individual element in the provided
      *         collection would return true
      */
@@ -111,11 +145,21 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
         return ret;
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     public boolean contains(Object o)
     {
         return set.containsKey(o);
     }
 
+    /**
+     *
+     * @param c
+     * @return
+     */
     public boolean containsAll(Collection<?> c)
     {
         boolean all = true;
@@ -123,16 +167,29 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
         return all;
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isEmpty()
     {
         return set.isEmpty();
     }
 
+    /**
+     *
+     * @return
+     */
     public Iterator<T> iterator()
     {
         return set.keySet().iterator();
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     public boolean remove(Object o)
     {
         for (;;)
@@ -153,6 +210,11 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
         }
     }
 
+    /**
+     *
+     * @param c
+     * @return
+     */
     public boolean removeAll(Collection<?> c)
     {
         boolean ret = false;
@@ -160,6 +222,11 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
         return ret;
     }
 
+    /**
+     *
+     * @param c
+     * @return
+     */
     public boolean retainAll(Collection<?> c)
     {
         boolean mod = false;
@@ -174,6 +241,10 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
         return mod;
     }
 
+    /**
+     *
+     * @return
+     */
     public int size()
     {
         return set.size();
@@ -209,6 +280,8 @@ public final class ConcurrentCountingSet<T> implements Iterable<T>,
     }
 
     /**
+     * @param <T>
+     * @param a
      * @return a T[] containing the elements of this set
      *         ordered in ascending order by the number of times
      *         they were added to this set.

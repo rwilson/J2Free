@@ -29,6 +29,8 @@ public class LaunderThrowable {
      * 
      * If the Throwable is an Error, throw it; if it is a
      * RuntimeException return it, otherwise throw IllegalStateException
+     * @param t 
+     * @return
      */
     public static RuntimeException launderThrowable(Throwable t) {
         if (t instanceof RuntimeException)

@@ -30,17 +30,34 @@ public class QueryFormula {
     private String query;
     private HashMap<String, Object> parameters;
     
-    public QueryFormula(String query) {
+    /**
+     * 
+     * @param query
+     */
+    public QueryFormula(String query)
+    {
         this.query = query;
         this.parameters = new HashMap<String, Object>();
     }
     
-    public QueryFormula(String query, HashMap<String, Object> params) {
+    /**
+     * 
+     * @param query
+     * @param params
+     */
+    public QueryFormula(String query, HashMap<String, Object> params)
+    {
         this.query = query;
         this.parameters = params;
     }
     
-    public QueryFormula(String query, KeyValuePair<String,Object>... params) {
+    /**
+     * 
+     * @param query
+     * @param params
+     */
+    public QueryFormula(String query, KeyValuePair<String,Object>... params)
+    {
         this.query = query;
         this.parameters = new HashMap<String, Object>();
         
@@ -48,15 +65,30 @@ public class QueryFormula {
             this.parameters.put(pair.key,pair.value);
     }
     
-    public String getQuery() { 
+    /**
+     * 
+     * @return
+     */
+    public String getQuery()
+    {
         return query; 
     }
     
-    public HashMap<String, Object> getParameters() {
+    /**
+     * 
+     * @return
+     */
+    public HashMap<String, Object> getParameters()
+    {
         return parameters;
     }
 
-    public KeyValuePair[] getParametersAsPairArray() {
+    /**
+     * 
+     * @return
+     */
+    public KeyValuePair[] getParametersAsPairArray()
+    {
         KeyValuePair[] pairs = new KeyValuePair[parameters.size()];
         
         Iterator<Map.Entry<String,Object>> itr = parameters.entrySet().iterator();

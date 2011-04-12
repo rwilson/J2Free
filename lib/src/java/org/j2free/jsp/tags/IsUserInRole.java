@@ -29,22 +29,35 @@ public class IsUserInRole extends BodyTagSupport
 {
     private String role;
 
+    /**
+     *
+     * @param role
+     */
     public void setRole(String role)
     {
         this.role = role;
     }
 
+    /**
+     *
+     */
     public IsUserInRole()
     {
         super();
         init();
     }
 
+    /**
+     *
+     */
     public final void init()
     {
         this.role = null;
     }
 
+    /**
+     *
+     */
     @Override
     public void release()
     {
@@ -52,6 +65,11 @@ public class IsUserInRole extends BodyTagSupport
         init();
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doStartTag() throws JspException
     {
@@ -67,6 +85,11 @@ public class IsUserInRole extends BodyTagSupport
         return ret;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doEndTag() throws JspException
     {

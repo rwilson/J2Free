@@ -32,6 +32,7 @@ import net.jcip.annotations.ThreadSafe;
  * <tt>PriorityFuture</tt> will, when sorted, be ordered first
  * by priority, then FIFO.
  *
+ * @param <V>
  * @author Ryan Wilson
  */
 @ThreadSafe
@@ -40,31 +41,66 @@ public class PriorityFuture<V> extends FutureTask<V> implements Comparable<Prior
     private final Priority priority;
     private final long     created;
 
-    public PriorityFuture(Callable<V> callable) {
+    /**
+     * 
+     * @param callable
+     */
+    public PriorityFuture(Callable<V> callable)
+    {
         this(callable, Priority.DEFAULT);
     }
 
-    public PriorityFuture(Callable<V> callable, Priority priority) {
+    /**
+     * 
+     * @param callable
+     * @param priority
+     */
+    public PriorityFuture(Callable<V> callable, Priority priority)
+    {
         super(callable);
         this.priority = priority;
         this.created  = System.currentTimeMillis();
     }
 
-    public PriorityFuture(Runnable runnable, V result) {
+    /**
+     * 
+     * @param runnable
+     * @param result
+     */
+    public PriorityFuture(Runnable runnable, V result)
+    {
         this(runnable, result, Priority.DEFAULT);
     }
 
-    public PriorityFuture(Runnable runnable, V result, Priority priority) {
+    /**
+     * 
+     * @param runnable
+     * @param result
+     * @param priority
+     */
+    public PriorityFuture(Runnable runnable, V result, Priority priority)
+    {
         super(runnable, result);
         this.priority = priority;
         this.created  = System.currentTimeMillis();
     }
 
-    public Priority getPriority() {
+    /**
+     * 
+     * @return
+     */
+    public Priority getPriority()
+    {
         return priority;
     }
 
-    public int compareTo(PriorityFuture<V> other) {
+    /**
+     * 
+     * @param other
+     * @return
+     */
+    public int compareTo(PriorityFuture<V> other)
+    {
         if (other == null)
             return 1;
 

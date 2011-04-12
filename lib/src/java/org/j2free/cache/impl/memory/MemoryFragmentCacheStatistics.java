@@ -33,26 +33,53 @@ public class MemoryFragmentCacheStatistics implements FragmentCacheStatistics {
     private final int  lastCleanCount;
     private final long lastCleanTimestamp;
 
-    public MemoryFragmentCacheStatistics(int size, int lastCleanCount, long lastCleanTimestamp) {
+    /**
+     * 
+     * @param size
+     * @param lastCleanCount
+     * @param lastCleanTimestamp
+     */
+    public MemoryFragmentCacheStatistics(int size, int lastCleanCount, long lastCleanTimestamp)
+    {
         this.lastCleanCount = lastCleanCount;
         this.lastCleanTimestamp = lastCleanTimestamp;
         this.size = size;
         this.timestamp = System.currentTimeMillis();
     }
 
-    public int getCacheSize() {
+    /**
+     * 
+     * @return
+     */
+    public int getCacheSize()
+    {
         return size;
     }
 
-    public long getTimestamp() {
+    /**
+     * 
+     * @return
+     */
+    public long getTimestamp()
+    {
         return timestamp;
     }
 
-    public int getLastCleanCount() {
+    /**
+     * 
+     * @return
+     */
+    public int getLastCleanCount()
+    {
         return lastCleanCount;
     }
 
-    public long getLastCleanTimestamp() {
+    /**
+     * 
+     * @return
+     */
+    public long getLastCleanTimestamp()
+    {
         return lastCleanTimestamp;
     }
     

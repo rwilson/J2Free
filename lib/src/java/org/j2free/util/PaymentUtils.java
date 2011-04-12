@@ -23,7 +23,13 @@ package org.j2free.util;
  */
 public class PaymentUtils {
 
-    public static String getCreditCardDigitsOnly(String s) {
+    /**
+     * 
+     * @param s
+     * @return
+     */
+    public static String getCreditCardDigitsOnly(String s)
+    {
         StringBuffer digitsOnly = new StringBuffer();
         char c;
         for (int i = 0; i < s.length(); i++) {
@@ -38,7 +44,13 @@ public class PaymentUtils {
     //-------------------
     // Perform Luhn check
     //-------------------
-    public static boolean isValidCreditCard(String cardNumber) {
+    /**
+     * 
+     * @param cardNumber
+     * @return
+     */
+    public static boolean isValidCreditCard(String cardNumber)
+    {
         
         if (cardNumber == null || cardNumber.length() <= 0) {
             return false;
@@ -68,7 +80,13 @@ public class PaymentUtils {
         return modulus == 0;
     }
     
-    public static String getCreditCardType(String cardNumber) {
+    /**
+     * 
+     * @param cardNumber
+     * @return
+     */
+    public static String getCreditCardType(String cardNumber)
+    {
         int firstDigit = Character.getNumericValue(cardNumber.charAt(0));
         switch(firstDigit) {
             case 3: return "Amex";

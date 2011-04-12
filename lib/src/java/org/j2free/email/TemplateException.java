@@ -28,12 +28,20 @@ public class TemplateException extends Exception
 {
     private Set<String> tokens;
 
+    /**
+     *
+     * @param message
+     */
     public TemplateException(String message)
     {
         super(message);
         this.tokens = new HashSet<String>();
     }
 
+    /**
+     *
+     * @param token
+     */
     public void addToken(String token)
     {
         this.tokens.add(token);

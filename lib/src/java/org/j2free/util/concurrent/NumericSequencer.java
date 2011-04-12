@@ -32,19 +32,31 @@ public class NumericSequencer
     private final AtomicInteger number;
     private final ConcurrentLinkedQueue<Integer> returned;
 
+    /**
+     *
+     */
     public NumericSequencer()
     {
         number   = new AtomicInteger(0);
         returned = new ConcurrentLinkedQueue<Integer>();
     }
 
+    /**
+     *
+     * @return
+     */
     public int next()
     {
         Integer n = returned.poll();
         return n == null ? number.getAndIncrement() : n;
     }
 
-    public void release(final int num) {
+    /**
+     * 
+     * @param num
+     */
+    public void release(final int num)
+    {
         returned.offer(num);
     }
 }

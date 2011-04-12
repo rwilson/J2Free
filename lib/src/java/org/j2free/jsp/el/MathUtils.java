@@ -22,23 +22,55 @@ package org.j2free.jsp.el;
  */
 public class MathUtils {
 
-    public static int floor(double d) {
+    /**
+     * 
+     * @param d
+     * @return
+     */
+    public static int floor(double d)
+    {
         return Double.valueOf(Math.floor(d)).intValue();
     }
 
-    public static int ceiling(double d) {
+    /**
+     * 
+     * @param d
+     * @return
+     */
+    public static int ceiling(double d)
+    {
         return Double.valueOf(Math.ceil(d)).intValue();
     }
 
-    public static double max(double one, double two) {
+    /**
+     * 
+     * @param one
+     * @param two
+     * @return
+     */
+    public static double max(double one, double two)
+    {
         return Math.max(one, two);
     }
 
-    public static double min(double one, double two) {
+    /**
+     * 
+     * @param one
+     * @param two
+     * @return
+     */
+    public static double min(double one, double two)
+    {
         return Math.min(one,two);
     }
 
-    public static double max(double... doubles) {
+    /**
+     * 
+     * @param doubles
+     * @return
+     */
+    public static double max(double... doubles)
+    {
         double max = -1d;
 
         for (double d : doubles) {
@@ -50,7 +82,13 @@ public class MathUtils {
         return max;
     }
 
-    public static double min(double... doubles) {
+    /**
+     * 
+     * @param doubles
+     * @return
+     */
+    public static double min(double... doubles)
+    {
         double min = -1d;
 
         for (double d : doubles) {

@@ -26,21 +26,47 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ServletConfig {
 
-    public static enum SSLOption {
-        DENY,       // Disallow SSL processing by this servlet
-        OPTIONAL,   // Optionally allow SSL processing by this servlet
-        REQUIRE,    // Require SSL connections to this servlet
-        UNSPECIFIED // Unspecified, delegates to the InvokerFilters runtime config
+    /**
+     * 
+     */
+    public static enum SSLOption
+    {
+        /**
+         * Disallow SSL processing by this servlet
+         */
+        DENY,
+        /**
+         * Optionally allow SSL processing by this servlet.
+         */
+        OPTIONAL,
+        /**
+         * Require SSL connections to this servlet.
+         */
+        REQUIRE,
+        /**
+         * Unspecified, delegates to the InvokerFilters runtime config
+         */
+        UNSPECIFIED
     };
 
-    public String[] mappings() default {};
+    /**
+     * @return The paths for which this configuration should indicate the endpoint.
+     */
+    public String[] mappings() default
+    {};
 
+    /**
+     * @return A regex to match against paths.
+     */
     public String regex() default "";
 
+    /**
+     * @return The SSLOption in effect
+     */
     public SSLOption ssl() default SSLOption.UNSPECIFIED;
 
     /**
-     * Whether the Filter expects an open Controller. Default is false.
+     * @return true if the Servlet requires a Controller, otherwise false.
      */
     public boolean requireController() default true;
 
@@ -53,6 +79,11 @@ public @interface ServletConfig {
      * It is not recommended that Servlets modify this value but,
      * if memory is a concern, it could be disabled for servlets
      * that match to a large number of URLs.
+     * 
+     * @return true if regex or wildcard mappings that resolve to this
+     *         endpoint should be cached.  Enabling this allows for
+     *         lookups in O(1) time after the first match but uses
+     *         more memory.
      */
     public boolean preferDirectLookups() default true;
 
@@ -61,8 +92,11 @@ public @interface ServletConfig {
      * for this servlet only.  Useful for disabling servlet reloading
      * for a particular servlet.
      *
-     * -1 indicates that the value is not set and the default should be
-     * used.  To disable servlet reloading, specify 0.
+     * @return Indicates how many requests a Servlet instance may serve
+     *         before it is discarded and a new instance is constructed.
+     *         -1 indicates that the value is unset and the default,
+     *         specified by the InvokerFilter config, should be used. To
+     *         disable reloading of instances of this Servlet, return 0.
      */
     public int maxUses() default -1;
 }

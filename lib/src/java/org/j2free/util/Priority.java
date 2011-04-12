@@ -24,10 +24,25 @@ package org.j2free.util;
  */
 public enum Priority {
 
+    /**
+     *
+     */
     MAX,
+    /**
+     *
+     */
     HIGH,
+    /**
+     *
+     */
     DEFAULT,
+    /**
+     *
+     */
     LOW,
+    /**
+     *
+     */
     MIN
             
 }

@@ -34,6 +34,9 @@ public class SecurityUtils {
     /**
      *  Yea, this isn't the prettiest code, but compared to a version that uses
      *  Integer.toHexString() it's roughly two seconds faster at 1,000,000 reps
+     * @param text
+     * @return
+     * @deprecated
      */
 //    private static String convertToHex(byte[] digest) {
 //        StringBuffer hex = new StringBuffer();
@@ -65,6 +68,12 @@ public class SecurityUtils {
 //        }
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     * @deprecated
+     */
     @Deprecated
     public static String MD5(String text) {
         return DigestUtils.md5Hex(text);
@@ -81,7 +90,9 @@ public class SecurityUtils {
      *  Convenience method for MD5(byte[]) which uses ObjectOutputStream to write
      *  an object to a ByteArrayOutputStream to get the object as a byte[]
      *
-     *  @return the MD5 hash of the object
+     *  @param o 
+     * @return the MD5 hash of the object
+     * @throws IOException
      */
     public static String MD5(Object o) throws IOException {
 
@@ -94,7 +105,9 @@ public class SecurityUtils {
     }
 
     /**
-     *  @return Calculates the MD5 hash of the byte array
+     *  @param bytes
+     * @return Calculates the MD5 hash of the byte array
+     * @deprecated
      */
     @Deprecated
     public static String MD5(byte[] bytes) {

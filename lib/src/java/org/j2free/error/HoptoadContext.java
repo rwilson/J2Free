@@ -29,6 +29,11 @@ import javax.servlet.http.HttpSession;
  */
 public class HoptoadContext
 {
+    /**
+     *
+     * @param req
+     * @return
+     */
     public static HoptoadContext parseRequest(HttpServletRequest req)
     {
         if (req == null)
@@ -72,6 +77,9 @@ public class HoptoadContext
     private String method;
     private String userAgent;
 
+    /**
+     *
+     */
     public HoptoadContext()
     {
         queryParams = new HashMap<String, String>();

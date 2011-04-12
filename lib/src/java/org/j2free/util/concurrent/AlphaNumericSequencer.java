@@ -30,16 +30,27 @@ public class AlphaNumericSequencer
 {
     private final AtomicLong number;
 
+    /**
+     *
+     */
     public AlphaNumericSequencer()
     {
         this(0l);
     }
 
+    /**
+     *
+     * @param seed
+     */
     public AlphaNumericSequencer(long seed)
     {
         number = new AtomicLong(seed);
     }
 
+    /**
+     *
+     * @return
+     */
     public String next()
     {
         return Long.toString(number.incrementAndGet(), Character.MAX_RADIX);

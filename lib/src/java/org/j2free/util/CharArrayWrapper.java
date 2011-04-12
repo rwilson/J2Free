@@ -40,6 +40,7 @@ public class CharArrayWrapper extends HttpServletResponseWrapper {
      *  <P>
      *  Second, this constructor creates a CharArrayWriter
      *  that will be used to accumulate the response.
+     * @param response
      */
     public CharArrayWrapper(HttpServletResponse response) {
         super(response);
@@ -51,6 +52,7 @@ public class CharArrayWrapper extends HttpServletResponseWrapper {
      *  a version that writes into the character array.
      *  The filter needs to send the contents of the
      *  array to the client (perhaps after modifying it).
+     * @return
      */
     public PrintWriter getWriter() {
         return(new PrintWriter(charWriter));
@@ -63,12 +65,15 @@ public class CharArrayWrapper extends HttpServletResponseWrapper {
      *  does not guarantee that it "remembers" the previous
      *  value, so the call is likely to make a new String
      *  every time.
+     * @return
      */
     public String toString() {
         return(charWriter.toString());
     }
     
-    /** Get the underlying character array. */
+    /** Get the underlying character array.
+     * @return
+     */
     public char[] toCharArray() {
         return(charWriter.toCharArray());
     }

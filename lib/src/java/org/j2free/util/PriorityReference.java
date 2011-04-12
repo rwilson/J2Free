@@ -24,6 +24,7 @@ package org.j2free.util;
  * <tt>Comparable</tt> and that do not have a field which
  * can be used to order by priority using a <tt>Comparator</tt>
  *
+ * @param <E>
  * @author Ryan Wilson
  */
 public class PriorityReference<E> implements Comparable<PriorityReference<E>> {
@@ -31,24 +32,51 @@ public class PriorityReference<E> implements Comparable<PriorityReference<E>> {
     private final Priority priority;
     private final E        element;
 
-    public PriorityReference(E element) {
+    /**
+     * 
+     * @param element
+     */
+    public PriorityReference(E element)
+    {
         this(element, Priority.DEFAULT);
     }
 
-    public PriorityReference(E element, Priority priority) {
+    /**
+     * 
+     * @param element
+     * @param priority
+     */
+    public PriorityReference(E element, Priority priority)
+    {
         this.element  = element;
         this.priority = priority;
     }
 
-    public E get() {
+    /**
+     * 
+     * @return
+     */
+    public E get()
+    {
         return element;
     }
 
-    public Priority getPriority() {
+    /**
+     * 
+     * @return
+     */
+    public Priority getPriority()
+    {
         return priority;
     }
 
-    public int compareTo(PriorityReference<E> other) {
+    /**
+     * 
+     * @param other
+     * @return
+     */
+    public int compareTo(PriorityReference<E> other)
+    {
         if (other == null)
             return 1;
 

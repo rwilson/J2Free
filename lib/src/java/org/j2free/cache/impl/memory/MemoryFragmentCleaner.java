@@ -40,7 +40,12 @@ public class MemoryFragmentCleaner implements Runnable {
     @GuardedBy("this") private long lastCleanTimestamp;
     @GuardedBy("this") private int lastCleanCount;
 
-    public MemoryFragmentCleaner(FragmentCache<MemoryFragment> cache) {
+    /**
+     * 
+     * @param cache
+     */
+    public MemoryFragmentCleaner(FragmentCache<MemoryFragment> cache)
+    {
         super();
         this.cache = cache;
 
@@ -48,7 +53,11 @@ public class MemoryFragmentCleaner implements Runnable {
         this.lastCleanCount     = -1;
     }
 
-    public void run() {
+    /**
+     * 
+     */
+    public void run()
+    {
 
         long start = System.currentTimeMillis();
 
@@ -82,11 +91,21 @@ public class MemoryFragmentCleaner implements Runnable {
         log.info("FragmentCleaner complete [" + (System.currentTimeMillis() - start) + "ms, " + lastCleanCount + " of " + count + " cleaned]");
     }
 
-    public synchronized long getLastCleanTimestamp() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized long getLastCleanTimestamp()
+    {
         return lastCleanTimestamp;
     }
 
-    public synchronized int getLastCleanCount() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized int getLastCleanCount()
+    {
         return lastCleanCount;
     }
 }

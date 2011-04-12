@@ -67,6 +67,10 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
 
     private final Log log = LogFactory.getLog(getClass());
 
+    /**
+     *
+     * @param config
+     */
     public MemoryFragmentCache(Configuration config)
     {
         this(
@@ -82,7 +86,12 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
             );
     }
 
-    public MemoryFragmentCache(int initialSize) {
+    /**
+     * 
+     * @param initialSize
+     */
+    public MemoryFragmentCache(int initialSize)
+    {
         this.map     = new ConcurrentHashMap<String,MemoryFragment>(initialSize);
         this.cleaner = new MemoryFragmentCleaner(this);
     }
@@ -169,6 +178,7 @@ public class MemoryFragmentCache implements FragmentCache<MemoryFragment> {
      *
      * @param interval The time interval
      * @param unit The time unit the interval is in
+     * @param runNow
      */
     public final void scheduleCleaner(long interval, TimeUnit unit, boolean runNow) {
 

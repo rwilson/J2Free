@@ -52,11 +52,26 @@ import static org.j2free.util.Constants.*;
  */
 public class ServletUtils {
 
-    public static int getIntParameter(HttpServletRequest req, String name) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @return
+     */
+    public static int getIntParameter(HttpServletRequest req, String name)
+    {
         return getIntParameter(req, name, -1);
     }
 
-    public static int getIntParameter(HttpServletRequest req, String name, int defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static int getIntParameter(HttpServletRequest req, String name, int defValue)
+    {
         int i = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -68,12 +83,27 @@ public class ServletUtils {
         return i;
     }
 
-    public static short getShortParameter(HttpServletRequest req, String name) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @return
+     */
+    public static short getShortParameter(HttpServletRequest req, String name)
+    {
         short s = -1;
         return getShortParameter(req, name, s);
     }
 
-    public static short getShortParameter(HttpServletRequest req, String name, short defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static short getShortParameter(HttpServletRequest req, String name, short defValue)
+    {
         short i = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -85,7 +115,15 @@ public class ServletUtils {
         return i;
     }
 
-    public static long getLongParameter(HttpServletRequest req, String name, long defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static long getLongParameter(HttpServletRequest req, String name, long defValue)
+    {
         long l = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -97,7 +135,15 @@ public class ServletUtils {
         return l;
     }
 
-    public static float getFloatParameter(HttpServletRequest req, String name, float defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static float getFloatParameter(HttpServletRequest req, String name, float defValue)
+    {
         float i = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -109,7 +155,15 @@ public class ServletUtils {
         return i;
     }
 
-    public static double getDoubleParameter(HttpServletRequest req, String name, double defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static double getDoubleParameter(HttpServletRequest req, String name, double defValue)
+    {
         double i = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -121,7 +175,15 @@ public class ServletUtils {
         return i;
     }
 
-    public static boolean getBooleanParameter(HttpServletRequest req, String name, boolean defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static boolean getBooleanParameter(HttpServletRequest req, String name, boolean defValue)
+    {
         boolean b = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -133,7 +195,15 @@ public class ServletUtils {
         return b;
     }
 
-    public static java.sql.Date getDateParameter(HttpServletRequest req, String name, java.sql.Date defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static java.sql.Date getDateParameter(HttpServletRequest req, String name, java.sql.Date defValue)
+    {
         java.sql.Date d = defValue;
         String s = req.getParameter(name);
         if (s != null) {
@@ -145,11 +215,26 @@ public class ServletUtils {
         return d;
     }
 
-    public static String getStringParameter(HttpServletRequest req, String name) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @return
+     */
+    public static String getStringParameter(HttpServletRequest req, String name)
+    {
         return getStringParameter(req, name, EMPTY);
     }
 
-    public static String getStringParameter(HttpServletRequest req, String name, String defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param defValue
+     * @return
+     */
+    public static String getStringParameter(HttpServletRequest req, String name, String defValue)
+    {
         String s = req.getParameter(name);
         if (s == null) {
             s = defValue;
@@ -157,11 +242,28 @@ public class ServletUtils {
         return s == null ? s : s.trim();
     }
 
-    public static String[] getStringArrayParameter(HttpServletRequest req, String name, String del) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param del
+     * @return
+     */
+    public static String[] getStringArrayParameter(HttpServletRequest req, String name, String del)
+    {
         return getStringArrayParameter(req, name, del, new String[0]);
     }
 
-    public static String[] getStringArrayParameter(HttpServletRequest req, String name, String del, String[] defValue) {
+    /**
+     * 
+     * @param req
+     * @param name
+     * @param del
+     * @param defValue
+     * @return
+     */
+    public static String[] getStringArrayParameter(HttpServletRequest req, String name, String del, String[] defValue)
+    {
         String s = req.getParameter(name);
 
         if (s == null) {
@@ -195,7 +297,7 @@ public class ServletUtils {
 
     /** 
      * @param words to join
-     * @param separator, the separator to put between words
+     * @param separator
      * @return String of words concatonated with the separator
      */
     public static String join(Object[] words, String separator) {
@@ -213,8 +315,8 @@ public class ServletUtils {
     }
 
     /**
-     * @param   ints to join
-     * @param   separator, the separator to put between words
+     * @param words
+     * @param separator
      * @return  String of words concatonated with the separator
      */
     public static String join(int[] words, String separator) {
@@ -232,8 +334,8 @@ public class ServletUtils {
     }
 
     /**
-     * @param   ints to join
-     * @param   separator, the separator to put between words
+     * @param words 
+     * @param separator
      * @return  String of words concatonated with the separator
      */
     public static String join(float[] words, String separator) {
@@ -251,8 +353,8 @@ public class ServletUtils {
     }
 
     /**
-     * @param   ints to join
-     * @param   separator, the separator to put between words
+     * @param words 
+     * @param separator
      * @return  String of words concatonated with the separator
      */
     public static String join(double[] words, String separator) {
@@ -290,8 +392,9 @@ public class ServletUtils {
     }
 
     /** 
+     * @param <T>
      * @param   words to join
-     * @param   separator, the separator to put between words
+     * @param separator
      * @return  String of words concatonated with the separator
      */
     public static <T extends Object> String join(Collection<T> words, String separator) {
@@ -318,8 +421,9 @@ public class ServletUtils {
      * parameter when combined with the key and hashed.  For post requests, the parameter
      * order is not guaranteed and so is assumed to be sorted alphabetically by key.
      *
-     * @param a request object
-     * @param a secret key
+     * @param req
+     * @param secret
+     * @return
      */
     public static boolean isAuthenticatedRequest(HttpServletRequest req, String secret)
     {
@@ -356,44 +460,118 @@ public class ServletUtils {
         return signQueryString(query, secret).equals(sig);
     }
 
-    public static String signQueryString(String query, String secret) {
+    /**
+     * 
+     * @param query
+     * @param secret
+     * @return
+     */
+    public static String signQueryString(String query, String secret)
+    {
         return SecurityUtils.SHA1(query + secret);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, false);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchCompressed(HttpServletRequest request, HttpServletResponse response, String destination)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, true, "text/html", true, true);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @param contentType
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchCompressed(HttpServletRequest request, HttpServletResponse response, String destination,
                                           String contentType)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, true, contentType, true, true);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @param wrap
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination,
                                        boolean wrap)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, wrap, "text/html", false, false);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @param wrap
+     * @param contentType
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination,
                                        boolean wrap, String contentType)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, wrap, contentType, false, false);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @param wrap
+     * @param contentType
+     * @param compress
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination,
                                        boolean wrap, String contentType, boolean compress)
             throws ServletException, IOException {
         dispatchRequest(request, response, destination, wrap, contentType, compress, false);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @param destination
+     * @param wrap
+     * @param contentType
+     * @param compress
+     * @param flushAndClose
+     * @throws ServletException
+     * @throws IOException
+     */
     public static void dispatchRequest(HttpServletRequest request, HttpServletResponse response, String destination,
                                        boolean wrap, String contentType, boolean compress, boolean flushAndClose)
             throws ServletException, IOException {
@@ -427,7 +605,13 @@ public class ServletUtils {
         }
     }
 
-    public static void sendPermanentRedirect(HttpServletResponse response, String url) {
+    /**
+     * 
+     * @param response
+     * @param url
+     */
+    public static void sendPermanentRedirect(HttpServletResponse response, String url)
+    {
         response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY);
         response.setHeader("Location", url);
         response.setHeader("Connection","close");
@@ -439,6 +623,8 @@ public class ServletUtils {
      * @param request a HttpServletRequest
      * @param response a HttpServletResponse
      * @param sslPort the port SSL requests should be forwarded to
+     * @throws ServletException
+     * @throws IOException
      */
     public static void redirectOverSSL(HttpServletRequest request, HttpServletResponse response, int sslPort)
         throws ServletException, IOException {
@@ -477,7 +663,10 @@ public class ServletUtils {
      *
      * @param request a HttpServletRequest
      * @param response a HttpServletResponse
+     * @param urlStr 
      * @param sslPort the port SSL requests should be forwarded to
+     * @throws ServletException
+     * @throws IOException
      */
     public static void redirectOverSSL(HttpServletRequest request, HttpServletResponse response, String urlStr, int sslPort)
         throws ServletException, IOException {
@@ -517,6 +706,8 @@ public class ServletUtils {
      * @param request a HttpServletRequest
      * @param response a HttpServletResponse
      * @param nonSslPort the port Non-SSL requests should be forwarded to
+     * @throws ServletException
+     * @throws IOException
      */
     public static void redirectOverNonSSL(HttpServletRequest request, HttpServletResponse response, int nonSslPort)
         throws ServletException, IOException {
@@ -555,7 +746,10 @@ public class ServletUtils {
      *
      * @param request a HttpServletRequest
      * @param response a HttpServletResponse
+     * @param urlStr 
      * @param nonSslPort the port Non-SSL requests should be forwarded to
+     * @throws ServletException
+     * @throws IOException
      */
     public static void redirectOverNonSSL(HttpServletRequest request, HttpServletResponse response, String urlStr, int nonSslPort)
         throws ServletException, IOException {
@@ -596,6 +790,8 @@ public class ServletUtils {
      * 
      * @param response
      * @param statusCode
+     * @throws ServletException
+     * @throws IOException
      */
     public static void doXmlStatusCodeError(HttpServletResponse response, int statusCode) 
             throws ServletException, IOException 
@@ -700,18 +896,28 @@ public class ServletUtils {
         return true;
     }
 
-    public static <T extends Object> T or(T a, T b) {
+    /**
+     * 
+     * @param <T>
+     * @param a
+     * @param b
+     * @return
+     */
+    public static <T extends Object> T or(T a, T b)
+    {
         return a != null ? a : b;
     }
 
     /**
-     *  @return true if the String argument is null or an empty String, otherwise false
+     *  @param str
+     * @return true if the String argument is null or an empty String, otherwise false
      */
     public static boolean empty(String str) {
         return StringUtils.isEmpty(str);
     }
 
     /**
+     * @param c
      * @return true if the collection argument is null or isEmpty(), otherwise false
      */
     public static boolean empty(Collection c) {
@@ -719,6 +925,7 @@ public class ServletUtils {
     }
 
     /**
+     * @param array
      * @return true if the array argument is null or length == 0, otherwise false
      */
     public static boolean empty(Object[] array) {
@@ -728,21 +935,38 @@ public class ServletUtils {
     /**
      * Returns the argument String surrounded in the argument quore with any pf
      * the argument quotes that were in the string escaped.
+     * @param toQuote 
+     * @param quote 
+     * @return
      */
     public static String quote(String toQuote, char quote) {
         return String.format("%s%s%s", quote, toQuote.replace(Character.toString(quote), "\\" + quote), quote);
     }
 
-    public static String escapeSingleQuotes(String text) {
+    /**
+     * 
+     * @param text
+     * @return
+     */
+    public static String escapeSingleQuotes(String text)
+    {
         return text.replaceAll("'","\\\\'");
     }
 
-    public static String escapeDoubleQuotes(String text) {
+    /**
+     * 
+     * @param text
+     * @return
+     */
+    public static String escapeDoubleQuotes(String text)
+    {
         return text.replaceAll("\"","\\\\\"");
     }
 
     /**
      * Appends a newline char to the end of the string and returns it.
+     * @param str 
+     * @return
      */
     public static String line(String str) {
         return String.format("%s\n", str);
@@ -750,6 +974,8 @@ public class ServletUtils {
 
     /**
      * Replaces &lt; &gt; &amp; &#39; &quot;
+     * @param str 
+     * @return
      */
     public static String cleanXSS(String str) {
         return str.replace("&","&amp;")
@@ -759,7 +985,13 @@ public class ServletUtils {
                   .replace("\"","&quot;");
     }
 
-    public static String toCamelCase(String source) {
+    /**
+     * 
+     * @param source
+     * @return
+     */
+    public static String toCamelCase(String source)
+    {
 
         if (StringUtils.isEmpty(source)) return EMPTY;
         if (StringUtils.isBlank(source)) return source;
@@ -781,7 +1013,13 @@ public class ServletUtils {
         return ret.toString();
     }
 
-    public static String capitalizeFirst(String source) {
+    /**
+     * 
+     * @param source
+     * @return
+     */
+    public static String capitalizeFirst(String source)
+    {
 
         if (StringUtils.isEmpty(source)) return EMPTY;
         if (StringUtils.isBlank(source)) return source;
@@ -793,7 +1031,13 @@ public class ServletUtils {
         return source.toUpperCase().charAt(0) + source.substring(1);
     }
 
-    public static String describeRequest(HttpServletRequest req) {
+    /**
+     * 
+     * @param req
+     * @return
+     */
+    public static String describeRequest(HttpServletRequest req)
+    {
 
         if (req == null) {
             return EMPTY;
@@ -850,6 +1094,10 @@ public class ServletUtils {
      *  this method tries to find the value of the cookie with
      *  the given name. If no cookie matches the name,
      *  the default value is returned.
+     * @param request 
+     * @param cookieName 
+     * @param defaultValue
+     * @return
      */
     public static String getCookieValue(HttpServletRequest request, String cookieName, String defaultValue) {
         Cookie[] cookies = request.getCookies();
@@ -866,6 +1114,9 @@ public class ServletUtils {
     /** Given the request object and a name, this method tries
      *  to find and return the cookie that has the given name.
      *  If no cookie matches the name, null is returned.
+     * @param request
+     * @param cookieName
+     * @return
      */
     public static Cookie getCookie(HttpServletRequest request, String cookieName) {
         Cookie[] cookies = request.getCookies();
@@ -879,7 +1130,17 @@ public class ServletUtils {
         return (null);
     }
 
-    public static Cookie createCookie(HttpServletResponse response, String name, String value, int expiry, boolean useRootPath) {
+    /**
+     * 
+     * @param response
+     * @param name
+     * @param value
+     * @param expiry
+     * @param useRootPath
+     * @return
+     */
+    public static Cookie createCookie(HttpServletResponse response, String name, String value, int expiry, boolean useRootPath)
+    {
 
         Cookie c = new Cookie(name, value);
         c.setMaxAge(expiry);
@@ -893,6 +1154,10 @@ public class ServletUtils {
 
     /**
      * Cookie will last a year
+     * @param response
+     * @param name
+     * @param value
+     * @return
      */
     public static Cookie createCookie(HttpServletResponse response, String name, String value) {
         return createCookie(response, name, value, 60 * 60 * 24 * 356, true);
@@ -900,6 +1165,9 @@ public class ServletUtils {
 
     /**
      * Removes a cookie
+     * @param response
+     * @param name
+     * @param useRootPath
      */
     public static void removeCookie(HttpServletResponse response, String name, boolean useRootPath) {
         createCookie(response, name, EMPTY, 0, useRootPath);
@@ -909,7 +1177,7 @@ public class ServletUtils {
      * Performes a basic auth authentication on the request comparing the username and password sent in the header
      * to the correct ones correctUsername and correctPassword
      * If no auth is sent or username and password doesn't match it returns false
-     * @param request
+     * @param req
      * @param correctUsername
      * @param correctPassword
      * @return

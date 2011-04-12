@@ -25,6 +25,14 @@ import net.jcip.annotations.Immutable;
 @Immutable
 public interface FragmentCacheStatistics {
 
+    /**
+     *
+     * @return
+     */
     public int getCacheSize();
+    /**
+     *
+     * @return
+     */
     public long getTimestamp();
 }

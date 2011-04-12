@@ -69,11 +69,22 @@ public final class HoptoadNotifier
     private final String version;
     private final boolean validating;
 
+    /**
+     *
+     * @param token
+     * @param version
+     */
     public HoptoadNotifier(String token, String version)
     {
         this(token, version, false);
     }
 
+    /**
+     *
+     * @param token
+     * @param version
+     * @param validating
+     */
     public HoptoadNotifier(String token, String version, boolean validating)
     {
         if (token == null || token.equals(""))
@@ -90,6 +101,7 @@ public final class HoptoadNotifier
 
     /**
      * @param thrown A non-null Throwable
+     * @return
      * @throws IllegalArgumentException is thrown is null
      */
     public Future<HttpCallResult> notify(Throwable thrown)
@@ -100,6 +112,7 @@ public final class HoptoadNotifier
     /**
      * @param thrown A non-null Throwable
      * @param message A optional string message; if null, the message from thrown will be used
+     * @return
      * @throws IllegalArgumentException is thrown is null
      */
     public Future<HttpCallResult> notify(Throwable thrown, String message)
@@ -110,6 +123,7 @@ public final class HoptoadNotifier
     /**
      * @param request
      * @param thrown
+     * @return
      * @throws IllegalArgumentException is thrown is null
      */
     public Future<HttpCallResult> notify(HttpServletRequest request, Throwable thrown)
@@ -117,15 +131,22 @@ public final class HoptoadNotifier
         return notify(HoptoadContext.parseRequest(request), thrown);
     }
 
+    /**
+     *
+     * @param context
+     * @param thrown
+     * @return
+     */
     public Future<HttpCallResult> notify(HoptoadContext context, Throwable thrown)
     {
         return notify(context, thrown, null);
     }
 
     /**
-     * @param request
+     * @param context
      * @param thrown A non-null Throwable
      * @param message A optional string message; if null, the message from thrown will be used
+     * @return
      * @throws IllegalArgumentException is thrown is null
      */
     public Future<HttpCallResult> notify(HoptoadContext context, Throwable thrown, String message)
@@ -140,6 +161,7 @@ public final class HoptoadNotifier
 
     /**
      * @param frame A non-null StackTraceElement
+     * @return
      * @throws IllegalArgumentException is frame is null
      */
     public Future<HttpCallResult> notify(StackTraceElement frame)
@@ -150,6 +172,7 @@ public final class HoptoadNotifier
     /**
      * @param frame A non-null StackTraceElement
      * @param message A optional string message
+     * @return
      * @throws IllegalArgumentException is frame is null
      */
     public Future<HttpCallResult> notify(StackTraceElement frame, String message)
@@ -161,6 +184,7 @@ public final class HoptoadNotifier
      * @param request
      * @param frame A non-null StackTraceElement
      * @param message A optional string message
+     * @return
      * @throws IllegalArgumentException is frame is null
      */
     public Future<HttpCallResult> notify(HttpServletRequest request, StackTraceElement frame, String message)
@@ -168,6 +192,13 @@ public final class HoptoadNotifier
         return notify(HoptoadContext.parseRequest(request), frame, message);
     }
 
+    /**
+     *
+     * @param context
+     * @param frame
+     * @param message
+     * @return
+     */
     public Future<HttpCallResult> notify(HoptoadContext context, StackTraceElement frame, String message)
     {
         if (frame == null)

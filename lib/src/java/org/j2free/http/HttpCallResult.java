@@ -40,16 +40,40 @@ import org.json.JSONObject;
 @Immutable
 public final class HttpCallResult {
 
+    /**
+     *
+     */
     protected final HttpMethod method;
+    /**
+     *
+     */
     protected final String response;
+    /**
+     *
+     */
     protected final byte[] bytes;
 
+    /**
+     *
+     */
     protected final StatusLine status;
 
+    /**
+     *
+     */
     protected final HashMap<String,Header> requestHeaders;
+    /**
+     *
+     */
     protected final HashMap<String,Header> responseHeaders;
 
-    public HttpCallResult(HttpMethod method) throws IOException {
+    /**
+     * 
+     * @param method
+     * @throws IOException
+     */
+    public HttpCallResult(HttpMethod method) throws IOException
+    {
         
         this.method     = method;
         this.response   = method.getResponseBodyAsString();
@@ -71,51 +95,115 @@ public final class HttpCallResult {
         status = method.getStatusLine();
     }
 
-    public int getStatusCode() {
+    /**
+     * 
+     * @return
+     */
+    public int getStatusCode()
+    {
         return status.getStatusCode();
     }
 
-    public String getResponse() {
+    /**
+     * 
+     * @return
+     */
+    public String getResponse()
+    {
         return response;
     }
 
-    public byte[] getResponseBytes() {
+    /**
+     * 
+     * @return
+     */
+    public byte[] getResponseBytes()
+    {
         return bytes;
     }
 
-    public Header getRequestHeader(String header) {
+    /**
+     * 
+     * @param header
+     * @return
+     */
+    public Header getRequestHeader(String header)
+    {
         return requestHeaders.get(header);
     }
 
-    public Header getResponseHeader(String header) {
+    /**
+     * 
+     * @param header
+     * @return
+     */
+    public Header getResponseHeader(String header)
+    {
         return responseHeaders.get(header);
     }
 
-    public Collection<Header> getRequestHeaders() {
+    /**
+     * 
+     * @return
+     */
+    public Collection<Header> getRequestHeaders()
+    {
         return Collections.unmodifiableCollection(requestHeaders.values());
     }
 
-    public Collection<Header> getResponseHeaders() {
+    /**
+     * 
+     * @return
+     */
+    public Collection<Header> getResponseHeaders()
+    {
         return Collections.unmodifiableCollection(responseHeaders.values());
     }
 
-    public Map<String, Header> getRequestHeaderMap() {
+    /**
+     * 
+     * @return
+     */
+    public Map<String, Header> getRequestHeaderMap()
+    {
         return Collections.unmodifiableMap(requestHeaders);
     }
 
-    public Map<String, Header> getResponseHeaderMap() {
+    /**
+     * 
+     * @return
+     */
+    public Map<String, Header> getResponseHeaderMap()
+    {
         return Collections.unmodifiableMap(responseHeaders);
     }
 
-    public StatusLine getStatusLine() {
+    /**
+     * 
+     * @return
+     */
+    public StatusLine getStatusLine()
+    {
         return status;
     }
 
-    public JSONObject getResponseAsJSONObject() throws JSONException {
+    /**
+     * 
+     * @return
+     * @throws JSONException
+     */
+    public JSONObject getResponseAsJSONObject() throws JSONException
+    {
         return new JSONObject(response);
     }
 
-    public JSONArray getResponseAsJSONArray() throws JSONException {
+    /**
+     * 
+     * @return
+     * @throws JSONException
+     */
+    public JSONArray getResponseAsJSONArray() throws JSONException
+    {
         return new JSONArray(response);
     }
 }

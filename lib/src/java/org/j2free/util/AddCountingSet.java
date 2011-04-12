@@ -22,6 +22,7 @@ import org.j2free.util.concurrent.ConcurrentCountingSet;
 import org.j2free.util.concurrent.CountingSet;
 
 /**
+ * @param <E>
  * @deprecated not thread-safe, use {@link CountingSet} or {@link ConcurrentCountingSet} instead.
  * @author Ryan Wilson
  */
@@ -30,32 +31,67 @@ public class AddCountingSet<E> extends HashSet<E> {
     
     private HashMap<E,Integer> set;
     
-    public AddCountingSet() {
+    /**
+     * 
+     */
+    public AddCountingSet()
+    {
         set = new HashMap<E,Integer>();
     }
     
-    public AddCountingSet(int initialCapacity) {
+    /**
+     * 
+     * @param initialCapacity
+     */
+    public AddCountingSet(int initialCapacity)
+    {
         set = new HashMap<E,Integer>(initialCapacity);
     }
     
-    public AddCountingSet(int initialCapacity, float loadFactor) {
+    /**
+     * 
+     * @param initialCapacity
+     * @param loadFactor
+     */
+    public AddCountingSet(int initialCapacity, float loadFactor)
+    {
         set = new HashMap<E,Integer>(initialCapacity,loadFactor);
     }
     
-    public AddCountingSet(Collection<? extends E> c) {
+    /**
+     * 
+     * @param c
+     */
+    public AddCountingSet(Collection<? extends E> c)
+    {
         set = new HashMap<E,Integer>();
         for (E e : c) add(e);
     }
     
-    public Map<E,Integer> getMap() {
+    /**
+     * 
+     * @return
+     */
+    public Map<E,Integer> getMap()
+    {
         return Collections.unmodifiableMap(set);
     }
     
-    public void clear() {
+    /**
+     * 
+     */
+    public void clear()
+    {
         set.clear();
     }
     
-    public boolean add(E o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public boolean add(E o)
+    {
         if (set.containsKey(o)) {
             set.put(o,set.get(o) + 1);
             return false;
@@ -65,31 +101,70 @@ public class AddCountingSet<E> extends HashSet<E> {
         }
     }
     
-    public boolean contains(Object o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public boolean contains(Object o)
+    {
         return set.containsKey(o);
     }
     
-    public int getAddCount(Object o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public int getAddCount(Object o)
+    {
         return set.get(o);
     }
     
-    public boolean isEmpty() {
+    /**
+     * 
+     * @return
+     */
+    public boolean isEmpty()
+    {
         return set.isEmpty();
     }
     
-    public Iterator<E> iterator() {
+    /**
+     * 
+     * @return
+     */
+    public Iterator<E> iterator()
+    {
         return set.keySet().iterator();
     }
     
-    public boolean remove(Object o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public boolean remove(Object o)
+    {
         return (set.remove(o) != null);
     }
     
-    public int size() {
+    /**
+     * 
+     * @return
+     */
+    public int size()
+    {
         return set.size();
     }
     
-    public List<E> orderedList(final boolean asc) {
+    /**
+     * 
+     * @param asc
+     * @return
+     */
+    public List<E> orderedList(final boolean asc)
+    {
         ArrayList<E> ordered = new ArrayList<E>(set.size());
         for (E e : set.keySet())
             ordered.add(e);
@@ -109,7 +184,13 @@ public class AddCountingSet<E> extends HashSet<E> {
         return ordered;
     }
 
-    public HashMap<E,Integer> getOverThreshold(int threshold) {
+    /**
+     * 
+     * @param threshold
+     * @return
+     */
+    public HashMap<E,Integer> getOverThreshold(int threshold)
+    {
         HashMap<E,Integer> over = new HashMap<E,Integer>();
         Iterator<Map.Entry<E,Integer>> setItr = set.entrySet().iterator();
         Map.Entry<E,Integer> ent = null;

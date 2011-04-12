@@ -31,6 +31,7 @@ import net.jcip.annotations.ThreadSafe;
  * an element has been added.  The set can be dumped as a list in asc or
  * desc order of how many times an element was added.
  *
+ * @param <T>
  * @author Ryan Wilson
  */
 @ThreadSafe
@@ -64,33 +65,69 @@ public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> 
 
     private final HashMap<T,Integer> set;
 
-    public CountingSet() {
+    /**
+     * 
+     */
+    public CountingSet()
+    {
         set = new HashMap<T,Integer>();
     }
 
-    public CountingSet(int initialCapacity) {
+    /**
+     * 
+     * @param initialCapacity
+     */
+    public CountingSet(int initialCapacity)
+    {
         set = new HashMap<T,Integer>(initialCapacity);
     }
 
-    public CountingSet(int initialCapacity, float loadFactor) {
+    /**
+     * 
+     * @param initialCapacity
+     * @param loadFactor
+     */
+    public CountingSet(int initialCapacity, float loadFactor)
+    {
         set = new HashMap<T,Integer>(initialCapacity,loadFactor);
     }
 
-    public CountingSet(Collection<? extends T> c) {
+    /**
+     * 
+     * @param c
+     */
+    public CountingSet(Collection<? extends T> c)
+    {
         set = new HashMap<T,Integer>();
         for (T e : c) add(e);
     }
 
-    public synchronized int getAddCount(Object o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public synchronized int getAddCount(Object o)
+    {
         Integer i = set.get(o);
         return i == null ? 0 : i.intValue();
     }
 
-    public synchronized void clear() {
+    /**
+     * 
+     */
+    public synchronized void clear()
+    {
         set.clear();
     }
 
-    public synchronized boolean add(T o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public synchronized boolean add(T o)
+    {
         if (set.containsKey(o)) {
             set.put(o,set.get(o) + 1);
             return false;
@@ -101,6 +138,7 @@ public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> 
     }
 
     /**
+     * @param c
      * @return true always, since every element will either be added to the
      *         set, or increment an element that was already in the set.
      */
@@ -109,25 +147,53 @@ public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> 
         return true;
     }
 
-    public synchronized boolean contains(Object o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public synchronized boolean contains(Object o)
+    {
         return set.containsKey(o);
     }
 
-    public synchronized boolean containsAll(Collection<?> c) {
+    /**
+     * 
+     * @param c
+     * @return
+     */
+    public synchronized boolean containsAll(Collection<?> c)
+    {
         boolean all = true;
         for (Object o : c) all &= contains(o);
         return all;
     }
 
-    public synchronized boolean isEmpty() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized boolean isEmpty()
+    {
         return set.isEmpty();
     }
 
-    public synchronized Iterator<T> iterator() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized Iterator<T> iterator()
+    {
         return set.keySet().iterator();
     }
 
-    public synchronized boolean remove(Object o) {
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public synchronized boolean remove(Object o)
+    {
         Integer i = set.get(o);
         if (i == null) {
             return false;
@@ -139,13 +205,25 @@ public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> 
         }
     }
 
-    public synchronized boolean removeAll(Collection<?> c) {
+    /**
+     * 
+     * @param c
+     * @return
+     */
+    public synchronized boolean removeAll(Collection<?> c)
+    {
         boolean ret = false;
         for (Object e : c) ret |= remove(e);
         return ret;
     }
 
-    public synchronized boolean retainAll(Collection<?> c) {
+    /**
+     * 
+     * @param c
+     * @return
+     */
+    public synchronized boolean retainAll(Collection<?> c)
+    {
         
         boolean mod = false;
 
@@ -161,7 +239,12 @@ public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> 
         return mod;
     }
 
-    public synchronized int size() {
+    /**
+     * 
+     * @return
+     */
+    public synchronized int size()
+    {
         return set.size();
     }
 
@@ -177,6 +260,8 @@ public final class CountingSet<T> implements Iterable<T>, Collection<T>, Set<T> 
     }
 
     /**
+     * @param <T>
+     * @param a
      * @return a T[] containing the elements of this set
      *         ordered in ascending order by the number of times
      *         they were added to this set.

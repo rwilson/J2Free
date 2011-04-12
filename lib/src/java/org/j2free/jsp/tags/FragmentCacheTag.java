@@ -63,6 +63,7 @@ public class FragmentCacheTag extends BodyTagSupport
             = new AtomicReference<FragmentCache>(null);
 
     /**
+     * @param strategy
      * @return The underlying {@link FragmentCache} associated with the specified
      *         strategy name; useful for code looking to evict a cache {@link Fragment}
      *         outside of the FragmentCacheTag.
@@ -115,7 +116,12 @@ public class FragmentCacheTag extends BodyTagSupport
         caches.clear();
     }
 
-    public static boolean isEnabled() {
+    /**
+     * 
+     * @return
+     */
+    public static boolean isEnabled()
+    {
         return enabled.get();
     }
 
@@ -124,12 +130,22 @@ public class FragmentCacheTag extends BodyTagSupport
     // not complete the update within REQUEST_TIMEOUT, the waiting thread
     // will print a message to refresh the page.
     private static final AtomicLong REQUEST_TIMEOUT = new AtomicLong(20);
-    public static void setRequestTimeout(long timeout) {
+    /**
+     * 
+     * @param timeout
+     */
+    public static void setRequestTimeout(long timeout)
+    {
         REQUEST_TIMEOUT.set(timeout);
     }
 
     private static final AtomicLong WARNING_COMPUTE_DURATION = new AtomicLong(10000);
-    public static void setWarningComputeDuration(long duration) {
+    /**
+     * 
+     * @param duration
+     */
+    public static void setWarningComputeDuration(long duration)
+    {
         WARNING_COMPUTE_DURATION.set(duration);
     }
 
@@ -140,6 +156,9 @@ public class FragmentCacheTag extends BodyTagSupport
      */
     private static ThreadLocal<Fragment> threadLocal = new ThreadLocal<Fragment>();
 
+    /**
+     *
+     */
     public static void releaseFragment()
     {
         Fragment fragment = threadLocal.get();
@@ -185,32 +204,66 @@ public class FragmentCacheTag extends BodyTagSupport
     // The time unit of the expiration
     private String unit;
     
-    public FragmentCacheTag() {
+    /**
+     * 
+     */
+    public FragmentCacheTag()
+    {
         super();
         disable = false;
     }
     
-    public void setKey(String key) {
+    /**
+     * 
+     * @param key
+     */
+    public void setKey(String key)
+    {
         this.key = key;
     }
     
-    public void setCondition(String condition) {
+    /**
+     * 
+     * @param condition
+     */
+    public void setCondition(String condition)
+    {
         this.condition = condition;
     }
     
-    public void setTimeout(long timeout) {
+    /**
+     * 
+     * @param timeout
+     */
+    public void setTimeout(long timeout)
+    {
         this.timeout = timeout;
     }
 
-    public void setDisable(boolean disable) {
+    /**
+     * 
+     * @param disable
+     */
+    public void setDisable(boolean disable)
+    {
         this.disable = disable;
     }
 
-    public void setStrategy(String strategy) {
+    /**
+     * 
+     * @param strategy
+     */
+    public void setStrategy(String strategy)
+    {
         this.strategy = strategy;
     }
 
-    public void setUnit(String unit) {
+    /**
+     * 
+     * @param unit
+     */
+    public void setUnit(String unit)
+    {
         this.unit = unit;
     }
 
@@ -231,6 +284,8 @@ public class FragmentCacheTag extends BodyTagSupport
      *      - Caching is enabled, the cache has expired, but another thread is refreshing the cache
      *      - Caching is enabled, the condition has changed, but another thread is refreshing the cache
      *
+     * @return 
+     * @throws JspException
      */
     @Override
     public int doStartTag() throws JspException
@@ -372,6 +427,8 @@ public class FragmentCacheTag extends BodyTagSupport
     /**
      *  Write the content to the apge, try to acquire lock and update, release lock,
      *  then return SKIP_BODY when complete
+     * @return
+     * @throws JspException
      */
     @Override
     public int doAfterBody() throws JspException
@@ -407,6 +464,11 @@ public class FragmentCacheTag extends BodyTagSupport
         return SKIP_BODY;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doEndTag() throws JspException
     {
@@ -418,6 +480,9 @@ public class FragmentCacheTag extends BodyTagSupport
         return EVAL_PAGE;
     }
 
+    /**
+     *
+     */
     @Override
     public void release()
     {

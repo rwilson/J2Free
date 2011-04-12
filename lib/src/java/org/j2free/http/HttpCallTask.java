@@ -43,8 +43,25 @@ public class HttpCallTask implements Comparable<HttpCallTask>
 {
     private final Log log = LogFactory.getLog(HttpCallTask.class);
 
-    public static enum Method { GET, POST };
+    /**
+     *
+     */
+    public static enum Method
+    {
 
+        /**
+         *
+         */
+        GET,
+        /**
+         * 
+         */
+        POST
+    };
+
+    /**
+     *
+     */
     protected final Method method;
 
     private final List<KeyValuePair<String,String>> queryParams;
@@ -52,9 +69,21 @@ public class HttpCallTask implements Comparable<HttpCallTask>
 
     private String postBody;
 
+    /**
+     *
+     */
     protected final String url;
+    /**
+     *
+     */
     protected final boolean followRedirects;
+    /**
+     *
+     */
     protected final Priority priority;
+    /**
+     *
+     */
     protected final long created;
 
     /**
@@ -62,6 +91,7 @@ public class HttpCallTask implements Comparable<HttpCallTask>
      * <pre>
      *  HttpCallTask(HttpCallTask.Method.GET, url);
      * </pre>
+     * @param url
      */
     public HttpCallTask(String url)
     {
@@ -73,6 +103,8 @@ public class HttpCallTask implements Comparable<HttpCallTask>
      * <pre>
      *  HttpCallTask(HttpCallTask.Method.GET, url, false);
      * </pre>
+     * @param method
+     * @param url
      */
     public HttpCallTask(Method method, String url)
     {
@@ -84,6 +116,8 @@ public class HttpCallTask implements Comparable<HttpCallTask>
      * <pre>
      *  HttpCallTask(HttpCallTask.Method.GET, url, false, Priority.DEFAULT);
      * </pre>
+     * @param url
+     * @param priority
      */
     public HttpCallTask(String url, Priority priority)
     {
@@ -95,12 +129,22 @@ public class HttpCallTask implements Comparable<HttpCallTask>
      * <pre>
      *  HttpCallTask(HttpCallTask.Method.GET, url, false, Priority.DEFAULT);
      * </pre>
+     * @param method 
+     * @param followRedirects
+     * @param url
      */
     public HttpCallTask(Method method, String url, boolean followRedirects)
     {
         this(method, url, followRedirects, Priority.DEFAULT);
     }
     
+    /**
+     *
+     * @param method
+     * @param url
+     * @param followRedirects
+     * @param priority
+     */
     public HttpCallTask(Method method, String url, boolean followRedirects, Priority priority)
     {
         this.method          = method;
@@ -115,27 +159,48 @@ public class HttpCallTask implements Comparable<HttpCallTask>
         this.postBody        = null;
     }
 
+    /**
+     *
+     * @param header
+     */
     public synchronized void addRequestHeader(Header header)
     {
         requestHeaders.add(header);
     }
 
+    /**
+     *
+     * @param name
+     * @param value
+     */
     public synchronized void addQueryParam(String name, String value)
     {
         addQueryParam(new KeyValuePair<String, String>(name, value));
     }
 
+    /**
+     *
+     * @param param
+     */
     public synchronized void addQueryParam(KeyValuePair<String,String> param)
     {
         queryParams.add(param);
     }
 
+    /**
+     *
+     * @param params
+     */
     public synchronized void addQueryParams(Map<String, String> params)
     {
         for (Map.Entry<String,String> entry : params.entrySet())
             addQueryParam(new KeyValuePair<String, String>(entry.getKey(), entry.getValue()));
     }
 
+    /**
+     *
+     * @param params
+     */
     public synchronized void addQueryParams(List<KeyValuePair<String,String>> params)
     {
         queryParams.addAll(params);
@@ -172,21 +237,37 @@ public class HttpCallTask implements Comparable<HttpCallTask>
         addQueryParam("sig", SecurityUtils.SHA1(sb.toString()));
     }
 
+    /**
+     *
+     * @return
+     */
     protected synchronized List<KeyValuePair<String,String>> getQueryParams()
     {
         return Collections.unmodifiableList(queryParams);
     }
 
+    /**
+     *
+     * @return
+     */
     protected synchronized List<Header> getRequestHeaders()
     {
         return Collections.unmodifiableList(requestHeaders);
     }
 
+    /**
+     *
+     * @param body
+     */
     public synchronized void setExplicitPostBody(String body)
     {
         this.postBody = body;
     }
 
+    /**
+     *
+     * @return
+     */
     public synchronized String getExplicitPostBody()
     {
         return postBody;
@@ -199,6 +280,8 @@ public class HttpCallTask implements Comparable<HttpCallTask>
      *
      * This method does not need to be synchronized because <tt>priority</tt>
      * is final.
+     * @param other
+     * @return
      */
     public int compareTo(HttpCallTask other)
     {
@@ -213,6 +296,10 @@ public class HttpCallTask implements Comparable<HttpCallTask>
         return Float.valueOf(Math.signum(other.created - this.created)).intValue();
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public String toString()
     {

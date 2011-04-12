@@ -55,6 +55,7 @@ public final class QueuedHttpCallService implements HttpCallService
     /**
      * Enables this service.
      *
+     * @param corePoolSize
      * @param maxPoolSize The max number of threads
      * @param threadIdle How long a thread can be idle before terminating it
      * @param connectTimeout How long to wait for a connection

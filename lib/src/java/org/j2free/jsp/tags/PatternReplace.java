@@ -40,19 +40,39 @@ public class PatternReplace extends BodyTagSupport {
     private String pattern;
     private String replace;
 
-    public void setPattern(String pattern) {
+    /**
+     * 
+     * @param pattern
+     */
+    public void setPattern(String pattern)
+    {
         this.pattern = pattern;
     }
 
-    public void setReplace(String replace) {
+    /**
+     * 
+     * @param replace
+     */
+    public void setReplace(String replace)
+    {
         this.replace = replace;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doStartTag() throws JspException {
         return EVAL_BODY_BUFFERED;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doAfterBody() throws JspException {
 
@@ -72,6 +92,11 @@ public class PatternReplace extends BodyTagSupport {
         return SKIP_BODY;
     }
 
+    /**
+     *
+     * @return
+     * @throws JspException
+     */
     @Override
     public int doEndTag() throws JspException {
         return EVAL_PAGE;

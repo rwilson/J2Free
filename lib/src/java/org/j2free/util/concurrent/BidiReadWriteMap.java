@@ -32,6 +32,8 @@ import net.jcip.annotations.ThreadSafe;
  * A bi-directional, thread-safe, map that uses read-write locks
  * for greater concurrency.
  *
+ * @param <K> 
+ * @param <V>
  * @author Ryan Wilson
  */
 @ThreadSafe
@@ -44,7 +46,13 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
     private final Lock          read  = lock.readLock();
     private final Lock          write = lock.writeLock();
 
-    public BidiReadWriteMap(Map<K,V> kToV, Map<V,K> vToK) {
+    /**
+     * 
+     * @param kToV
+     * @param vToK
+     */
+    public BidiReadWriteMap(Map<K,V> kToV, Map<V,K> vToK)
+    {
         this.kToV = kToV;
         this.vToK = vToK;
     }
@@ -84,7 +92,13 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public boolean containsKey(Object key) {
+    /**
+     * 
+     * @param key
+     * @return
+     */
+    public boolean containsKey(Object key)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");
@@ -97,7 +111,13 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public boolean containsValue(Object value) {
+    /**
+     * 
+     * @param value
+     * @return
+     */
+    public boolean containsValue(Object value)
+    {
 
         if (value == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null values");
@@ -110,7 +130,12 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public Set<Map.Entry<K,V>> entrySet() {
+    /**
+     * 
+     * @return
+     */
+    public Set<Map.Entry<K,V>> entrySet()
+    {
         read.lock();
         try {
             return kToV.entrySet();
@@ -119,7 +144,13 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public V get(Object key) {
+    /**
+     * 
+     * @param key
+     * @return
+     */
+    public V get(Object key)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");
@@ -132,7 +163,12 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public boolean isEmpty() {
+    /**
+     * 
+     * @return
+     */
+    public boolean isEmpty()
+    {
         read.lock();
         try {
             return kToV.isEmpty();
@@ -141,7 +177,12 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public Set<K> keySet() {
+    /**
+     * 
+     * @return
+     */
+    public Set<K> keySet()
+    {
         read.lock();
         try {
             return kToV.keySet();
@@ -150,7 +191,14 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public V put(K key, V value) {
+    /**
+     * 
+     * @param key
+     * @param value
+     * @return
+     */
+    public V put(K key, V value)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");
@@ -167,7 +215,12 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public void putAll(Map t) {
+    /**
+     * 
+     * @param t
+     */
+    public void putAll(Map t)
+    {
         write.lock();
         try {
             for (Object o : t.keySet()) {
@@ -178,7 +231,13 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public V remove(Object key) {
+    /**
+     * 
+     * @param key
+     * @return
+     */
+    public V remove(Object key)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");
@@ -195,7 +254,12 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public int size() {
+    /**
+     * 
+     * @return
+     */
+    public int size()
+    {
         read.lock();
         try {
             return kToV.size();
@@ -204,7 +268,12 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public Collection<V> values() {
+    /**
+     * 
+     * @return
+     */
+    public Collection<V> values()
+    {
         read.lock();
         try {
             return vToK.keySet();
@@ -216,6 +285,8 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
 
     /*****************************************************************
      * BidiMap implementation
+     * @param value 
+     * @return
      */
     
     public K getKey(V value) {
@@ -233,6 +304,9 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
 
     /*****************************************************************
      * ConcurrentMap implementation
+     * @param key
+     * @param value
+     * @return
      */
 
     public V putIfAbsent(K key, V value) {
@@ -256,7 +330,14 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public boolean remove(Object key, Object value) {
+    /**
+     * 
+     * @param key
+     * @param value
+     * @return
+     */
+    public boolean remove(Object key, Object value)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");
@@ -276,7 +357,15 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public boolean replace(K key, V oldValue, V newValue) {
+    /**
+     * 
+     * @param key
+     * @param oldValue
+     * @param newValue
+     * @return
+     */
+    public boolean replace(K key, V oldValue, V newValue)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");
@@ -301,7 +390,14 @@ public class BidiReadWriteMap<K,V> implements ConcurrentMap<K,V> {
         }
     }
 
-    public V replace(K key, V value) {
+    /**
+     * 
+     * @param key
+     * @param value
+     * @return
+     */
+    public V replace(K key, V value)
+    {
 
         if (key == null)
             throw new NullPointerException("BidiReadWriteMap does not allow null keys");

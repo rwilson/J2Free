@@ -38,16 +38,31 @@ import org.j2free.util.ServletUtils;
  */
 public class StandardExtensions
 {
+    /**
+     *
+     * @param obj
+     * @param className
+     * @return
+     */
     public static boolean instanceOf(Object obj, String className)
     {
         return obj == null || className == null ? false :obj.getClass().getName().equals(className);
     }
     
+    /**
+     *
+     * @return
+     */
     public static long currentTimeMillis()
     {
         return System.currentTimeMillis();
     }
     
+    /**
+     *
+     * @param d
+     * @return
+     */
     public static String formatPercent(float d)
     {
 
@@ -57,6 +72,12 @@ public class StandardExtensions
         return n.format(d);
     }
     
+    /**
+     *
+     * @param i0
+     * @param i1
+     * @return
+     */
     public static int integerDivision(int i0, int i1)
     {
         if (i1 > 0)
@@ -65,21 +86,45 @@ public class StandardExtensions
         return 0;
     }
     
+    /**
+     *
+     * @param text
+     * @return
+     */
     public static String escapeSingleQuotes(String text)
     {
         return ServletUtils.escapeSingleQuotes(text);
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
     public static String escapeDoubleQuotes(String text)
     {
         return ServletUtils.escapeDoubleQuotes(text);
     }
 
+    /**
+     *
+     * @param text
+     * @param match
+     * @param replace
+     * @return
+     */
     public static String replaceAll(String text, String match, String replace)
     {
         return text.replaceAll(match,replace);
     }
     
+    /**
+     *
+     * @param decimal
+     * @param min
+     * @param max
+     * @return
+     */
     public static String formatDecimal(double decimal, int min, int max)
     {
         DecimalFormat df = new DecimalFormat();
@@ -88,6 +133,12 @@ public class StandardExtensions
         return df.format(decimal);
     }
 
+    /**
+     *
+     * @param request
+     * @param role
+     * @return
+     */
     public static boolean isUserInRole(HttpServletRequest request, String role)
     {
         if (request == null || role == null)
@@ -96,6 +147,11 @@ public class StandardExtensions
         return request.isUserInRole(role);
     }
     
+    /**
+     *
+     * @param URL
+     * @return
+     */
     public static boolean hasValidURLExtension(String URL)
     {
         URL = URL.toLowerCase();
@@ -110,6 +166,11 @@ public class StandardExtensions
         return domain.matches(".*?\\.([a-z]{2}|com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|museum)$");
     }
     
+    /**
+     *
+     * @param string
+     * @return
+     */
     public static boolean startsWithVowel(String string)
     {
         if (string == null)
@@ -121,31 +182,62 @@ public class StandardExtensions
         return Arrays.binarySearch(vowels,string.charAt(0)) != -1;
     }
     
+    /**
+     *
+     * @param toFind
+     * @param toFindIn
+     * @return
+     */
     public static int indexOf(String toFind, String toFindIn)
     {
         return toFindIn.indexOf(toFind);
     }
     
+    /**
+     *
+     * @param string
+     * @return
+     */
     public static int stringLength(String string)
     {
         return string.length();
     }
     
+    /**
+     *
+     * @param s
+     * @return
+     */
     public static String toLower(String s)
     {
         return s.toLowerCase();
     }
     
+    /**
+     *
+     * @param s
+     * @return
+     */
     public static String toUpper(String s)
     {
         return s.toUpperCase();
     }
     
+    /**
+     *
+     * @param s
+     * @return
+     */
     public static String trim(String s)
     {
         return s.trim();
     }
     
+    /**
+     *
+     * @param n
+     * @return
+     */
     public static String commify(int n)
     {
         NumberFormat nf = NumberFormat.getInstance();
@@ -153,11 +245,21 @@ public class StandardExtensions
         return nf.format(n);
     }
     
+    /**
+     *
+     * @param str
+     * @return
+     */
     public static String capitalizeFirst(String str)
     {
         return ServletUtils.capitalizeFirst(str);
     }
     
+    /**
+     *
+     * @param str
+     * @return
+     */
     public static String urlEncode(String str)
     {
         try {
@@ -167,6 +269,11 @@ public class StandardExtensions
         }
     }
     
+    /**
+     *
+     * @param str
+     * @return
+     */
     public static String cleanXSS(String str)
     {
         return ServletUtils.cleanXSS(str);
@@ -184,22 +291,39 @@ public class StandardExtensions
         return toMatch.matches(regex);
     }
 
+    /**
+     *
+     * @param request
+     * @return
+     */
     public static boolean isSecureRequest(HttpServletRequest request)
     {
         return request.isSecure();
     }
 
 
-    public static String sha1Hash(String str) {
+    /**
+     * 
+     * @param str
+     * @return
+     */
+    public static String sha1Hash(String str)
+    {
         return org.j2free.security.SecurityUtils.SHA1(str);
     }
 
-    public static double random() {
+    /**
+     * 
+     * @return
+     */
+    public static double random()
+    {
         return Math.random();
     }
 
     /**
      * Adds the correct protocol.
+     * @param request
      * @param url
      * @return
      */
@@ -213,6 +337,8 @@ public class StandardExtensions
 
     /**
      * Converts the given ip from x.x.x.x to a number
+     * @param addr
+     * @return
      */
     public static int ipToInt(String addr)
     {
@@ -230,6 +356,8 @@ public class StandardExtensions
 
     /**
      * Converts the given int to an ip addr of the form x.x.x.x
+     * @param i 
+     * @return
      */
     public static String intToIp(int i)
     {

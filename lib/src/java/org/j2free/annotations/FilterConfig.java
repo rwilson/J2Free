@@ -27,17 +27,20 @@ import java.lang.annotation.*;
 public @interface FilterConfig {
 
     /**
-     * Paths that match this regex will go through this filter
+     * @return The regex to match against potential paths.
+     *         Paths that match this regex will go through this filter.
      */
     public String match() default "";
 
     /**
-     * Paths that match this regex will not go through this filter
+     * @return The regex to match against potential paths. Paths that match
+     *         this regex will not go through this filter. Exclude overrides
+     *         match.
      */
     public String exclude() default "";
 
     /**
-     * Whether the Filter expects an open Controller. Default is false.
+     * @return true if the Filter requires a Controller, otherwise false. Default is false.
      */
     public boolean requireController() default false;
 
@@ -53,6 +56,8 @@ public @interface FilterConfig {
      * chain.
      *
      * It is HIGHLY recommended to specify this field!
+     * 
+     * @return The priority rank for this Filter.
      */
     public int priority() default 0;
 }

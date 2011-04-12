@@ -22,6 +22,10 @@ import java.util.regex.*;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.logging.*;
 
+/**
+ *
+ * @author ryan
+ */
 @NotThreadSafe
 /**
  * @author Ryan Wilson
@@ -44,6 +48,9 @@ public class HtmlFilter
     private final String EMAIL_LINE_BREAKS   = "</?[tb]r\\s?/?>";
     private final String LINK_PATTERN = "<a.*?href=\"([^\"]*?)\"[^>]*?>([^<]*?)</a>";
 
+    /**
+     *
+     */
     public HtmlFilter()
     {
         okayTags = new TreeSet<String>();
@@ -52,11 +59,22 @@ public class HtmlFilter
 
     private final Log log = LogFactory.getLog(HtmlFilter.class);
 
+    /**
+     *
+     * @param msg
+     * @return
+     */
     public String filter(String msg)
     {
         return filter(msg, defaultAllowedTags);
     }
 
+    /**
+     *
+     * @param msg
+     * @param allowedTags
+     * @return
+     */
     public String filter(String msg, String[] allowedTags)
     {
         if (msg == null)
@@ -97,6 +115,11 @@ public class HtmlFilter
         return (okayTags.contains(tag.substring(1, end)) || okayTags.contains(tag.substring(2, end)));
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
     public String strictFilter(String text)
     {
         if (text == null || text.equals(""))
@@ -110,6 +133,11 @@ public class HtmlFilter
         return m1.replaceAll("");
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
     public String filterForEmail(String text)
     {
         Pattern links = Pattern.compile(LINK_PATTERN, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);

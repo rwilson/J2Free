@@ -42,7 +42,13 @@ public class ProgrammaticAccess {
     
     private static final ConcurrentHashMap<String,Object> allowedUsers = new ConcurrentHashMap<String,Object>();
     
-    public static String allow(Object obj) {
+    /**
+     * 
+     * @param obj
+     * @return
+     */
+    public static String allow(Object obj)
+    {
         try {
             String hash = MD5("" + obj.hashCode());
             allowedUsers.put(hash,obj);
@@ -52,11 +58,23 @@ public class ProgrammaticAccess {
         return null;
     }
     
-    public static Object get(String key) {
+    /**
+     * 
+     * @param key
+     * @return
+     */
+    public static Object get(String key)
+    {
         return allowedUsers.get(key);
     }
     
-    public static Object expire(String key) {
+    /**
+     * 
+     * @param key
+     * @return
+     */
+    public static Object expire(String key)
+    {
         return allowedUsers.remove(key);
     }
 }

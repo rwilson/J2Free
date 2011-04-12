@@ -81,6 +81,9 @@ public final class Controller
         return LogFactory.getLog(Controller.class);
     }
 
+    /**
+     *
+     */
     public static final String ATTRIBUTE_KEY = "controller";
 
     /*****************************************************
@@ -241,11 +244,26 @@ public final class Controller
     // Instance implementation
     //------------------------------------------------------------//
     
+    /**
+     *
+     */
     protected UserTransaction tx;
+    /**
+     *
+     */
     protected EntityManager em;
+    /**
+     *
+     */
     protected FullTextEntityManager fullTextEntityManager;
 
+    /**
+     *
+     */
     protected Throwable problem;
+    /**
+     *
+     */
     protected InvalidValue[] errors;
 
     private Controller(boolean beginTX) throws NamingException, NotSupportedException, SystemException
@@ -444,7 +462,13 @@ public final class Controller
         return ((EntityManagerImpl) em.getDelegate()).getSession();
     }
 
-    public void setCacheMode(CacheMode mode) throws SystemException {
+    /**
+     * 
+     * @param mode
+     * @throws SystemException
+     */
+    public void setCacheMode(CacheMode mode) throws SystemException
+    {
         if (!isTransactionOpen()) {
             return;
         }
@@ -452,27 +476,61 @@ public final class Controller
         getSession().setCacheMode(mode);
     }
 
-    public void evictCollection(String collectionName, Serializable primaryKey) {
+    /**
+     * 
+     * @param collectionName
+     * @param primaryKey
+     */
+    public void evictCollection(String collectionName, Serializable primaryKey)
+    {
         getSession().getSessionFactory().evictCollection(collectionName, primaryKey);
     }
 
-    public void evict(Class clazz, Serializable primaryKey) {
+    /**
+     * 
+     * @param clazz
+     * @param primaryKey
+     */
+    public void evict(Class clazz, Serializable primaryKey)
+    {
         getSession().getSessionFactory().evict(clazz, primaryKey);
     }
 
-    public void evictCollection(String collection) {
+    /**
+     * 
+     * @param collection
+     */
+    public void evictCollection(String collection)
+    {
         getSession().getSessionFactory().evictCollection(collection);
     }
 
-    public void evict(Class clazz) {
+    /**
+     * 
+     * @param clazz
+     */
+    public void evict(Class clazz)
+    {
         getSession().getSessionFactory().evict(clazz);
     }
 
-    public Query createQuery(String query) {
+    /**
+     * 
+     * @param query
+     * @return
+     */
+    public Query createQuery(String query)
+    {
         return em.createQuery(query);
     }
 
-    public Query createNativeQuery(String query) {
+    /**
+     * 
+     * @param query
+     * @return
+     */
+    public Query createNativeQuery(String query)
+    {
         return em.createNativeQuery(query);
     }
 
@@ -543,7 +601,7 @@ public final class Controller
 
     /**
      * @param <T> The type of entity to fetch
-     * @param entityClass The class of the entity to count
+     * @param query
      * @param parameters the {@link KeyValuePair}s for the variables referenced in the query
      * @return The number of entities found
      */
@@ -575,25 +633,61 @@ public final class Controller
         return count(em.createQuery(queryString), parameters);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param namedQuery
+     * @param parameters
+     * @return
+     */
     public <T> int namedCount(Class<T> entityClass, String namedQuery,
                                              KeyValuePair<String, ? extends Object>... parameters) {
         return count(em.createNamedQuery(entityClass.getSimpleName() + "." + namedQuery), parameters);
     }
 
-    public <T> T proxy(Class<T> entityClass, Object entityId) {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param entityId
+     * @return
+     */
+    public <T> T proxy(Class<T> entityClass, Object entityId)
+    {
         return (T) em.getReference(entityClass, entityId);
     }
 
-    public <T> T merge(T entity) {
+    /**
+     * 
+     * @param <T>
+     * @param entity
+     * @return
+     */
+    public <T> T merge(T entity)
+    {
         entity = (T) em.merge(entity);
         return entity;
     }
 
-    public <T> void refresh(T entity) {
+    /**
+     * 
+     * @param <T>
+     * @param entity
+     */
+    public <T> void refresh(T entity)
+    {
         em.refresh(entity);
     }
 
-    public <T> void remove(Class<T> entityClass, Object entityId) {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param entityId
+     */
+    public <T> void remove(Class<T> entityClass, Object entityId)
+    {
         T entity = (T) findPrimaryKey(entityClass, entityId);
 
         if (entity == null)
@@ -602,7 +696,13 @@ public final class Controller
         em.remove(entity);
     }
 
-    public <T> void remove(T entity) {
+    /**
+     * 
+     * @param <T>
+     * @param entity
+     */
+    public <T> void remove(T entity)
+    {
 
         if (entity == null)
             throw new IllegalStateException("Cannot remove null entity!");
@@ -610,11 +710,26 @@ public final class Controller
         em.remove(entity);
     }
 
-    public <T> T persist(T entity) {
+    /**
+     * 
+     * @param <T>
+     * @param entity
+     * @return
+     */
+    public <T> T persist(T entity)
+    {
         return persist(entity, false);
     }
 
-    public <T> T persist(T entity, boolean flush) {
+    /**
+     * 
+     * @param <T>
+     * @param entity
+     * @param flush
+     * @return
+     */
+    public <T> T persist(T entity, boolean flush)
+    {
         try {
             
             em.persist(entity);
@@ -647,23 +762,49 @@ public final class Controller
         return entity;
     }
 
-    public boolean hasErrors() {
+    /**
+     * 
+     * @return
+     */
+    public boolean hasErrors()
+    {
         return this.errors != null || this.problem != null;
     }
 
-    public InvalidValue[] getErrors() {
+    /**
+     * 
+     * @return
+     */
+    public InvalidValue[] getErrors()
+    {
         return this.errors;
     }
 
-    public void clearErrors() {
+    /**
+     * 
+     */
+    public void clearErrors()
+    {
         this.errors = null;
     }
 
-    public Throwable getLastException() {
+    /**
+     * 
+     * @return
+     */
+    public Throwable getLastException()
+    {
         return problem;
     }
     
-    public String getErrorsAsString(String delimiter, boolean debug) {
+    /**
+     * 
+     * @param delimiter
+     * @param debug
+     * @return
+     */
+    public String getErrorsAsString(String delimiter, boolean debug)
+    {
         StringBuilder errorStringBuilder = new StringBuilder();
         boolean first = true;
         for (InvalidValue error : this.errors) {
@@ -692,7 +833,12 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param criteria 
+     * @return
+     */
     public <T> List<T> listByCriterions(Class<T> entityClass, Object... criteria) {
         return listByCriterions(entityClass, -1, -1, criteria);
     }
@@ -708,7 +854,13 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param numResults
+     * @param criteria
+     * @return
+     */
     public <T> List<T> listByCriterions(Class<T> entityClass, int numResults, Object... criteria) {
         return listByCriterions(entityClass, 0, numResults, criteria);
     }
@@ -724,7 +876,14 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param firstResult
+     * @param criteria
+     * @param numResults
+     * @return
+     */
     public <T> List<T> listByCriterions(Class<T> entityClass, int firstResult, int numResults,
                                                        Object... criteria) {
         try {
@@ -755,7 +914,14 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param numResults
+     * @param firstResult
+     * @param criteria
+     * @return
+     */
     public <T> List<T> listByCriterea(Class<T> entityClass, int firstResult, int numResults,
                                                      Criteria criteria) {
         if (firstResult > 0) {
@@ -773,7 +939,12 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param criteria
+     * @return
+     */
     public <T> List<T> listByCriteria(Class<T> entityClass, Criteria criteria) {
         try {
             return (List<T>) criteria.list();
@@ -793,7 +964,12 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param criteria
+     * @return
+     */
     public <T> T findByCriterion(Class<T> entityClass, Object... criteria) {
         try {
             Criteria search = getSession().createCriteria(entityClass);
@@ -819,6 +995,10 @@ public final class Controller
      * 
      * See for more examples:
      * http://www.hibernate.org/hib_docs/reference/en/html/querycriteria.html#queryByFormula-criteria-naturalid
+     * @param <T> 
+     * @param entityClass
+     * @param naturalId 
+     * @return
      */
     public <T> T findNaturalId(Class<T> entityClass, NaturalIdentifier naturalId) {
         try {
@@ -839,7 +1019,12 @@ public final class Controller
      * See for more examples:
      * http://www.hibernate.org/hib_docs/v3/api/org/hibernate/criterion/Restrictions.html
      * 
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param criteria
+     * @return
+     */
     public <T> int count(Class<T> entityClass, Object... criteria) {
         try {
             Criteria search = getSession().createCriteria(entityClass);
@@ -855,7 +1040,15 @@ public final class Controller
         }
     }
 
-    public <T> List<T> listByExample(T exampleInstance, String... excludeProperties) {
+    /**
+     * 
+     * @param <T>
+     * @param exampleInstance
+     * @param excludeProperties
+     * @return
+     */
+    public <T> List<T> listByExample(T exampleInstance, String... excludeProperties)
+    {
         try {
             Example example = Example.create(exampleInstance);
             for (String prop : excludeProperties) {
@@ -868,7 +1061,15 @@ public final class Controller
         }
     }
 
-    public <T> List<T> listByExample(Class<T> entityClass, Example example) {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param example
+     * @return
+     */
+    public <T> List<T> listByExample(Class<T> entityClass, Example example)
+    {
         try {
             return (List<T>) getSession().createCriteria(entityClass).add(example).list();
         } catch (NoResultException e) {
@@ -876,16 +1077,39 @@ public final class Controller
         }
     }
 
-    public <T> T queryByFormula(QueryFormula formula) {
+    /**
+     * 
+     * @param <T>
+     * @param formula
+     * @return
+     */
+    public <T> T queryByFormula(QueryFormula formula)
+    {
         return (T) query(em.createQuery(formula.getQuery()), formula.getParametersAsPairArray());
     }
 
-    public <T> T query(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param <T>
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public <T> T query(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         Query query = em.createQuery(queryString);
         return (T) query(query, parameters);
     }
 
-    public <T> T query(Query query, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param <T>
+     * @param query
+     * @param parameters
+     * @return
+     */
+    public <T> T query(Query query, KeyValuePair<String, ? extends Object>... parameters)
+    {
         if (parameters != null) {
             for (KeyValuePair<String, ? extends Object> parameter : parameters) {
                 query.setParameter(parameter.key, parameter.value);
@@ -898,6 +1122,14 @@ public final class Controller
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param queryString
+     * @param parameters
+     * @return
+     */
     public <T> T query(Class<T> entityClass, String queryString,
                                       KeyValuePair<String, ? extends Object>... parameters) {
         try {
@@ -907,6 +1139,14 @@ public final class Controller
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param namedQuery
+     * @param parameters
+     * @return
+     */
     public <T> T namedQuery(Class<T> entityClass, String namedQuery,
                                            KeyValuePair<String, ? extends Object>... parameters) {
         try {
@@ -916,6 +1156,14 @@ public final class Controller
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param returnClass
+     * @param namedQuery
+     * @param parameters
+     * @return
+     */
     public <T> T namedScaler(Class<T> returnClass, String namedQuery,
                                             KeyValuePair<String, ? extends Object>... parameters) {
         try {
@@ -925,20 +1173,54 @@ public final class Controller
         }
     }
 
-    public <T> List<T> list(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param <T>
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public <T> List<T> list(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         return (List<T>) list(queryString, 0, -1, parameters);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param queryString
+     * @param start
+     * @param limit
+     * @param parameters
+     * @return
+     */
     public <T> List<T> list(String queryString, int start, int limit,
                                            KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createQuery(queryString);
         return (List<T>) list(query, start, limit, parameters);
     }
 
-    public <T> List<T> list(Query query, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param <T>
+     * @param query
+     * @param parameters
+     * @return
+     */
+    public <T> List<T> list(Query query, KeyValuePair<String, ? extends Object>... parameters)
+    {
         return (List<T>) list(query, 0, -1, parameters);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param query
+     * @param start
+     * @param limit
+     * @param parameters
+     * @return
+     */
     public <T> List<T> list(Query query, int start, int limit,
                                            KeyValuePair<String, ? extends Object>... parameters) {
         if (parameters != null) {
@@ -959,10 +1241,25 @@ public final class Controller
         }
     }
 
-    public List<Object[]> namedList(String namedQuery, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param namedQuery
+     * @param parameters
+     * @return
+     */
+    public List<Object[]> namedList(String namedQuery, KeyValuePair<String, ? extends Object>... parameters)
+    {
         return namedList(namedQuery, -1, -1, parameters);
     }
 
+    /**
+     *
+     * @param namedQuery
+     * @param start
+     * @param limit
+     * @param parameters
+     * @return
+     */
     public List<Object[]> namedList(String namedQuery, int start, int limit,
                                     KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNamedQuery(namedQuery);
@@ -984,10 +1281,25 @@ public final class Controller
         }
     }
 
-    public List<Object[]> namedNativeList(String namedQuery, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param namedQuery
+     * @param parameters
+     * @return
+     */
+    public List<Object[]> namedNativeList(String namedQuery, KeyValuePair<String, ? extends Object>... parameters)
+    {
         return namedNativeList(namedQuery, -1, -1, parameters);
     }
 
+    /**
+     *
+     * @param namedQuery
+     * @param start
+     * @param limit
+     * @param parameters
+     * @return
+     */
     public List<Object[]> namedNativeList(String namedQuery, int start, int limit,
                                           KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(namedQuery);
@@ -1009,6 +1321,14 @@ public final class Controller
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param queryString
+     * @param parameters
+     * @return
+     */
     public <T> List<T> nativeList(Class<T> entityClass, String queryString,
                                                  KeyValuePair<String, ? extends Object>... parameters) {
 
@@ -1029,6 +1349,14 @@ public final class Controller
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param scalarType
+     * @param queryString
+     * @param parameters
+     * @return
+     */
     public <T> List<T> nativeScalerList(Class<T> scalarType, String queryString,
                                                        KeyValuePair<String, ? extends Object>... parameters) {
         Query query = em.createNativeQuery(queryString);
@@ -1044,7 +1372,14 @@ public final class Controller
         }
     }
 
-    public List<Object[]> nativeList(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public List<Object[]> nativeList(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         Query query = em.createNativeQuery(queryString);
         if (parameters != null) {
             for (KeyValuePair<String, ? extends Object> parameter : parameters) {
@@ -1058,7 +1393,14 @@ public final class Controller
         }
     }
 
-    public Object nativeScalar(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public Object nativeScalar(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         Query query = em.createNativeQuery(queryString);
         if (parameters != null) {
             for (KeyValuePair<String, ? extends Object> parameter : parameters) {
@@ -1072,7 +1414,14 @@ public final class Controller
         }
     }
 
-    public int nativeCount(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public int nativeCount(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         Query query = em.createNativeQuery(queryString);
 
         int count = 0;
@@ -1095,16 +1444,42 @@ public final class Controller
         return count;
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param queryString
+     * @param parameters
+     * @return
+     */
     public <T> List<T> list(Class<T> entityClass, String queryString,
                                            KeyValuePair<String, ? extends Object>... parameters) {
         return list(entityClass, queryString, -1, -1, parameters);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param namedQuery
+     * @param parameters
+     * @return
+     */
     public <T> List<T> namedList(Class<T> entityClass, String namedQuery,
                                                 KeyValuePair<String, ? extends Object>... parameters) {
         return namedList(entityClass, namedQuery, -1, -1, parameters);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param queryString
+     * @param start
+     * @param limit
+     * @param parameters
+     * @return
+     */
     public <T> List<T> list(Class<T> entityClass, String queryString, int start, int limit,
                                            KeyValuePair<String, ? extends Object>... parameters) {
         try {
@@ -1114,6 +1489,16 @@ public final class Controller
         }
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param namedQuery
+     * @param start
+     * @param limit
+     * @param parameters
+     * @return
+     */
     public <T> List<T> namedList(Class<T> entityClass, String namedQuery, int start, int limit,
                                                 KeyValuePair<String, ? extends Object>... parameters) {
         try {
@@ -1125,6 +1510,8 @@ public final class Controller
     }
 
     /**
+     * @param <T> 
+     * @param objects
      * @deprecated
      * will cause memory problems when mapping large numbers of entities, use the alternate version with batch sizes
      **/
@@ -1137,7 +1524,11 @@ public final class Controller
 
     /**
      * It is critical that batchSize matches the hibernate.search.worker.batch_size you set
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param batchSize
+     */
     public <T> void hibernateSearchIndex(Class<T> entityClass, int batchSize) {
         FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.setFlushMode(FlushMode.MANUAL);
@@ -1165,7 +1556,11 @@ public final class Controller
 
     /**
      * It is critical that batchSize matches the hibernate.search.worker.batch_size you set
-     **/
+     *
+     * @param <T>
+     * @param entityClass
+     * @param batchSize
+     */
     public <T> void hibernateSearchClearAndIndex(Class<T> entityClass, int batchSize) {
         FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.purgeAll(entityClass);
@@ -1173,21 +1568,59 @@ public final class Controller
         fullTextSession.getSearchFactory().optimize(entityClass);
     }
 
-    public <T> void hibernateSearchRemove(Class<T> entityClass, int entityId) {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param entityId
+     */
+    public <T> void hibernateSearchRemove(Class<T> entityClass, int entityId)
+    {
         FullTextSession fullTextSession = org.hibernate.search.Search.getFullTextSession(getSession());
         fullTextSession.purge(entityClass, entityId);
         fullTextSession.flush(); //index are written at commit time
     }
 
-    public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, String[] fields) throws ParseException {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param query
+     * @param fields
+     * @return
+     * @throws ParseException
+     */
+    public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, String[] fields) throws ParseException
+    {
         return hibernateSearchResults(entityClass, query, -1, -1, fields);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param query
+     * @param limit
+     * @param fields
+     * @return
+     * @throws ParseException
+     */
     public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, int limit,
                                                              String[] fields) throws ParseException {
         return hibernateSearchResults(entityClass, query, -1, limit, fields);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param entityClass
+     * @param query
+     * @param start
+     * @param limit
+     * @param fields
+     * @return
+     * @throws ParseException
+     */
     public <T> List<T> hibernateSearchResults(Class<T> entityClass, String query, int start, int limit,
                                                              String[] fields) throws ParseException {
         try {
@@ -1218,7 +1651,17 @@ public final class Controller
         }
     }
 
-    public <T> int hibernateSearchCount(Class<T> entityClass, String query, String[] fields) throws ParseException {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param query
+     * @param fields
+     * @return
+     * @throws ParseException
+     */
+    public <T> int hibernateSearchCount(Class<T> entityClass, String query, String[] fields) throws ParseException
+    {
         try {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
 
@@ -1261,25 +1704,61 @@ public final class Controller
         return query;
     }
 
-    public <T> Criteria createCriteria(Class<T> entityClass) {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @return
+     */
+    public <T> Criteria createCriteria(Class<T> entityClass)
+    {
         return getSession().createCriteria(entityClass);
     }
 
-    public <T> Criteria createCriteria(Class<T> entityClass, String alias) {
+    /**
+     * 
+     * @param <T>
+     * @param entityClass
+     * @param alias
+     * @return
+     */
+    public <T> Criteria createCriteria(Class<T> entityClass, String alias)
+    {
         return getSession().createCriteria(entityClass, alias);
     }
 
-    public int update(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public int update(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         Query query = em.createQuery(queryString);
         return update(query, parameters);
     }
 
-    public int nativeUpdate(String queryString, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param queryString
+     * @param parameters
+     * @return
+     */
+    public int nativeUpdate(String queryString, KeyValuePair<String, ? extends Object>... parameters)
+    {
         Query query = em.createNativeQuery(queryString);
         return update(query, parameters);
     }
 
-    public int update(Query query, KeyValuePair<String, ? extends Object>... parameters) {
+    /**
+     * 
+     * @param query
+     * @param parameters
+     * @return
+     */
+    public int update(Query query, KeyValuePair<String, ? extends Object>... parameters)
+    {
         if (parameters != null) {
             for (KeyValuePair<String, ? extends Object> parameter : parameters) {
                 query.setParameter(parameter.key, parameter.value);
@@ -1288,21 +1767,56 @@ public final class Controller
         return query.executeUpdate();
     }
 
-    public <T> Object filterSingle(Collection<T> collection, String filterString) {
+    /**
+     * 
+     * @param <T>
+     * @param collection
+     * @param filterString
+     * @return
+     */
+    public <T> Object filterSingle(Collection<T> collection, String filterString)
+    {
         List<Object> list = filter(collection, filterString, 0, 1);
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T> Object filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
+    /**
+     * 
+     * @param <T>
+     * @param collection
+     * @param filterString
+     * @param params
+     * @return
+     */
+    public <T> Object filterSingle(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params)
+    {
         List<Object> list = filter(collection, filterString, 0, 1, params);
         return list.size() > 0 ? list.get(0) : null;
     }
 
-    public <T> List filter(Collection<T> collection, String filterString) {
+    /**
+     * 
+     * @param <T>
+     * @param collection
+     * @param filterString
+     * @return
+     */
+    public <T> List filter(Collection<T> collection, String filterString)
+    {
         return filter(collection, filterString, 0, -1);
     }
 
-    public <T> List filter(Collection<T> collection, String filterString, int start, int limit) {
+    /**
+     * 
+     * @param <T>
+     * @param collection
+     * @param filterString
+     * @param start
+     * @param limit
+     * @return
+     */
+    public <T> List filter(Collection<T> collection, String filterString, int start, int limit)
+    {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
         if (limit > 0) {
             query.setMaxResults(limit);
@@ -1311,10 +1825,29 @@ public final class Controller
         return query.list();
     }
 
-    public <T> List filter(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params) {
+    /**
+     * 
+     * @param <T>
+     * @param collection
+     * @param filterString
+     * @param params
+     * @return
+     */
+    public <T> List filter(Collection<T> collection, String filterString, KeyValuePair<String, ? extends Object>... params)
+    {
         return filter(collection, filterString, 0, -1, params);
     }
 
+    /**
+     *
+     * @param <T>
+     * @param collection
+     * @param filterString
+     * @param start
+     * @param limit
+     * @param params
+     * @return
+     */
     public <T> List filter(Collection<T> collection, String filterString, int start, int limit,
                                              KeyValuePair<String, ? extends Object>... params) {
         org.hibernate.Query query = getSession().createFilter(collection, filterString).setFirstResult(start);
@@ -1329,7 +1862,13 @@ public final class Controller
         return query.list();
     }
 
-    public String getTransactionStatus() throws SystemException {
+    /**
+     * 
+     * @return
+     * @throws SystemException
+     */
+    public String getTransactionStatus() throws SystemException
+    {
         if (tx == null) {
             return "Null transaction";
         }

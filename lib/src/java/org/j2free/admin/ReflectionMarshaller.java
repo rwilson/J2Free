@@ -71,7 +71,13 @@ public final class ReflectionMarshaller implements Marshaller {
      */
     protected static ConcurrentHashMap<String,ReflectionMarshaller> marshallers = new ConcurrentHashMap();
     
-    public static ReflectionMarshaller getForClass(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public static ReflectionMarshaller getForClass(Class klass)
+    {
         
         ReflectionMarshaller marshaller = marshallers.get(klass.getName());
         
@@ -109,10 +115,19 @@ public final class ReflectionMarshaller implements Marshaller {
     
     protected Class klass;
     
+    /**
+     *
+     */
     protected HashMap<Field, Converter> instructions;
     
+    /**
+     *
+     */
     protected Field entityIdField;
     
+    /**
+     *
+     */
     protected boolean embeddedId;
     
     private ReflectionMarshaller(Class klass) throws Exception {
@@ -239,7 +254,13 @@ public final class ReflectionMarshaller implements Marshaller {
         }
     }
     
-    public Object extractId(Object obj) {
+    /**
+     * 
+     * @param obj
+     * @return
+     */
+    public Object extractId(Object obj)
+    {
         if (entityIdField == null)
             return null;
         
@@ -273,18 +294,40 @@ public final class ReflectionMarshaller implements Marshaller {
         return null;
     }
  
-    public Method getGetter(Field field) throws NoSuchMethodException {
+    /**
+     * 
+     * @param field
+     * @return
+     * @throws NoSuchMethodException
+     */
+    public Method getGetter(Field field) throws NoSuchMethodException
+    {
         if (isBoolean(field.getType()))
             return field.getDeclaringClass().getMethod("is" + capitalizeIndex(field.getName(),0));
         else
             return field.getDeclaringClass().getMethod("get" + capitalizeIndex(field.getName(),0));
     }
     
-    public Method getSetter(Field field) throws NoSuchMethodException {
+    /**
+     * 
+     * @param field
+     * @return
+     * @throws NoSuchMethodException
+     */
+    public Method getSetter(Field field) throws NoSuchMethodException
+    {
         return field.getDeclaringClass().getMethod("set" + capitalizeIndex(field.getName(),0),field.getType());
     }
     
-    public List<MarshalledField> marshallOut(Object entity, boolean includeTransient) throws IllegalArgumentException {
+    /**
+     * 
+     * @param entity
+     * @param includeTransient
+     * @return
+     * @throws IllegalArgumentException
+     */
+    public List<MarshalledField> marshallOut(Object entity, boolean includeTransient) throws IllegalArgumentException
+    {
         
         TreeSet<MarshalledField> fields = new TreeSet<MarshalledField>();
         
@@ -373,7 +416,16 @@ public final class ReflectionMarshaller implements Marshaller {
         return new LinkedList<MarshalledField>(fields);
     }
     
-    public Object marshallIn(Object entity, Map<String,String[]> parameterMap, Controller controller) throws MarshallingException {
+    /**
+     * 
+     * @param entity
+     * @param parameterMap
+     * @param controller
+     * @return
+     * @throws MarshallingException
+     */
+    public Object marshallIn(Object entity, Map<String,String[]> parameterMap, Controller controller) throws MarshallingException
+    {
         Field     field;
         Converter converter;
         Method    setter;
@@ -845,15 +897,31 @@ public final class ReflectionMarshaller implements Marshaller {
         return obj == null ? "" : obj;
     }
     
-    public String getIdName() {
+    /**
+     * 
+     * @return
+     */
+    public String getIdName()
+    {
         return this.entityIdField.getName();
     }
     
-    public Class getIdType() {
+    /**
+     * 
+     * @return
+     */
+    public Class getIdType()
+    {
         return this.entityIdField.getType();
     }
     
-    public Object asIdType(String stringId) {
+    /**
+     * 
+     * @param stringId
+     * @return
+     */
+    public Object asIdType(String stringId)
+    {
         Class type = getIdType();
         if (type.equals(String.class))
             return stringId;
@@ -868,39 +936,93 @@ public final class ReflectionMarshaller implements Marshaller {
         return stringId;
     }
     
-    public boolean isInteger(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isInteger(Class klass)
+    {
         return klass.equals(Integer.class) || klass.equals(int.class);
     }
     
-    public boolean isLong(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isLong(Class klass)
+    {
         return klass.equals(Long.class) || klass.equals(long.class);
     }
     
-    public boolean isDouble(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isDouble(Class klass)
+    {
         return klass.equals(Double.class) || klass.equals(double.class);
     }
     
-    public boolean isFloat(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isFloat(Class klass)
+    {
         return klass.equals(Float.class) || klass.equals(float.class);
     }
     
-    public boolean isBoolean(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isBoolean(Class klass)
+    {
         return klass.equals(Boolean.class) || klass.equals(boolean.class);
     }
     
-    public boolean isShort(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isShort(Class klass)
+    {
         return klass.equals(Short.class) || klass.equals(short.class);
     }
     
-    public boolean isByte(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isByte(Class klass)
+    {
         return klass.equals(Byte.class) || klass.equals(byte.class);
     }
     
-    public boolean isChar(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isChar(Class klass)
+    {
         return klass.equals(Character.class) || klass.equals(char.class);
     }
     
-    public boolean isDate(Class klass) {
+    /**
+     * 
+     * @param klass
+     * @return
+     */
+    public boolean isDate(Class klass)
+    {
         Class superClass = klass;
         do {
             if (superClass.equals(Date.class))
@@ -911,7 +1033,14 @@ public final class ReflectionMarshaller implements Marshaller {
         return false;
     }
     
-    public Date asDate(String value) throws ParseException {
+    /**
+     * 
+     * @param value
+     * @return
+     * @throws ParseException
+     */
+    public Date asDate(String value) throws ParseException
+    {
         SimpleDateFormat format = null;
         
         for (String pattern : SUPPORTED_DATE_FORMATS) {

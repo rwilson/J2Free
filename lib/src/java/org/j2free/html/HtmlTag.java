@@ -38,25 +38,55 @@ public class HtmlTag {
     private final String ATT_CLOSE  = "\"";
     private final String ATT_OPEN   = "=\"";
     
+    /**
+     *
+     */
     protected String  body;
+    /**
+     *
+     */
     protected boolean selfClosing;
     
     private String tagName;
     private HashMap<String,String> attributes;
     
-    public HtmlTag(String tagName) {
+    /**
+     * 
+     * @param tagName
+     */
+    public HtmlTag(String tagName)
+    {
         this(tagName,"",false);
     }
     
-    public HtmlTag(String tagName, String body) {
+    /**
+     * 
+     * @param tagName
+     * @param body
+     */
+    public HtmlTag(String tagName, String body)
+    {
         this(tagName,body,false);
     }
     
-    public HtmlTag(String tagName, boolean selfClosing) {
+    /**
+     * 
+     * @param tagName
+     * @param selfClosing
+     */
+    public HtmlTag(String tagName, boolean selfClosing)
+    {
         this(tagName,null,selfClosing);
     }
     
-    public HtmlTag(String tagName, String body, boolean selfClosing) {
+    /**
+     * 
+     * @param tagName
+     * @param body
+     * @param selfClosing
+     */
+    public HtmlTag(String tagName, String body, boolean selfClosing)
+    {
         this.tagName     = tagName;
         this.body        = body;
         this.selfClosing = selfClosing;
@@ -64,52 +94,112 @@ public class HtmlTag {
         attributes = new HashMap<String,String>();
     }
     
-    public HtmlTag setAttribute(String key, String value) {
+    /**
+     * 
+     * @param key
+     * @param value
+     * @return
+     */
+    public HtmlTag setAttribute(String key, String value)
+    {
         attributes.put(key,value);
         return this;
     }
     
-    public HtmlTag setBody(String body) {
+    /**
+     * 
+     * @param body
+     * @return
+     */
+    public HtmlTag setBody(String body)
+    {
         this.body = body;
         return this;
     }
     
-    public HtmlTag setTagName(String tagName) {
+    /**
+     * 
+     * @param tagName
+     * @return
+     */
+    public HtmlTag setTagName(String tagName)
+    {
         this.tagName = tagName;
         return this;
     }
     
-    public HtmlTag setSelfClosing(boolean selfClosing) {
+    /**
+     * 
+     * @param selfClosing
+     * @return
+     */
+    public HtmlTag setSelfClosing(boolean selfClosing)
+    {
         this.selfClosing = selfClosing;
         return this;
     }
     
-    public HtmlTag setTitle(String title) {
+    /**
+     * 
+     * @param title
+     * @return
+     */
+    public HtmlTag setTitle(String title)
+    {
         setAttribute("title",title);
         return this;
     }
     
-    public HtmlTag setAlt(String alt) {
+    /**
+     * 
+     * @param alt
+     * @return
+     */
+    public HtmlTag setAlt(String alt)
+    {
         setAttribute("alt",alt);
         return this;
     }
     
-    public HtmlTag setStyle(String style) {
+    /**
+     * 
+     * @param style
+     * @return
+     */
+    public HtmlTag setStyle(String style)
+    {
         setAttribute("style",style);
         return this;
     }
     
-    public HtmlTag setClass(String className) {
+    /**
+     * 
+     * @param className
+     * @return
+     */
+    public HtmlTag setClass(String className)
+    {
         setAttribute("class",className);
         return this;
     }
     
-    public HtmlTag setId(String id) {
+    /**
+     * 
+     * @param id
+     * @return
+     */
+    public HtmlTag setId(String id)
+    {
         setAttribute("id",id);
         return this;
     }
     
-    public String toString() {
+    /**
+     * 
+     * @return
+     */
+    public String toString()
+    {
         StringBuilder builder = new StringBuilder();
         builder.append(OPEN + tagName);
         
@@ -124,11 +214,22 @@ public class HtmlTag {
         return builder.toString();
     }
     
-    public static String br() {
+    /**
+     * 
+     * @return
+     */
+    public static String br()
+    {
         return br(1);
     }
     
-    public static String br(int count) {
+    /**
+     * 
+     * @param count
+     * @return
+     */
+    public static String br(int count)
+    {
         HtmlTag br = new HtmlTag("br",true);
 
         StringBuilder builder = new StringBuilder();
@@ -138,51 +239,103 @@ public class HtmlTag {
         return builder.toString();
     }
 
-    public static class a extends HtmlTag {
+    /**
+     * 
+     */
+    public static class a extends HtmlTag
+    {
         
-        public a(String body) {
+        /**
+         * 
+         * @param body
+         */
+        public a(String body)
+        {
             super("a",body,false);
         }
         
-        public a(String body, String href) {
+        /**
+         * 
+         * @param body
+         * @param href
+         */
+        public a(String body, String href)
+        {
             super("a",body,false);
             setAttribute("href",href);
         }
         
-        public a setHref(String href) {
+        /**
+         * 
+         * @param href
+         * @return
+         */
+        public a setHref(String href)
+        {
             setAttribute("href",href);
             return this;
         }
     }
     
-    public static class img extends HtmlTag {
+    /**
+     * 
+     */
+    public static class img extends HtmlTag
+    {
         
-        public img(String src) {
+        /**
+         * 
+         * @param src
+         */
+        public img(String src)
+        {
             super("img");
             selfClosing = true;
             setAttribute("src",src);
         }
         
-        public void setSrc(String src) {
+        /**
+         * 
+         * @param src
+         */
+        public void setSrc(String src)
+        {
             setAttribute("src",src);
         }
     }
     
-    public static class table extends HtmlTag {
+    /**
+     * 
+     */
+    public static class table extends HtmlTag
+    {
         
         private List<tr> rows;
         
-        public table() {
+        /**
+         * 
+         */
+        public table()
+        {
             super("table",false);
             this.rows = new LinkedList<tr>();
         }
         
-        public tr row() {
+        /**
+         * 
+         * @return
+         */
+        public tr row()
+        {
             tr row = new tr(this);
             rows.add(row);
             return row;
         }
         
+        /**
+         *
+         * @return
+         */
         @Override
         public String toString() {
             
@@ -195,7 +348,11 @@ public class HtmlTag {
         }
     }
     
-    public static class tr extends HtmlTag {
+    /**
+     * 
+     */
+    public static class tr extends HtmlTag
+    {
         
         private List<td> cells;
         private table parent;
@@ -207,22 +364,43 @@ public class HtmlTag {
             this.cells  = new LinkedList<td>();
         }
         
-        public td td(String body) {
+        /**
+         * 
+         * @param body
+         * @return
+         */
+        public td td(String body)
+        {
             td cell = new td(this,body);
             cells.add(cell);
             return cell;
         }
         
-        public th th(String body) {
+        /**
+         * 
+         * @param body
+         * @return
+         */
+        public th th(String body)
+        {
             th cell = new th(this,body);
             cells.add(cell);
             return cell;
         }
         
-        public table end() {
+        /**
+         * 
+         * @return
+         */
+        public table end()
+        {
             return parent;
         }
         
+        /**
+         *
+         * @return
+         */
         @Override
         public String toString() {
             
@@ -235,33 +413,72 @@ public class HtmlTag {
         }
     }
     
-    public static class td extends HtmlTag {
+    /**
+     * 
+     */
+    public static class td extends HtmlTag
+    {
         
         private tr parent;
         
-        public td(tr parent, String body) {
+        /**
+         * 
+         * @param parent
+         * @param body
+         */
+        public td(tr parent, String body)
+        {
             this("td",parent,body);
         }
         
-        public td(String cellType, tr parent, String body) {
+        /**
+         * 
+         * @param cellType
+         * @param parent
+         * @param body
+         */
+        public td(String cellType, tr parent, String body)
+        {
             super(cellType,body,false);
             this.parent = parent;
         }
         
-        public td colspan(int colspan) {
+        /**
+         * 
+         * @param colspan
+         * @return
+         */
+        public td colspan(int colspan)
+        {
             setAttribute("colspan","" + colspan);
             return this;
         }
         
-        public td rowspan(int rowspan) {
+        /**
+         * 
+         * @param rowspan
+         * @return
+         */
+        public td rowspan(int rowspan)
+        {
             setAttribute("rowspan","" + rowspan);
             return this;
         }
         
-        public tr end() {
+        /**
+         * 
+         * @return
+         */
+        public tr end()
+        {
             return parent;
         }
         
+        /**
+         *
+         * @param style
+         * @return
+         */
         @Override
         public td setStyle(String style) {
             super.setStyle(style);
@@ -269,9 +486,19 @@ public class HtmlTag {
         }
     }
 
-    public static class th extends td {
+    /**
+     * 
+     */
+    public static class th extends td
+    {
 
-        public th(tr parent,String body) {
+        /**
+         * 
+         * @param parent
+         * @param body
+         */
+        public th(tr parent,String body)
+        {
             super("th",parent,body);
         }
     }

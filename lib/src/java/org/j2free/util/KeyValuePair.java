@@ -21,15 +21,29 @@ import net.jcip.annotations.Immutable;
 
 /**
  *
+ * @param <A> 
+ * @param <B>
  * @author Ryan Wilson
  */
 @Immutable
 public class KeyValuePair<A,B> {
     
+    /**
+     *
+     */
     public final A key;
+    /**
+     *
+     */
     public final B value;
     
-    public KeyValuePair(A key, B value) {
+    /**
+     * 
+     * @param key
+     * @param value
+     */
+    public KeyValuePair(A key, B value)
+    {
         this.key   = key;
         this.value = value;
     }

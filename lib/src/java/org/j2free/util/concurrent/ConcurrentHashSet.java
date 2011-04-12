@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * This class implements the <tt>Set</tt> interface, backed by a ConcurrentHashMap instance.
  *
+ * @param <E>
  * @author Matt Tucker
  */
 public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
@@ -76,34 +77,66 @@ public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
         map = new ConcurrentHashMap<E, Object>(initialCapacity);
     }
 
-    public Iterator<E> iterator() {
+    /**
+     * 
+     * @return
+     */
+    public Iterator<E> iterator()
+    {
         return map.keySet().iterator();
     }
 
-    public int size() {
+    /**
+     * 
+     * @return
+     */
+    public int size()
+    {
         return map.size();
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean isEmpty() {
         return map.isEmpty();
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     @Override
     public boolean contains(Object o) {
         return map.containsKey(o);
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     @Override
     public boolean add(E o) {
         return map.put(o, PRESENT) == null;
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     @Override
     public boolean remove(Object o) {
         return map.remove(o) == PRESENT;
     }
 
+    /**
+     *
+     */
     @Override
     public void clear() {
         map.clear();

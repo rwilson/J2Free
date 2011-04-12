@@ -96,6 +96,11 @@ public class MemoryFragment implements Fragment, Cloneable {
         this.lockedTime  = -1;
     }
 
+    /**
+     *
+     * @return
+     * @throws CloneNotSupportedException
+     */
     @Override
     public MemoryFragment clone() throws CloneNotSupportedException {
         return new MemoryFragment(content, condition, timeout);
@@ -160,7 +165,7 @@ public class MemoryFragment implements Fragment, Cloneable {
      *  - If (a || b) && c then lock this MemoryFragment for update by the calling Thread
      *    and return true; otherwise return false.
      *
-     * @param The current condition
+     * @param curCondition
      * @return true if this fragment has been locked for update by the
      *         calling thread, otherwise false
      */
@@ -257,8 +262,8 @@ public class MemoryFragment implements Fragment, Cloneable {
      *  updates the content and notifies other threads that may be
      *  waiting to get the content, otherwise returns false.
      *
-     *  @param content the content to set
-     *  @param condition the current condition
+     *  @param newContent
+     * @param newCondition
      */
     public boolean tryUpdateAndRelease(String newContent, String newCondition) {
 
